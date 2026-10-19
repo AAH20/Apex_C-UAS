@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C-UAS Platform Architecture",
+    "subtitle": "Detection → Tracking → Engagement Scheduling → Forensics → DEW Modeling",
+    "output": "cuas-platform-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "rf_sensor", "type": "external", "label": "RF Sensor", "sublabel": "DJI / MAVLink / ExpressLRS / LoRa", "pos": [40, 200], "size": [160, 64] },
+    { "id": "gnss_sensor", "type": "external", "label": "GNSS Sensor", "sublabel": "Spoof / meaconing detect", "pos": [40, 420], "size": [160, 64] },
+    { "id": "detection", "type": "backend", "label": "Detection Engine", "sublabel": "RF classifier + spoof detector", "pos": [300, 310], "size": [160, 64] },
+    { "id": "tracking", "type": "backend", "label": "EKF Tracking", "sublabel": "Continuous-jerk 3D prediction", "pos": [540, 310], "size": [160, 64] },
+    { "id": "engagement", "type": "security", "label": "Engagement Scheduler", "sublabel": "NP-hard: budgeted max coverage", "pos": [780, 310], "size": [180, 64], "tag": "Key differentiator" },
+    { "id": "decision", "type": "backend", "label": "Agentic Decision Loop", "sublabel": "Perception → Decision → Action", "pos": [1040, 200], "size": [180, 64] },
+    { "id": "forensics", "type": "database", "label": "Forensic Dossier", "sublabel": "Ed25519-signed, FAA/DOD", "pos": [1040, 420], "size": [160, 64] },
+    { "id": "dew", "type": "cloud", "label": "DEW Beam Modeling", "sublabel": "M², thermal bloom, T-to-K", "pos": [1300, 310], "size": [160, 64] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Defensive-only: no weapons effector", "wraps": ["detection", "tracking", "engagement", "decision", "forensics", "dew"], "pad": 20 }
+  ],
+  "connections": [
+    { "id": "rf-to-detect", "from": "rf_sensor", "to": "detection", "label": "IQ samples" },
+    { "id": "gnss-to-detect", "from": "gnss_sensor", "to": "detection", "label": "Telemetry" },
+    { "id": "detect-to-track", "from": "detection", "to": "tracking", "label": "Detections" },
+    { "id": "track-to-engage", "from": "tracking", "to": "engagement", "label": "Tracks" },
+    { "id": "engage-to-decide", "from": "engagement", "to": "decision", "label": "Schedule", "variant": "emphasis" },
+    { "id": "decide-to-forensics", "from": "decision", "to": "forensics", "label": "Events" },
+    { "id": "decide-to-dew", "from": "decision", "to": "dew", "label": "Beam params" }
+  ],
+  "cards": [
+    { "dot": "rose", "title": "Defensive-only", "items": ["Detection, DF, classification, tracking, forensics", "Jamming safety-gated behind authorized flag", "No live SDR, no weapons-employment effector"] },
+    { "dot": "emerald", "title": "Key differentiator", "items": ["NP-hard engagement scheduler (greedy 1-1/e)", "Dwell/slew/thermal-bloom constraints", "Expected-kills maximization before swarm impact"] }
+  ]
+}

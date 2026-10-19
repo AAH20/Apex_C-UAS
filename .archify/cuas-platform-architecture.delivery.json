@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "118f5e4d-23c6-43fb-bcd1-4be1a6d5a7ec",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/ahmedhassan/c-uas-platform/.archify/cuas-platform-architecture.json",
+  "output": "/Users/ahmedhassan/c-uas-platform/.archify/cuas-platform-architecture.html",
+  "specification": {
+    "sha256": "1bde52ccdc995e9a2febad1a7d83b850ce3eca4eef383b6dc0439aa24772eb5f",
+    "bytes": 2936
+  },
+  "artifact": {
+    "sha256": "95081c164702714d6dd70d69b2b98bdd57324d93d556623c4f5df6421a38904a",
+    "bytes": 760017
+  }
+}

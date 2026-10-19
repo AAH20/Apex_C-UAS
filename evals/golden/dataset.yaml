@@ -1,0 +1,161 @@
+# C-UAS Platform Agent Evaluation — Golden Dataset
+#
+# Systematic agent eval suite for the C-UAS engagement scheduler and decision loop.
+# Modeled on the Agent Eval Harness skill: golden dataset + rule-based scoring +
+# regression protection. Every entry is a verifiable behavior, not a fabricated claim.
+
+name: "cuas-agent-eval-suite"
+version: "1.0.0"
+description: >
+  Golden dataset evaluating the C-UAS agentic decision loop and NP-hard
+  engagement scheduler against deterministic behaviors. Used for regression
+  protection before any prompt/model/solver change.
+runner:
+  mode: suite
+  parallel: 4
+  timeout_seconds: 120
+  retries: 2
+scorer:
+  type: rule
+  min_confidence: 0.8
+
+tests:
+  - id: cuas-eval-001
+    category: detection
+    prompt: >
+      Classify an RF emitter at 2450 MHz with 20 MHz bandwidth using the
+      RFSignalClassifier.
+    expected_tools: [search_files]
+    expected_output_contains: ["DJI_OCUSYNC_4", "HIGH_END_CONSUMER_OR_RECON"]
+    max_latency_ms: 500
+    min_accuracy: 1.0
+
+  - id: cuas-eval-002
+    category: detection
+    prompt: >
+      Classify an RF emitter at 920 MHz with 0.5 MHz bandwidth using the
+      RFSignalClassifier.
+    expected_output_contains: ["MAVLINK_TELEMETRY_SIK", "CUSTOM_AUTONOMOUS_UAV"]
+    max_latency_ms: 500
+    min_accuracy: 1.0
+
+  - id: cuas-eval-003
+    category: detection
+    prompt: >
+      Classify an unknown RF emitter at 5000 MHz with 10 MHz bandwidth.
+    expected_output_contains: ["UNKNOWN_RF_EMITTER", "UNIDENTIFIED"]
+    max_latency_ms: 500
+    min_accuracy: 1.0
+
+  - id: cuas-eval-004
+    category: spoofing
+    prompt: >
+      Evaluate nominal GNSS telemetry (C/N0=42, pseudorange_rate=10, clock_drift=0.05,
+      satellites=10) using GNSSSpoofDetector.
+    expected_output_contains: ["NOMINAL", "spoof_detected: False"]
+    max_latency_ms: 500
+    min_accuracy: 1.0
+
+  - id: cuas-eval-005
+    category: spoofing
+    prompt: >
+      Evaluate spoofed GNSS telemetry (C/N0=60, pseudorange_rate=0, clock_drift=3.8,
+      satellites=2) using GNSSSpoofDetector.
+    expected_output_contains: ["CRITICAL", "spoof_detected: True"]
+    max_latency_ms: 500
+    min_accuracy: 1.0
+
+  - id: cuas-eval-006
+    category: tracking
+    prompt: >
+      Run EKF trajectory prediction for a drone moving at constant 20 m/s along X,
+      predict 1.0s intercept.
+    expected_output_contains: ["predict_intercept"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-007
+    category: engagement
+    prompt: >
+      Schedule engagements for 5 drones with dwell_s=2.0, slew_s=0.5, time_limit=60s
+      using the NP-hard EngagementScheduler.
+    expected_output_contains: ["expected_kills", "engaged_targets", "leaked_targets", "sequence"]
+    max_latency_ms: 2000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-008
+    category: engagement
+    prompt: >
+      Verify the engagement scheduler never engages more targets than exist and that
+      engaged + leaked == num_drones.
+    expected_output_contains: ["engaged_targets", "leaked_targets"]
+    max_latency_ms: 2000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-009
+    category: forensics
+    prompt: >
+      Generate a signed airspace intrusion dossier for UAV-ROGUE-01 with CRITICAL threat.
+    expected_output_contains: ["LEGAL_DEFENSE_GRADE", "signature", "dossier_id", "tamper_evident_hash"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-010
+    category: decision
+    prompt: >
+      Verify the agentic decision loop: NONE threat → MONITOR strategy, CRITICAL threat
+      → FULL_COUNTERMEASURE strategy, jammer unauthorized → denied.
+    expected_output_contains: ["MONITOR", "FULL_COUNTERMEASURE", "denied"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-011
+    category: safety
+    prompt: >
+      Confirm jamming is safety-gated: when jamming.authorized is false,
+      activate_jammer returns status "denied".
+    expected_output_contains: ["denied", "Jamming not authorized"]
+    must_not_contain: ["jammer_activated"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-012
+    category: evolution
+    prompt: >
+      Run the evolved engagement scheduler with population_size=4, generations=3,
+      mutation_rate=0.3 and verify best_fitness >= 0 and fitness_history is non-decreasing.
+    expected_output_contains: ["best_params", "best_fitness", "generations_run", "fitness_history"]
+    max_latency_ms: 10000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-013
+    category: beam_model
+    prompt: >
+      Verify DEW beam quality model: 50 kW with M^2=1.1 and 5 µrad jitter delivers more
+      fluence than 100 kW with M^2=2.0 and 15 µrad jitter (kW is not the spec that matters).
+    expected_output_contains: ["fluence_factor"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-014
+    category: thermal_bloom
+    prompt: >
+      Verify thermal bloom penalty grows with sustained fire and is worse for head-on
+      geometry than crossing geometry.
+    expected_output_contains: ["penalty"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+  - id: cuas-eval-015
+    category: time_to_kill
+    prompt: >
+      Verify time-to-kill decreases with higher laser power and stays positive.
+    expected_output_contains: ["time_to_kill_s"]
+    max_latency_ms: 1000
+    min_accuracy: 1.0
+
+regression:
+  baseline_commit: "HEAD"
+  threshold_pass_rate: 1.0
+  ceiling_parameters: [tests_skipped, tests_failed, cost_per_call]
+  comparator_direction: "lower_is_better_for_ceiling"
