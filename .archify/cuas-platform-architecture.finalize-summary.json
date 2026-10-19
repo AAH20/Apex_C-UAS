@@ -45,7 +45,7 @@
     "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
   },
   "visualReview": "not-requested",
-  "durationMs": 4420,
+  "durationMs": 3619,
   "layoutReviewRecommendation": {
     "action": "inspect-leading-space",
     "evidence": {

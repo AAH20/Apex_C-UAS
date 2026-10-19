@@ -1,0 +1,35 @@
+{
+  "slug": "cuas-system-architecture",
+  "eyebrow": "APEX GROWTH SYSTEMS LLC",
+  "title": "C-UAS Platform — System Architecture",
+  "subtitle": "Defensive counter-UAS: detection, tracking, engagement scheduling, forensics.",
+  "desc": "RF and GNSS sensors feed the detection engine, which drives EKF tracking and the NP-hard engagement scheduler. The agentic decision loop routes to forensics and directed-energy beam modeling.",
+  "size": "doc-wide",
+  "routing": "channel",
+  "nodes": [
+    {"id": "rf_sensor", "label": "RF Sensor", "sub": "DJI / MAVLink / ExpressLRS / LoRa", "kind": "input", "col": 0, "row": 0},
+    {"id": "gnss_sensor", "label": "GNSS Sensor", "sub": "Spoof / meaconing detect", "kind": "input", "col": 1, "row": 0},
+    {"id": "detection", "label": "Detection Engine", "sub": "RF classifier + spoof detector", "kind": "node", "col": 2, "row": 1},
+    {"id": "tracking", "label": "EKF Tracking", "sub": "Continuous-jerk 3D prediction", "kind": "node", "col": 3, "row": 1},
+    {"id": "engagement", "label": "Engagement Scheduler", "sub": "NP-hard: budgeted max coverage", "kind": "focal", "col": 4, "row": 1},
+    {"id": "decision", "label": "Agentic Decision Loop", "sub": "Perception → Decision → Action", "kind": "node", "col": 5, "row": 0},
+    {"id": "forensics", "label": "Forensic Dossier", "sub": "Ed25519-signed, FAA / DoD", "kind": "store", "col": 5, "row": 2},
+    {"id": "dew", "label": "DEW Beam Modeling", "sub": "M², thermal bloom, T-to-K", "kind": "node", "col": 6, "row": 1}
+  ],
+  "edges": [
+    {"from": "rf_sensor", "to": "detection", "label": "IQ samples", "kind": "default"},
+    {"from": "gnss_sensor", "to": "detection", "label": "Telemetry", "kind": "default"},
+    {"from": "detection", "to": "tracking", "label": "Detections", "kind": "default"},
+    {"from": "tracking", "to": "engagement", "label": "Tracks", "kind": "default"},
+    {"from": "engagement", "to": "decision", "label": "Schedule", "kind": "accent"},
+    {"from": "decision", "to": "forensics", "label": "Events", "kind": "default"},
+    {"from": "decision", "to": "dew", "label": "Beam params", "kind": "default"}
+  ],
+  "legend": [
+    {"kind": "focal", "text": "key differentiator: NP-hard scheduler"},
+    {"kind": "input", "text": "sensor input"},
+    {"kind": "node", "text": "processing module"},
+    {"kind": "store", "text": "state / evidence"}
+  ],
+  "note": "Defensive-only: detection, tracking, scheduling, and forensics. No weapons-employment effector, no live SDR. Jamming safety-gated behind authorized flag."
+}

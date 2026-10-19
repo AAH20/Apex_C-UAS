@@ -1,0 +1,28 @@
+{
+  "slug": "cuas-decision-loop",
+  "eyebrow": "APEX GROWTH SYSTEMS LLC",
+  "title": "Agentic Decision Loop",
+  "subtitle": "Perception → Decision → Action with default-denied jamming.",
+  "desc": "Perception fuses RF and direction-finding inputs; Decision assesses threat level and selects a response strategy; Action executes commands with the jammer safety-gated.",
+  "size": "doc-wide",
+  "nodes": [
+    {"id": "perception", "label": "Perception Module", "sub": "RF + DF + classification", "kind": "input", "col": 0, "row": 1},
+    {"id": "threat", "label": "Threat Assessment", "sub": "NONE → CRITICAL", "kind": "node", "col": 1, "row": 0},
+    {"id": "strategy", "label": "Strategy Selection", "sub": "MON → FCM", "kind": "node", "col": 1, "row": 2},
+    {"id": "action", "label": "Action Module", "sub": "scan / DF / jam / alert", "kind": "node", "col": 2, "row": 1},
+    {"id": "jammgate", "label": "Jammer Gate", "sub": "authorized?", "kind": "security", "col": 3, "row": 1}
+  ],
+  "edges": [
+    {"from": "perception", "to": "threat", "label": "situation", "kind": "default"},
+    {"from": "threat", "to": "strategy", "label": "level", "kind": "default"},
+    {"from": "strategy", "to": "action", "label": "plan", "kind": "default"},
+    {"from": "action", "to": "jammgate", "label": "gate?", "kind": "accent"}
+  ],
+  "legend": [
+    {"kind": "input", "text": "sensor fusion"},
+    {"kind": "node", "text": "decision step"},
+    {"kind": "security", "text": "safety gate"},
+    {"kind": "default", "text": "data flow"}
+  ],
+  "note": "Jamming default-denied: the authorized flag must be true before activate_jammer returns anything but denied."
+}

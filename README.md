@@ -12,20 +12,34 @@ behind an explicit `authorized` flag.
 
 ---
 
-## What this is
+## About the Publisher
 
-A Python platform that detects drone RF emissions (DJI OcuSync, MAVLink, ExpressLRS, LoRa),
-detects GNSS/GPS spoofing, predicts intercept trajectories with a continuous-jerk EKF,
-schedules engagements optimally under a time limit (NP-hard budgeted maximum coverage),
-generates cryptographically signed forensic dossiers (FAA Part 89 / DoD admissible), and
-models directed-energy beam quality, thermal bloom, and time-to-kill.
+**Apex Growth Systems LLC** — a U.S. registered company (Arizona, ACC 25121151, formed
+2026-09-14; EIN 61-2391219). Founder: Ahmed Hassan, AI Infrastructure & Multi-Cloud
+Architect, CISO/GRC specialist.
 
-An agentic decision loop maps swarm state to threat levels and response strategies, with an
-evolutionary algorithm that tunes scheduler parameters to maximize expected kills before
-swarm impact.
+This project can be incorporated in any other country around the globe when needed — the
+codebase is jurisdiction-agnostic, dependency-light (pure Python + `cryptography`), and
+designed for defensive counter-UAS tooling that is legal to deploy worldwide subject to
+local RF spectrum and directed-energy regulations.
 
-A full **agent evaluation harness** (rule-based golden suite) and **DeepEval-style pytest
-suite** provide regression protection — 94 tests, all passing.
+**Contact:** aah@a2zsoc.com | https://a2zsoc.com
+
+---
+
+## Architecture Diagrams
+
+Editorial diagrams (diagram-design spec, rendered HTML+SVG) live under `docs/diagrams/`:
+
+| Diagram | File | Description |
+|---|---|---|
+| System Architecture | [`docs/diagrams/system-architecture.html`](docs/diagrams/system-architecture.html) | Full platform: sensors → detection → tracking → engagement → decision → forensics + DEW |
+| Agentic Decision Loop | [`docs/diagrams/decision-loop.html`](docs/diagrams/decision-loop.html) | Perception → Decision → Action with default-denied jamming gate |
+| Engagement Pipeline | [`docs/diagrams/engagement-pipeline.html`](docs/diagrams/engagement-pipeline.html) | NP-hard greedy scheduler with dwell / slew / thermal-bloom constraints |
+
+An Archify-authored architecture diagram (JSON schema v1) is also checked in at
+`.archify/cuas-platform-architecture.json` with all four quality gates passing
+(validate / deliver / check / browser-check).
 
 ---
 
@@ -46,12 +60,12 @@ GNSS Sensor ──────┘                     ├─► EKF Tracking ─
 and a single beam director with dwell/slew/thermal-bloom constraints, it
 maximizes expected kills before swarm impact.
 
-### Module map
+### Module Map
 
 | Module | Purpose |
 |---|---|
 | `c_uas/detection` | RF signal classification + GNSS spoofing detection |
-| `c_uas/tracking` | Continuous-jerk EKF 3D trajectory prediction |
+| `c_uas/tracking` | Continuous-jerk EKF trajectory prediction |
 | `c_uas/forensics` | Ed25519-signed airspace intrusion dossiers |
 | `c_uas/engagement` | NP-hard engagement scheduler + constraint models |
 | `c_uas/decision` | Agentic Perception → Decision → Action loop |
@@ -61,7 +75,7 @@ maximizes expected kills before swarm impact.
 
 ---
 
-## Quick start
+## Quick Start
 
 ```bash
 # Clone
@@ -109,7 +123,7 @@ python evals/harness.py run
 
 ---
 
-## Module reference
+## Module Reference
 
 ### `c_uas.detection` — RF classification & GNSS spoof detection
 
@@ -198,7 +212,7 @@ evaluated as ordinary pytest tests — no LLM judge, no API cost, deterministic.
 pytest evals/test_deep_eval.py -v
 ```
 
-### Verification checklist
+### Verification Checklist
 
 - [x] Every new function/method has a test
 - [x] Each test watched fail before implementation (RED-GREEN-REFACTOR)
@@ -209,7 +223,7 @@ pytest evals/test_deep_eval.py -v
 
 ---
 
-## Evolution parameters
+## Evolution Parameters
 
 The engagement scheduler is tunable via `EvolutionParams`:
 
@@ -227,7 +241,7 @@ The engagement scheduler is tunable via `EvolutionParams`:
 
 ---
 
-## Design decisions & best practices
+## Design Decisions & Best Practices
 
 ### Diagrams (diagram-design / archify)
 
@@ -260,16 +274,20 @@ The engagement scheduler is tunable via `EvolutionParams`:
 
 ---
 
-## License & author
+## License & Author
 
-AGPL-3.0. Authored by **Ahmed Hassan** (ahmed@a2zsoc.com), Founder, A2Z SOC
+AGPL-3.0. Authored by **Ahmed Hassan** (aah@a2zsoc.com), Founder, A2Z SOC
 (https://a2zsoc.com). AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
+
+**Publisher:** Apex Growth Systems LLC — U.S. registered company (Arizona, ACC 25121151,
+formed 2026-09-14; EIN 61-2391219). This project can be incorporated in any other
+country around the globe when needed.
 
 Built with 100 parallel AI agents — tools, not team members.
 
 ---
 
-## Security note
+## Security Note
 
 This platform is defensive counter-UAS tooling: detection, classification, tracking,
 scheduling, and forensic evidence generation. It does **not** include a weapons effector,

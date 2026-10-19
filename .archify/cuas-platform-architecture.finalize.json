@@ -5,7 +5,7 @@
   "status": "pass",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-19T23:14:19.658Z",
+  "startedAt": "2026-10-19T23:30:09.212Z",
   "specification": {
     "path": "/Users/ahmedhassan/c-uas-platform/.archify/cuas-platform-architecture.json",
     "sha256": "1bde52ccdc995e9a2febad1a7d83b850ce3eca4eef383b6dc0439aa24772eb5f",
@@ -54,7 +54,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 356,
+      "durationMs": 237,
       "command": [
         "/Users/ahmedhassan/.hermes/node/bin/node",
         "/Users/ahmedhassan/.hermes/skills/creative/archify/bin/archify.mjs",
@@ -68,7 +68,7 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "118f5e4d-23c6-43fb-bcd1-4be1a6d5a7ec",
+        "receiptId": "10851884-e2b7-4aec-ac87-490666da8262",
         "ok": true,
         "command": "deliver",
         "type": "architecture",
@@ -106,7 +106,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 103,
+      "durationMs": 98,
       "command": [
         "/Users/ahmedhassan/.hermes/node/bin/node",
         "/Users/ahmedhassan/.hermes/skills/creative/archify/bin/archify.mjs",
@@ -245,13 +245,13 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "118f5e4d-23c6-43fb-bcd1-4be1a6d5a7ec"
+        "deliveryReceiptId": "10851884-e2b7-4aec-ac87-490666da8262"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 3531,
+      "durationMs": 3159,
       "command": [
         "/Users/ahmedhassan/.hermes/node/bin/node",
         "/Users/ahmedhassan/.hermes/skills/creative/archify/bin/archify.mjs",
@@ -269,7 +269,7 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "118f5e4d-23c6-43fb-bcd1-4be1a6d5a7ec",
+        "deliveryReceiptId": "10851884-e2b7-4aec-ac87-490666da8262",
         "artifact": {
           "path": "/Users/ahmedhassan/c-uas-platform/.archify/cuas-platform-architecture.html",
           "sha256": "95081c164702714d6dd70d69b2b98bdd57324d93d556623c4f5df6421a38904a",
@@ -967,8 +967,8 @@
     "browserCheckReceipt": "/Users/ahmedhassan/c-uas-platform/.archify/cuas-platform-architecture.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-19T23:14:24.077Z",
-  "durationMs": 4420,
+  "finishedAt": "2026-10-19T23:30:12.829Z",
+  "durationMs": 3619,
   "update": {
     "status": "update_available",
     "installedVersion": "3.0.1",

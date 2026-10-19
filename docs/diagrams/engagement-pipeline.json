@@ -1,0 +1,29 @@
+{
+  "slug": "cuas-engagement-pipeline",
+  "eyebrow": "APEX GROWTH SYSTEMS LLC",
+  "title": "Engagement Scheduler Pipeline",
+  "subtitle": "NP-hard budgeted maximum coverage with dwell / slew / thermal-bloom constraints.",
+  "desc": "Detection outputs feed dwell-time and thermal-bloom models; the greedy (1-1/e) scheduler maximizes expected kills before swarm impact.",
+  "size": "doc-wide",
+  "nodes": [
+    {"id": "detect_out", "label": "Detection Output", "sub": "drone tracks", "kind": "input", "col": 0, "row": 1},
+    {"id": "dwell", "label": "Dwell / Slew Model", "sub": "time per target", "kind": "node", "col": 1, "row": 0},
+    {"id": "bloom", "label": "Thermal Bloom", "sub": "beam defocus", "kind": "node", "col": 1, "row": 2},
+    {"id": "scheduler", "label": "Scheduler", "sub": "greedy 1-1/e", "kind": "focal", "col": 2, "row": 1},
+    {"id": "plan", "label": "Engagement Plan", "sub": "expected kills", "kind": "store", "col": 3, "row": 1}
+  ],
+  "edges": [
+    {"from": "detect_out", "to": "dwell", "label": "tracks", "kind": "default"},
+    {"from": "detect_out", "to": "bloom", "label": "sustained fire", "kind": "default"},
+    {"from": "dwell", "to": "scheduler", "label": "dwell time", "kind": "default"},
+    {"from": "bloom", "to": "scheduler", "label": "penalty", "kind": "default"},
+    {"from": "scheduler", "to": "plan", "label": "sequence", "kind": "accent"}
+  ],
+  "legend": [
+    {"kind": "input", "text": "detection output"},
+    {"kind": "node", "text": "constraint model"},
+    {"kind": "focal", "text": "NP-hard scheduler"},
+    {"kind": "store", "text": "output plan"}
+  ],
+  "note": "Greedy (1-1/e) approximation for budgeted maximum coverage: dwell + slew per target, thermal-bloom penalty on sustained fire."
+}
