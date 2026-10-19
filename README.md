@@ -20,10 +20,9 @@ Contact: aah@a2zsoc.com | https://a2zsoc.com
 
 ## Architecture Diagrams
 
-Inline SVG diagrams below. The Archify architecture diagram (JSON schema v1, all four quality gates passing) lives at `.archify/cuas-platform-architecture.json`.
+Inline SVG diagrams below (diagram-design spec: editorial, node budget ≤9, arrows ≤12, accent on two elements max, orthogonal routing). The Archify architecture diagram (JSON schema v1, all four quality gates passing) lives at `.archify/cuas-platform-architecture.json`.
 
-<details>
-<summary>System Architecture</summary>
+### System Architecture
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-system-architecture-title cuas-system-architecture-desc" viewBox="0 0 1272 580" width="1272" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -109,10 +108,7 @@ Inline SVG diagrams below. The Archify architecture diagram (JSON schema v1, all
 </svg>
 </div>
 
-</details>
-
-<details>
-<summary>Agentic Decision Loop</summary>
+### Agentic Decision Loop
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-decision-loop-title cuas-decision-loop-desc" viewBox="0 0 960 580" width="960" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -174,10 +170,7 @@ Inline SVG diagrams below. The Archify architecture diagram (JSON schema v1, all
 </svg>
 </div>
 
-</details>
-
-<details>
-<summary>Engagement Scheduler Pipeline</summary>
+### Engagement Scheduler Pipeline
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-engagement-pipeline-title cuas-engagement-pipeline-desc" viewBox="0 0 960 580" width="960" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -242,7 +235,56 @@ Inline SVG diagrams below. The Archify architecture diagram (JSON schema v1, all
 </svg>
 </div>
 
-</details>
+### Mermaid Architectures
+
+```mermaid
+flowchart TD
+    subgraph Sensors
+    A[RF Sensor] -->|IQ samples| D[Detection Engine]
+    B[GNSS Sensor] -->|Telemetry| D
+    end
+
+    subgraph Tracking
+    D -->|Detections| E[EKF Tracking]
+    end
+
+    subgraph Scheduling
+    E -->|Tracks| F[Engagement Scheduler]
+    end
+
+    subgraph Decision
+    F -->|Schedule| G[Agentic Decision Loop]
+    end
+
+    subgraph Outputs
+    G -->|Events| H[Forensic Dossier]
+    G -->|Beam params| I[DEW Beam Modeling]
+    end
+
+    style F fill:#f0c,stroke:#333,stroke-width:2px
+    style A fill:#e1f5fe,stroke:#333
+    style B fill:#e1f5fe,stroke:#333
+```
+
+```mermaid
+flowchart LR
+    P[Perception Module] -->|situation| T[Threat Assessment]
+    T -->|level| S[Strategy Selection]
+    S -->|plan| A[Action Module]
+    A -->|gate?| J[Jammer Gate]
+    J -->|authorized| A
+    style J fill:#ff9999,stroke:#333,stroke-width:2px
+```
+
+```mermaid
+flowchart TD
+    D[Detection Output] -->|tracks| Dw[Dwell / Slew Model]
+    D -->|sustained fire| TB[Thermal Bloom]
+    Dw -->|dwell time| S[Scheduler]
+    TB -->|penalty| S
+    S -->|sequence| EP[Engagement Plan]
+    style S fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ---
 
