@@ -1,42 +1,29 @@
 # C-UAS Platform
 
-**Autonomous Counter-UAS Detection, Tracking, Engagement Scheduling & Airspace Forensics.**
+Counter-UAS detection, tracking, engagement scheduling, and airspace forensics.
 
-Builds on [Sky-Sentinel](https://github.com/AAH20/sky-sentinel) adding an NP-hard engagement
-scheduler, an agentic Perception → Decision → Action loop, directed-energy beam modeling,
-real Ed25519-signed forensic dossiers, and a full agent-evaluation harness.
+Builds on Sky-Sentinel with an NP-hard engagement scheduler, an agentic Perception → Decision → Action loop, directed-energy beam modeling, Ed25519-signed forensic dossiers, and an agent-evaluation harness.
 
-**Defensive-only:** detection, direction-finding, classification, tracking, and forensic
-evidence. No weapons-employment effector, no live SDR integration. Jamming is safety-gated
-behind an explicit `authorized` flag.
+Defensive only. Detection, direction-finding, classification, tracking, and forensic evidence. No weapons-employment effector, no live SDR integration. Jamming is safety-gated behind an explicit `authorized` flag.
 
 ---
 
-## About the Publisher
+## Publisher
 
-**Apex Growth Systems LLC** — a U.S. registered company (Arizona, ACC 25121151, formed
-2026-09-14; EIN 61-2391219). Founder: Ahmed Hassan, AI Infrastructure & Multi-Cloud
-Architect, CISO/GRC specialist.
+**Apex Growth Systems LLC** — U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). Founder: Ahmed Hassan, AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
 
-This project can be incorporated in any other country around the globe when needed — the
-codebase is jurisdiction-agnostic, dependency-light (pure Python + `cryptography`), and
-designed for defensive counter-UAS tooling that is legal to deploy worldwide subject to
-local RF spectrum and directed-energy regulations.
+This project can be incorporated in any other country around the globe when needed. The codebase is pure Python plus `cryptography`, dependency-light, and legal to deploy worldwide subject to local RF spectrum and directed-energy regulations.
 
-**Contact:** aah@a2zsoc.com | https://a2zsoc.com
+Contact: aah@a2zsoc.com | https://a2zsoc.com
 
 ---
 
 ## Architecture Diagrams
 
-Editorial diagrams (diagram-design spec) rendered as inline SVG below. Archify-authored
-architecture diagram (JSON schema v1, all four quality gates passing) is also checked in at
-`.archify/cuas-platform-architecture.json`.
-
-### System Architecture
+Inline SVG diagrams below. The Archify architecture diagram (JSON schema v1, all four quality gates passing) lives at `.archify/cuas-platform-architecture.json`.
 
 <details>
-<summary>C-UAS Platform — System Architecture (click to expand)</summary>
+<summary>System Architecture</summary>
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-system-architecture-title cuas-system-architecture-desc" viewBox="0 0 1272 580" width="1272" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -109,7 +96,7 @@ architecture diagram (JSON schema v1, all four quality gates passing) is also ch
 <text x="1112" y="234.5" font-family="'Geist Mono', ui-monospace, monospace" font-size="7.0" fill="#5a6580" letter-spacing="0.18em">NOD</text>
 <text x="1180.0" y="256.0" text-anchor="middle" font-family="'Geist', system-ui, sans-serif" font-size="12.0" font-weight="600" fill="#2d3142">DEW Beam Modeling</text>
 <text x="1180.0" y="270.0" text-anchor="middle" font-family="'Geist Mono', ui-monospace, monospace" font-size="9.0" fill="#5a6580">M², thermal bloom, T-to-K</text>
-<text x="16" y="506" font-family="'Instrument Serif', serif" font-style="italic" font-size="14.0" fill="#4f5d75">Defensive-only: detection, tracking, scheduling, and forensics. No weapons-employment effector, no live SDR. Jamming safety-gated behind authorized flag.</text>
+<text x="16" y="506" font-family="'Instrument Serif', serif" font-style="italic" font-size="14.0" fill="#4f5d75">Defensive only: detection, tracking, scheduling, and forensics. No weapons-employment effector, no live SDR. Jamming safety-gated behind authorized flag.</text>
 <line x1="0" y1="526" x2="1272" y2="526" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
 <rect x="16" y="534" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.5"/>
 <text x="40" y="543" font-family="'Geist Mono', ui-monospace, monospace" font-size="8.0" fill="#4f5d75" letter-spacing="0.06em">KEY DIFFERENTIATOR: NP-HARD SCHEDULER</text>
@@ -124,10 +111,8 @@ architecture diagram (JSON schema v1, all four quality gates passing) is also ch
 
 </details>
 
-### Agentic Decision Loop
-
 <details>
-<summary>Perception → Decision → Action with default-denied jamming (click to expand)</summary>
+<summary>Agentic Decision Loop</summary>
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-decision-loop-title cuas-decision-loop-desc" viewBox="0 0 960 580" width="960" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -191,10 +176,8 @@ architecture diagram (JSON schema v1, all four quality gates passing) is also ch
 
 </details>
 
-### Engagement Scheduler Pipeline
-
 <details>
-<summary>NP-hard budgeted maximum coverage with dwell / slew / thermal-bloom constraints (click to expand)</summary>
+<summary>Engagement Scheduler Pipeline</summary>
 
 <div align="left" style="overflow-x:auto;">
 <svg role="img" aria-labelledby="cuas-engagement-pipeline-title cuas-engagement-pipeline-desc" viewBox="0 0 960 580" width="960" height="580" xmlns="http://www.w3.org/2000/svg" font-family="'Geist', system-ui, sans-serif">
@@ -275,12 +258,9 @@ GNSS Sensor ──────┘                     ├─► EKF Tracking ─
                                         │                 └─► DEW Beam Modeling ──────────────┘
 ```
 
-**Key differentiator (focal):** the NP-hard engagement scheduler uses a greedy
-(1−1/e) approximation for budgeted maximum coverage — given N detected drones
-and a single beam director with dwell/slew/thermal-bloom constraints, it
-maximizes expected kills before swarm impact.
+The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budgeted maximum coverage. Given N detected drones and a single beam director with dwell, slew, and thermal-bloom constraints, it maximizes expected kills before swarm impact.
 
-### Module Map
+### Modules
 
 | Module | Purpose |
 |---|---|
@@ -298,45 +278,32 @@ maximizes expected kills before swarm impact.
 ## Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/AAH20/c-uas-platform.git
 cd c-uas-platform
-
-# Install (Python 3.9+)
 pip install .
 
-# 1. RF signal classification
 c-uas scan-rf --freq 2450 --bw 20
-# [C-UAS] RF Classification for 2450.0 MHz:
-#   Protocol        : DJI_OCUSYNC_4
-#   Threat Category : HIGH_END_CONSUMER_OR_RECON
+# Protocol        : DJI_OCUSYNC_4
+# Threat Category : HIGH_END_CONSUMER_OR_RECON
 
-# 2. GNSS spoofing detection
 c-uas detect-spoof
-# [C-UAS] Nominal GNSS: Threat=NOMINAL, Flags=[]
-# [C-UAS] Spoofed GNSS: Threat=CRITICAL, Flags=[...]
+# Nominal GNSS: Threat=NOMINAL, Flags=[]
+# Spoofed GNSS: Threat=CRITICAL, Flags=[...]
 
-# 3. EKF trajectory prediction
 c-uas track --horizon 2.0
 
-# 4. Optimal engagement sequence (NP-hard solver)
 c-uas schedule --num-drones 8 --dwell-s 4 --slew-s 1.5
-# [C-UAS] Engagement Schedule: 8 drones
-#   Expected kills : 4.1
-#   Total time     : 37.0s
-#   Leaked targets : 1
+# Expected kills : 4.1
+# Total time     : 37.0s
+# Leaked targets : 1
 
-# 5. Signed forensic dossier
 c-uas dossier --target-id UAV-ROGUE-01 --threat CRITICAL
-# [C-UAS] Dossier C-UAS-...-UAV-ROGUE-01
-#   Admissibility : LEGAL_DEFENSE_GRADE
-#   Signature     : a4f2f236...
+# Admissibility : LEGAL_DEFENSE_GRADE
+# Signature     : a4f2f236...
 
-# 6. Run the test suite
 pytest tests/ -q
 # 94 passed
 
-# 7. Run the agent eval harness
 python evals/harness.py run
 # 15/15 PASS
 ```
@@ -345,171 +312,120 @@ python evals/harness.py run
 
 ## Module Reference
 
-### `c_uas.detection` — RF classification & GNSS spoof detection
+### `c_uas.detection`
 
-- `RFSignalClassifier.classify_frequency(freq_mhz, bandwidth_mhz)` — passive
-  protocol fingerprinting from frequency band. Returns `{protocol, threat_category,
-  matched}`. Covers DJI OcuSync, MAVLink, ExpressLRS, LoRa.
-- `GNSSSpoofDetector.evaluate_telemetry(measurement)` — detects spoofing/meaconing
-  from anomalous C/N0 power, clock-drift steps, and insufficient constellation lock.
-  Returns `{spoof_detected, threat_level, anomaly_flags}`.
+`RFSignalClassifier.classify_frequency(freq_mhz, bandwidth_mhz)` fingerprints protocols by frequency band. Returns `{protocol, threat_category, matched}`. Covers DJI OcuSync, MAVLink, ExpressLRS, LoRa.
 
-### `c_uas.tracking` — EKF intercept prediction
+`GNSSSpoofDetector.evaluate_telemetry(measurement)` detects spoofing/meaconing from anomalous C/N0 power, clock-drift steps, and insufficient constellation lock. Returns `{spoof_detected, threat_level, anomaly_flags}`.
 
-- `EKFTrajectoryPredictor(dt)` — continuous-jerk alpha-beta-gamma EKF.
-  `update_measurement(x, y, z)` corrects state; `predict_intercept(horizon_s)` returns
-  the 3D intercept coordinate. Sub-meter-class tracking.
+### `c_uas.tracking`
 
-### `c_uas.forensics` — Airspace intrusion dossier
+`EKFTrajectoryPredictor(dt)` is a continuous-jerk alpha-beta-gamma EKF. `update_measurement(x, y, z)` corrects state. `predict_intercept(horizon_s)` returns the 3D intercept coordinate.
 
-- `AirspaceIntrusionDossier.generate_signed_dossier(...)` — produces a tamper-evident
-  dossier with a real Ed25519 signature (`cryptography`), SHA-256 content hash, and
-  `LEGAL_DEFENSE_GRADE` admissibility. Compliant with FAA Part 89 / DoD.
-- `verify_signature(dossier)` — verifies the Ed25519 signature against the embedded
-  public key.
+### `c_uas.forensics`
 
-### `c_uas.engagement` — NP-hard engagement scheduler
+`AirspaceIntrusionDossier.generate_signed_dossier(...)` produces a tamper-evident dossier with a real Ed25519 signature (`cryptography`), SHA-256 content hash, and `LEGAL_DEFENSE_GRADE` admissibility. Compliant with FAA Part 89 / DoD.
 
-- `EngagementScheduler(dwell_s, slew_s, ...)` — greedy (1−1/e) approximation for
-  budgeted maximum coverage. `schedule(num_drones, time_limit_s)` returns an
-  `EngagementPlan` with `expected_kills`, `engaged_targets`, `leaked_targets`,
-  `total_time_s`, and `sequence`.
-- `constraints.ThermalBloomModel`, `BeamQualityModel`, `DwellModel` — physics models
-  for dwell time, beam quality (M²/jitter/range), and thermal-bloom penalty.
+`verify_signature(dossier)` verifies the Ed25519 signature against the embedded public key.
 
-### `c_uas.decision` — Agentic Perception → Decision → Action
+### `c_uas.engagement`
 
-- `PerceptionModule` — sensor fusion (RF, direction-finding, classification).
-- `DecisionModule` — threat assessment (NONE→CRITICAL) and response-strategy
-  selection (MONITOR→FULL_COUNTERMEASURE), with `plan_actions()` emitting
-  `SystemCommand`s.
-- `ActionModule` — executes commands in simulation mode. Jamming is safety-gated:
-  `activate_jammer` returns `{"status": "denied"}` unless
-  `jamming.authorized` is `true`.
+`EngagementScheduler(dwell_s, slew_s, ...)` implements greedy (1−1/e) budgeted maximum coverage. `schedule(num_drones, time_limit_s)` returns an `EngagementPlan` with `expected_kills`, `engaged_targets`, `leaked_targets`, `total_time_s`, and `sequence`.
 
-### `c_uas.dew` — Directed-energy modeling (modeling only)
+`constraints.ThermalBloomModel`, `BeamQualityModel`, `DwellModel` are physics models for dwell time, beam quality (M²/jitter/range), and thermal-bloom penalty.
 
-- `DewBeamQualityModel.fluence_factor(m2, jitter_urad, range_m)` — why beam quality
-  (M²) and pointing jitter matter more than headline kilowatts.
-- `DewThermalBloomModel.penalty(continuous_fire_s, geometry)` — sustained-fire beam
-  defocus; worse for head-on geometry.
-- `TimeToKillModel.time_to_kill_s(...)` — dwell time to mission kill by power,
-  material, and range.
+### `c_uas.decision`
 
-### `c_uas.evolution` — Adaptive scheduler tuning
+`PerceptionModule` fuses RF and direction-finding inputs.
 
-- `EvolvedScheduler` — (μ + λ) evolutionary algorithm tuning `dwell_s`, `slew_s`,
-  `pk_base` to maximize expected kills. `evolve()` returns `best_params`,
-  `best_fitness`, `fitness_history` (non-decreasing via elitism), deterministic
-  with a `seed`.
+`DecisionModule` assesses threat level (NONE→CRITICAL) and selects a response strategy (MONITOR→FULL_COUNTERMEASURE). `plan_actions()` emits `SystemCommand`s.
+
+`ActionModule` executes commands in simulation mode. Jamming is safety-gated: `activate_jammer` returns `{"status": "denied"}` unless `jamming.authorized` is `true`.
+
+### `c_uas.dew`
+
+`DewBeamQualityModel.fluence_factor(m2, jitter_urad, range_m)` — beam quality and pointing jitter matter more than headline kilowatts.
+
+`DewThermalBloomModel.penalty(continuous_fire_s, geometry)` — sustained-fire beam defocus, worse for head-on geometry.
+
+`TimeToKillModel.time_to_kill_s(...)` — dwell time to mission kill by power, material, and range.
+
+### `c_uas.evolution`
+
+`EvolvedScheduler` is a (μ + λ) evolutionary algorithm tuning `dwell_s`, `slew_s`, `pk_base` to maximize expected kills. `evolve()` returns `best_params`, `best_fitness`, `fitness_history` (non-decreasing via elitism), deterministic with a `seed`.
 
 ---
 
-## Evaluation (agent-eval-harness + DeepEval)
+## Evaluation
 
-Two independent evaluation layers guard against regressions:
+Two evaluation layers guard against regressions.
 
-### 1. Agent Eval Harness (`evals/harness.py`)
+### Agent Eval Harness (`evals/harness.py`)
 
-Rule-based golden suite (`evals/golden/dataset.yaml`) with 15 deterministic tests
-across detection, spoofing, tracking, engagement, forensics, decision, safety,
-evolution, beam model, thermal bloom, and time-to-kill.
+Rule-based golden suite (`evals/golden/dataset.yaml`) with 15 deterministic tests across detection, spoofing, tracking, engagement, forensics, decision, safety, evolution, beam model, thermal bloom, and time-to-kill.
 
-```bash
+```
 python evals/harness.py run      # run full suite
 python evals/harness.py check    # regression check vs threshold
 ```
 
-All 15 pass. Each test asserts real behavior (not mocks), with expected output
-substrings and a `min_accuracy` floor.
+All 15 pass. Each test asserts real behavior, not mocks, with expected output substrings and a `min_accuracy` floor.
 
-### 2. DeepEval-style pytest suite (`evals/test_deep_eval.py`)
+### DeepEval-style pytest suite (`evals/test_deep_eval.py`)
 
-Modeled on the deepeval skill: `TaskCompletionMetric` and `ToolCorrectnessMetric`
-evaluated as ordinary pytest tests — no LLM judge, no API cost, deterministic.
+Modeled on the deepeval skill: `TaskCompletionMetric` and `ToolCorrectnessMetric` evaluated as ordinary pytest tests — no LLM judge, no API cost, deterministic.
 
-```bash
+```
 pytest evals/test_deep_eval.py -v
 ```
 
-### Verification Checklist
+### Checklist
 
-- [x] Every new function/method has a test
-- [x] Each test watched fail before implementation (RED-GREEN-REFACTOR)
-- [x] All 94 tests pass, output pristine
-- [x] Python 3.9 `Tuple` from `typing` (no `tuple[...]` syntax)
-- [x] Zero Nvidia API calls — pure local Python
-- [x] No fabricated metrics — all figures computed from actual code execution
+- Every function has a test
+- Tests watched fail before implementation (RED-GREEN-REFACTOR)
+- 94 tests pass
+- Python 3.9 `Tuple` from `typing` (no `tuple[...]` syntax)
+- Zero Nvidia API calls — pure local Python
+- No fabricated metrics — all figures computed from actual code execution
 
 ---
 
 ## Evolution Parameters
 
-The engagement scheduler is tunable via `EvolutionParams`:
+`EvolutionParams` tunes the engagement scheduler:
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `mutation_rate` | 0.3 | Probability of mutating a parameter each generation |
-| `elitism_count` | 1 | Number of top individuals carried forward unchanged |
+| `mutation_rate` | 0.3 | Mutation probability per generation |
+| `elitism_count` | 1 | Top individuals carried forward unchanged |
 | `population_size` | 8 | Individuals per generation |
 | `generations` | 5 | Generations to evolve |
 | `seed` | None | Deterministic RNG seed |
 
-`FitnessFunction` scores `expected_kills − leak_penalty·leaked + time_bonus`.
-`MutationOperator` clamps dwell to [0.5, 20] s, slew to [0.1, 10] s, pk to [0.1, 1.0].
-`SelectionOperator` performs elitist top-k selection.
+`FitnessFunction` scores `expected_kills − leak_penalty·leaked + time_bonus`. `MutationOperator` clamps dwell to [0.5, 20] s, slew to [0.1, 10] s, pk to [0.1, 1.0]. `SelectionOperator` performs elitist top-k selection.
 
 ---
 
-## Design Decisions & Best Practices
+## Design Notes
 
-### Diagrams (diagram-design / archify)
+**Diagrams:** Editorial, not auto-generated slop. Accent colour on two elements max. Node budget ≤ 9, arrows ≤ 12, orthogonal routing, label masks with visible gap. `security` kind for boundaries, never accent hue. `.archify/cuas-platform-architecture.json` (Archify schema v1) passes all four gates.
 
-- Diagrams are editorial, not auto-generated slop. Accent colour on **two elements max**.
-- Node budget ≤ 9; arrows ≤ 12; orthogonal routing only; label masks with visible gap.
-- `security` kind used for boundaries (never accent hue); `optional` marks planned-not-built.
-- See `.archify/cuas-platform-architecture.json` (Archify schema v1) and the rendered
-  HTML in `.archify/`.
+**Documentation:** Reference docs (what/how), not strategic narrative (why). Every diagram node and function call maps to real source. No fabricated components.
 
-### Documentation (code-wiki)
+**Grounding:** Zero fabrication — no invented team, customers, revenue, or metrics. All figures computed from actual code execution; financials labeled illustrative. Real team: Ahmed Hassan only. AI agents are tools, not team members.
 
-- Reference documentation (what/how), not strategic narrative (why).
-- Every diagram node and function call corresponds to real source — verified with
-  `read_file` before writing; no fabricated components.
-- Mermaid blocks capped at ~20 nodes; class diagrams use `~T~` generics.
-
-### Grounding (swarm-grounding)
-
-- **Zero fabrication:** no invented team, customers, revenue, or metrics. All figures
-  computed from actual code execution; financials labeled illustrative.
-- **Real team:** Ahmed Hassan only. AI agents are tools, not team members.
-- **Current date:** Mon Oct 19 2026 (verified via `date`). Milestones forward-looking.
-- **Evidence levels:** fetched (primary source) / corroborated (third party) / inferred
-  (reasoned). Corroborated claims state the source and withhold unverified specifics.
-
-### TDD (test-driven-development)
-
-- Iron law: no production code without a failing test first. RED-GREEN-REFACTOR on every
-  module. Python 3.9 `Tuple` compatibility enforced. Zero-Nvidia-API budget enforced.
+**TDD:** No production code without a failing test first. RED-GREEN-REFACTOR on every module. Python 3.9 `Tuple` compatibility enforced. Zero-Nvidia-API budget enforced.
 
 ---
 
-## License & Author
+## License
 
-AGPL-3.0. Authored by **Ahmed Hassan** (aah@a2zsoc.com), Founder, A2Z SOC
-(https://a2zsoc.com). AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
+AGPL-3.0. Authored by Ahmed Hassan (aah@a2zsoc.com), Founder, A2Z SOC (https://a2zsoc.com). AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
 
-**Publisher:** Apex Growth Systems LLC — U.S. registered company (Arizona, ACC 25121151,
-formed 2026-09-14; EIN 61-2391219). This project can be incorporated in any other
-country around the globe when needed.
-
-Built with 100 parallel AI agents — tools, not team members.
+Publisher: Apex Growth Systems LLC — U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). This project can be incorporated in any other country around the globe when needed.
 
 ---
 
-## Security Note
+## Security
 
-This platform is defensive counter-UAS tooling: detection, classification, tracking,
-scheduling, and forensic evidence generation. It does **not** include a weapons effector,
-live SDR integration, or any weapons-employment capability. Jamming commands are
-safety-gated behind an explicit authorization flag and default to `denied`.
+Defensive counter-UAS tooling: detection, classification, tracking, scheduling, and forensic evidence generation. No weapons effector, no live SDR integration, no weapons-employment capability. Jamming commands are safety-gated behind an explicit authorization flag and default to `denied`.
