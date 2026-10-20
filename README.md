@@ -48,9 +48,9 @@ flowchart TD
     G -->|Beam params| I[DEW Beam Modeling]
     end
 
-    style F fill:#f0c,stroke:#333,stroke-width:2px
-    style A fill:#e1f5fe,stroke:#333
-    style B fill:#e1f5fe,stroke:#333
+    style F stroke:#333,stroke-width:2px
+    style A stroke:#333
+    style B stroke:#333
 ```
 
 ### Agentic Decision Loop
@@ -62,7 +62,7 @@ flowchart LR
     S -->|plan| A[Action Module]
     A -->|gate?| J[Jammer Gate]
     J -->|authorized| A
-    style J fill:#ff9999,stroke:#333,stroke-width:2px
+    style J stroke:#333,stroke-width:2px
 ```
 
 ### Engagement Scheduler Pipeline
@@ -74,7 +74,7 @@ flowchart TD
     Dw -->|dwell time| S[Scheduler]
     TB -->|penalty| S
     S -->|sequence| EP[Engagement Plan]
-    style S fill:#f9f,stroke:#333,stroke-width:2px
+    style S stroke:#333,stroke-width:2px
 ```
 
 ---
