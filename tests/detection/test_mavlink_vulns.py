@@ -81,6 +81,31 @@ class TestMavlinkVulnerabilityDatabase(unittest.TestCase):
         )
         self.assertGreater(len(hits), 0)
 
+    def test_new_cves_are_lookupable(self):
+        for cve in ["CVE-2026-1579", "CVE-2026-32743", "CVE-2026-32724", "CVE-2024-33844", "CVE-2020-10282"]:
+            vuln = self.db.get_by_cve(cve)
+            self.assertIsNotNone(vuln, f"{cve} not found in database")
+            self.assertIsNotNone(vuln.title)
+            self.assertGreater(len(vuln.detection_signature), 0)
+            self.assertGreater(len(vuln.mitigation), 0)
+
+    def test_critical_severity_count(self):
+        critical = self.db.list_by_severity("CRITICAL")
+        self.assertGreaterEqual(len(critical), 2)  # CVE-2026-1579, CVE-2020-10282
+
+    def test_high_severity_count(self):
+        high = self.db.list_by_severity("HIGH")
+        self.assertGreaterEqual(len(high), 5)
+
+    def test_medium_severity_count(self):
+        medium = self.db.list_by_severity("MEDIUM")
+        self.assertGreaterEqual(len(medium), 2)
+
+    def test_severity_breakdown_sums_to_total(self):
+        summary = self.db.summary()
+        self.assertEqual(sum(summary["by_severity"].values()), summary["total"])
+        self.assertEqual(summary["total"], 17)
+
 
 if __name__ == "__main__":
     unittest.main()

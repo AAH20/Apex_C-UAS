@@ -278,19 +278,37 @@ Publicly reported directed-energy and kinetic counter-UAS systems that are opera
 
 ### Unit Economics (illustrative)
 
-| Cost Element | DragonFire | Iron Beam | HELIOS | C-UAS Platform (this repo) |
-|---|---|---|---|---|
-| System unit cost | £100M+ program (UK MoD) | Not disclosed | $100M+ per ship integration | Software-only; hardware-dependent |
-| Cost per engagement | ~£10-20 per shot (laser) | Low per-shot (laser) | Low per-shot (laser) | $0 (software simulation) |
-| Sensor suite | Multi-sensor radar + EO/IR | Radar + EO | Ship radar + EO | Software-defined; user-provided |
-| Operator crew | 2-4 | 2-4 | Ship crew | 1 (agentic loop) |
-| Power draw | High (dedicated generator) | High (dedicated generator) | Ship electrical plant | Laptop-class |
+All figures below are illustrative models, not actual revenue or cost data. No revenue,
+customer count, or AUM exists for this project. Figures are directional estimates for
+comparison only, labeled illustrative per grounding policy.
+
+| Cost Element | DragonFire (UK) | Iron Beam (Israel) | HELIOS (US Navy) | AN/TWQ-1 Avenger (US) | C-UAS Platform (this repo) |
+|---|---|---|---|---|---|
+| System unit cost | £100M+ program (UK MoD) | Not disclosed | $100M+ per ship integration | $1M+ per battery (reported) | Software-only; hardware-dependent |
+| Cost per engagement | ~£10-20 per shot (laser) | Low per-shot (laser) | Low per-shot (laser) | High per-shot (expendable missile) | $0 (software simulation; no hardware effector) |
+| Sensor suite | Multi-sensor radar + EO/IR | Radar + EO | Ship radar + EO | Stinger pods + radar | Software-defined; user-provided |
+| Operator crew | 2-4 | 2-4 | Ship crew | 2-4 per battery | 1 (agentic loop) |
+| Power draw | High (dedicated generator) | High (dedicated generator) | Ship electrical plant | N/A (kinetic) | Laptop-class |
+| Prime power / thermal | 70% waste heat at 25-30% wall-plug efficiency | 70% waste heat at 25-30% wall-plug efficiency | 70% waste heat at 25-30% wall-plug efficiency | N/A | Negligible (software) |
+| Atmospheric attenuation | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | N/A | N/A (RF-based detection) |
+| Thermal bloom | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | N/A | N/A |
 
 ### Economies of Scale
 
-- **Laser systems:** Marginal cost per engagement drops to near-zero after capital outlay (no expendable interceptor), but capital cost is high and power/thermal infrastructure scales poorly below ship/large-vehicle class.
-- **Kinetic systems:** Per-engagement cost is high (expendable missile); economies of scale come from production volume, not per-shot savings.
-- **Software-only C-UAS (this platform):** Marginal cost per additional deployment approaches zero. Capital cost is development time only. Scales to any number of sites with sensor integration.
+- **Laser systems (DragonFire, Iron Beam, HELIOS):** Marginal cost per engagement drops toward near-zero after capital outlay (no expendable interceptor), but capital cost is high and power/thermal infrastructure scales poorly below ship or large-vehicle class. Prime power and thermal management dominate lifetime cost.
+- **Kinetic systems (AN/TWQ-1 Avenger):** Per-engagement cost is high (expendable Stinger missile). Economies of scale come from production volume, not per-shot savings. Magazine depth limits sustained engagement.
+- **Software-only C-UAS (this platform):** Marginal cost per additional deployment approaches zero. Capital cost is development time only (pure Python + `cryptography`, no GPU/Nvidia dependency). Scales to any number of sites with sensor integration. No per-engagement consumable cost.
+
+### Bottlenecks Identified (from parallel-bottleneck-discovery)
+
+| Bottleneck | Severity | Category | Source |
+|---|---|---|---|
+| Swarm saturation — one-to-one effector can't keep up with N simultaneous targets | Critical | Scalability | Parallel bottleneck discovery |
+| Thermal blooming — sustained fire heats air column, defocuses beam, cuts fluence 15-25% | High | Physical layer | Parallel bottleneck discovery |
+| Beam pointing/jitter — μrad precision required while platform and target both move | High | Physical layer | Parallel bottleneck discovery |
+| Prime power/thermal — 70% waste heat at 25-30% wall-plug efficiency | High | Physical layer | Parallel bottleneck discovery |
+| Atmospheric attenuation — humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Medium | Environmental | Parallel bottleneck discovery |
+| HPM fratricide — broad beam affects all electronics in cone, including friendly | Medium | Safety | Parallel bottleneck discovery |
 
 ### Benchmarks (this platform, measured from actual code execution)
 
@@ -302,7 +320,7 @@ Publicly reported directed-energy and kinetic counter-UAS systems that are opera
 | EKF tracking | Continuous-jerk alpha-beta-gamma | `c_uas/tracking/ekf_interceptor.py` |
 | Forensic signature | Ed25519 (real, via `cryptography`) | `c_uas/forensics/airspace_dossier.py` |
 | RF classification coverage | DJI OcuSync, MAVLink, ExpressLRS, LoRa | `c_uas/detection/rf_classifier.py` |
-| MAVLink vulnerabilities documented | 11 entries (1 CRITICAL, 5 HIGH, 4 MEDIUM, 1 LOW) | `c_uas/detection/mavlink_vulns.py` |
+| MAVLink vulnerabilities documented | 17 entries (3 CRITICAL, 10 HIGH, 4 MEDIUM) | `c_uas/detection/mavlink_vulns.py` |
 | Controller location methods | TDOA, BEARING, RSSI, SKYWAVE | `c_uas/detection/controller_locator.py` |
 
 ### Evolution Parameters (this platform)
@@ -322,13 +340,13 @@ Publicly reported directed-energy and kinetic counter-UAS systems that are opera
 | Layer | Tool | Count | Status |
 |---|---|---|---|
 | Agent Eval Harness | `evals/harness.py` (golden suite `evals/golden/dataset.yaml`) | 15 deterministic tests | 100% pass |
-|| DeepEval-style pytest | `evals/test_deep_eval.py` (`TaskCompletionMetric`, `ToolCorrectnessMetric`) | deterministic | passing |
+| DeepEval-style pytest | `evals/test_deep_eval.py` (`TaskCompletionMetric`, `ToolCorrectnessMetric`) | deterministic | passing |
 
 ---
 
 ## MAVLink Protocol Vulnerabilities
 
-The platform includes a defensive-only MAVLink vulnerability database (`c_uas/detection/mavlink_vulns.py`) covering 11 publicly disclosed weaknesses across MAVLink 1.0 and 2.0. Each entry has CVE identifiers (where assigned), affected message types, detection signatures, and mitigations.
+The platform includes a defensive-only MAVLink vulnerability database (`c_uas/detection/mavlink_vulns.py`) covering 17 publicly disclosed weaknesses across MAVLink 1.0 and 2.0. Each entry has CVE identifiers (where assigned), affected message types, detection signatures, and mitigations.
 
 ### Vulnerability Summary
 

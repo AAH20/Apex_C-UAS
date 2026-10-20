@@ -343,6 +343,196 @@ MAVLINK_VULNERABILITIES: Dict[str, MavlinkVulnerability] = {
             "commands re-executed at attacker-chosen times."
         ),
     ),
+    "MAV-2026-001": MavlinkVulnerability(
+        cve="CVE-2026-1579",
+        title="MAVLink authentication bypass — unauthenticated SERIAL_CONTROL shell access",
+        mavlink_version="2.0",
+        affected_messages=["SERIAL_CONTROL", "HEARTBEAT", "COMMAND_LONG"],
+        severity="CRITICAL",
+        description=(
+            "MAVLink 2.0 message signing is not mandatory by default. When "
+            "signing is disabled, any unauthenticated party with network or "
+            "RF access to the MAVLink interface can send arbitrary messages, "
+            "including SERIAL_CONTROL which provides interactive shell access "
+            "to the flight controller's underlying OS (NuttX shell). Discovered "
+            "by Dolev Aviv (Cyviation) and disclosed via CISA ICSA-26-090-02 "
+            "on 2026-03-31. CVSS v3.1 score 9.8 (Critical)."
+        ),
+        detection_signature=(
+            "SERIAL_CONTROL message received without valid MAVLink v2 signature; "
+            "shell device identifier present in payload; repeated SERIAL_CONTROL "
+            "messages from a single source in rapid succession; system_id "
+            "brute-forcing (1-255) observed in heartbeat telemetry."
+        ),
+        mitigation=(
+            "Enable MAVLink 2.0 message signing with a pre-shared 32-byte "
+            "SECRET_KEY on both vehicle and GCS. Disable SERIAL_CONTROL message "
+            "type on production vehicles unless diagnostic shell access is "
+            "required. Restrict network access to MAVLink interfaces via "
+            "firewall/ACL. Segment drone communication networks from "
+            "untrusted networks. Apply PX4 firmware patch enforcing signing "
+            "by default."
+        ),
+        exploit_impact=(
+            "Full remote compromise: interactive shell on the flight "
+            "controller, parameter modification, waypoint hijacking, motor "
+            "kill, firmware replacement, and potential pivot into companion "
+            "computer or GCS host."
+        ),
+    ),
+    "MAV-2026-002": MavlinkVulnerability(
+        cve="CVE-2026-32743",
+        title="PX4 MAVLink buffer overflow via malformed log file path",
+        mavlink_version="both",
+        affected_messages=["MAVLink FTP / file transfer", "LOG_REQUEST_LIST", "LOG_REQUEST_DATA"],
+        severity="HIGH",
+        description=(
+            "Stack-based buffer overflow in PX4 Autopilot MavlinkLogHandler "
+            "component (PX4 v1.17.0-rc2 and below). A malformed directory "
+            "path transmitted via MAVLink FTP protocol overflows the stack "
+            "buffer, crashing the flight controller. Triggered via UDP port "
+            "14540 or telemetry radio with no authentication required."
+        ),
+        detection_signature=(
+            "MAVLink FTP message ID 110 (file transfer) with abnormally long "
+            "directory path payload (>50 bytes in data payload section); "
+            "rapid sequence of malformed OpenFile commands; flight controller "
+            "restart/reboot following telemetry traffic spike."
+        ),
+        mitigation=(
+            "Upgrade PX4 Autopilot to patched version. Implement ground-side "
+            "MAVLink routing firewall to drop MAV_CMD_FILE_TRANSFER requests "
+            "and unusually long path strings. Transition to encrypted air-links "
+            "with hardware-accelerated AES. Enable hardware-level packet "
+            "filtering on telemetry radios."
+        ),
+        exploit_impact=(
+            "Denial of service: flight controller crash, loss of aircraft "
+            "control, potential mid-air instability."
+        ),
+    ),
+    "MAV-2026-003": MavlinkVulnerability(
+        cve="CVE-2026-32724",
+        title="PX4 heap use-after-free via MAVLink SERIAL_CONTROL race condition",
+        mavlink_version="both",
+        affected_messages=["SERIAL_CONTROL", "HEARTBEAT"],
+        severity="HIGH",
+        description=(
+            "Heap use-after-free in PX4 Autopilot MavlinkShell::available() "
+            "function. Race condition between MAVLink receiver thread (shell "
+            "creation/destruction) and telemetry sender thread (polls shell "
+            "for output). Remotely triggerable via crafted SERIAL_CONTROL "
+            "messages from an adjacent network. Fixed in PX4 v1.17.0-rc1."
+        ),
+        detection_signature=(
+            "Rapid SERIAL_CONTROL message sequences triggering shell creation "
+            "and destruction; telemetry sender thread accessing freed shell "
+            "object; unexpected flight controller restart or instability "
+            "correlated with telemetry traffic."
+        ),
+        mitigation=(
+            "Upgrade PX4 Autopilot to v1.17.0-rc1 or later. Disable MAVLink "
+            "shell functionality if not required. Implement message filtering "
+            "to limit SERIAL_CONTROL rates. Segment drone telemetry networks "
+            "from untrusted networks."
+        ),
+        exploit_impact=(
+            "Denial of service: heap corruption, drone instability, loss of "
+            "control during flight operations."
+        ),
+    ),
+    "MAV-2024-002": MavlinkVulnerability(
+        cve="CVE-2024-33844",
+        title="Parrot ANAFI USA MAV_MISSION_TYPE validation bypass",
+        mavlink_version="both",
+        affected_messages=["MISSION_COUNT", "MISSION_ITEM", "MISSION_SET_CURRENT"],
+        severity="HIGH",
+        description=(
+            "Parrot ANAFI USA firmware 1.10.4 does not validate MAV_MISSION_TYPE "
+            "(0, 1, 2, 255) in the control component. An attacker can send a "
+            "MISSION_COUNT command with an invalid MAV_MISSION_TYPE to cut off "
+            "the connection between controller and drone."
+        ),
+        detection_signature=(
+            "MISSION_COUNT message received with unexpected/invalid MAV_MISSION_TYPE "
+            "field value; sudden controller-drone connection loss following "
+            "mission protocol exchange; repeated invalid mission upload "
+            "attempts from single source."
+        ),
+        mitigation=(
+            "Validate MAV_MISSION_TYPE field against allowed values (0, 1, 2, "
+            "255) before processing mission protocol messages. Reject mission "
+            "uploads with invalid type fields. Maintain mission protocol state "
+            "machine and reject out-of-sequence messages."
+        ),
+        exploit_impact=(
+            "Denial of service: controller-drone connection severed, mission "
+            "interruption, potential loss of situational awareness during "
+            "flight operations."
+        ),
+    ),
+    "MAV-2020-002": MavlinkVulnerability(
+        cve="CVE-2020-10282",
+        title="MAVLink 1.0 no authentication mechanism — identity spoofing and unauthorized access",
+        mavlink_version="1.0",
+        affected_messages=["ALL"],
+        severity="CRITICAL",
+        description=(
+            "MAVLink protocol version 1.0 presents no authentication mechanism "
+            "nor authorization, leading to identity spoofing, unauthorized "
+            "access, and person-in-the-middle attacks. Version 2.0 optionally "
+            "allows package signing but is not mandatory. Reported by Alias "
+            "Robotics S.L.; CVSS v3.1 score 9.8 (Critical)."
+        ),
+        detection_signature=(
+            "MAVLink v1 packet format (magic byte 0xFE) detected on any link; "
+            "no signing/compatibility flags present; messages accepted from "
+            "unauthenticated source systems; no identity verification performed."
+        ),
+        mitigation=(
+            "Migrate all telemetry links to MAVLink v2 with signing enabled. "
+            "Wrap MAVLink 1.0 legacy links in encrypted tunnels (TLS/IPSec). "
+            "Implement link-layer authentication on telemetry radios. Do not "
+            "use MAVLink 1.0 over any RF path exposed to adversarial RF."
+        ),
+        exploit_impact=(
+            "Complete link compromise: identity spoofing, unauthorized access, "
+            "person-in-the-middle attacks, eavesdropping, injection, and replay "
+            "of all telemetry and command traffic."
+        ),
+    ),
+    "MAV-2023-005": MavlinkVulnerability(
+        cve=None,
+        title="MAVLink covert channel — covert information leakage via protocol fields",
+        mavlink_version="both",
+        affected_messages=["ALL"],
+        severity="MEDIUM",
+        description=(
+            "MAVLink's lack of security mechanisms, default broadcast messages, "
+            "and redundant protocol fields enable covert channels for secret "
+            "information exfiltration from drones to nearby adversaries within "
+            "transmission range. Published research (ASIA CCS 2024) demonstrates "
+            "high-throughput covert data exfiltration through MAVLink protocol "
+            "abuse in the presence of an active warden at the GCS."
+        ),
+        detection_signature=(
+            "Unusual pattern of benign MAVLink messages carrying anomalous "
+            "payload fields; heartbeat or telemetry messages with subtly "
+            "modified reserved fields; unexpected data volume on telemetry "
+            "link during idle periods."
+        ),
+        mitigation=(
+            "Sanitize reserved/unused fields in MAVLink messages before "
+            "transmission. Implement message field allow-listing. Monitor "
+            "telemetry link for anomalous data volume patterns. Use encrypted "
+            "air-links to prevent covert channel exploitation."
+        ),
+        exploit_impact=(
+            "Information leakage: sensitive drone data (position, mission "
+            "details, sensor readings) exfiltrated covertly through protocol "
+            "fields to nearby adversaries."
+        ),
+    ),
 }
 
 
