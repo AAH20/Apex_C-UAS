@@ -2,9 +2,9 @@
 
 Counter-UAS detection, tracking, engagement scheduling, and airspace forensics.
 
-Builds on Sky-Sentinel with an NP-hard engagement scheduler, an agentic Perception → Decision → Action loop, directed-energy beam modeling, Ed25519-signed forensic dossiers, and an agent-evaluation harness.
+Builds on Sky-Sentinel with an NP-hard engagement scheduler, an agentic Perception → Decision → Action loop, directed-energy beam modeling, Ed25519-signed forensic dossiers, MAVLink vulnerability analysis, long-range controller location detection, and an agent-evaluation harness.
 
-Defensive only. Detection, direction-finding, classification, tracking, and forensic evidence. No weapons-employment effector, no live SDR integration. Jamming is safety-gated behind an explicit `authorized` flag.
+Defensive only. Detection, direction-finding, classification, tracking, controller geolocation, MAVLink vulnerability assessment, and forensic evidence. No weapons-employment effector, no live SDR integration. Jamming is safety-gated behind an explicit `authorized` flag.
 
 ---
 
@@ -104,6 +104,8 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/decision` | Agentic Perception → Decision → Action loop |
 | `c_uas/dew` | Directed-energy beam quality, thermal bloom, time-to-kill |
 | `c_uas/evolution` | (μ + λ) evolutionary scheduler tuner |
+| `c_uas/detection.mavlink_vulns` | MAVLink protocol vulnerability database (11 CVEs/weaknesses) |
+| `c_uas/detection.controller_locator` | Long-range RF controller geolocation (TDOA / BEARING / RSSI / SKYWAVE) |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -111,7 +113,7 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 ## Quick Start
 
 ```bash
-git clone https://github.com/AAH20/c-uas-platform.git
+git clone https://github.com/AAH20/Apex_C-UAS.git
 cd c-uas-platform
 pip install .
 
@@ -134,8 +136,23 @@ c-uas dossier --target-id UAV-ROGUE-01 --threat CRITICAL
 # Admissibility : LEGAL_DEFENSE_GRADE
 # Signature     : a4f2f236...
 
+# MAVLink vulnerability database
+c-uas mavlink-vulns
+# [C-UAS] MAVLink Vulnerabilities (11 entries):
+#   CVE-2017-15872  [HIGH]  MAVLink 2.0
+#     Missing message signing / signature validation bypass
+
+# Controller location detection
+c-uas locate-controller --method BEARING
+# [C-UAS] Controller Location Estimate:
+#   Latitude    : 34.0 deg
+#   Longitude   : -121.0 deg
+#   Confidence  : +/- 50.0 km
+#   Method      : BEARING
+#   Sensors     : 3
+
 pytest tests/ -q
-# 94 passed
+# 104 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -186,6 +203,14 @@ python evals/harness.py run
 ### `c_uas.evolution`
 
 `EvolvedScheduler` is a (μ + λ) evolutionary algorithm tuning `dwell_s`, `slew_s`, `pk_base` to maximize expected kills. `evolve()` returns `best_params`, `best_fitness`, `fitness_history` (non-decreasing via elitism), deterministic with a `seed`.
+
+### `c_uas.detection.mavlink_vulns`
+
+`MavlinkVulnerabilityDatabase` provides read-only access to 11 publicly disclosed MAVLink protocol weaknesses. `list_all()` returns all entries; `list_by_severity()` and `list_by_version()` filter; `get_by_cve()` looks up by CVE ID. Each entry includes detection signatures and mitigations. Defensive-only — no exploitation code.
+
+### `c_uas.detection.controller_locator`
+
+`ControllerLocator` estimates UAV ground-controller geolocation from multi-sensor RF detections. `locate()` runs TDOA, BEARING, RSSI, and SKYWAVE methods and returns the best `ControllerLocationEstimate` with lat/lon, confidence radius (km), and per-sensor residuals. SKYWAVE supports beyond-line-of-sight (200+ km) HF skywave propagation.
 
 ---
 
@@ -271,12 +296,14 @@ Publicly reported directed-energy and kinetic counter-UAS systems that are opera
 
 | Benchmark | Value | Source |
 |---|---|---|
-| Tests passing | 94 / 94 | `pytest tests/ evals/test_deep_eval.py` |
+| Tests passing | 104 / 104 | `pytest tests/ evals/test_deep_eval.py` |
 | Eval harness pass rate | 100.00% | `python evals/harness.py check` |
 | Engagement scheduler approximation | Greedy (1−1/e) for budgeted max coverage | `c_uas/engagement/scheduler.py` |
 | EKF tracking | Continuous-jerk alpha-beta-gamma | `c_uas/tracking/ekf_interceptor.py` |
 | Forensic signature | Ed25519 (real, via `cryptography`) | `c_uas/forensics/airspace_dossier.py` |
 | RF classification coverage | DJI OcuSync, MAVLink, ExpressLRS, LoRa | `c_uas/detection/rf_classifier.py` |
+| MAVLink vulnerabilities documented | 11 entries (1 CRITICAL, 5 HIGH, 4 MEDIUM, 1 LOW) | `c_uas/detection/mavlink_vulns.py` |
+| Controller location methods | TDOA, BEARING, RSSI, SKYWAVE | `c_uas/detection/controller_locator.py` |
 
 ### Evolution Parameters (this platform)
 
@@ -295,7 +322,82 @@ Publicly reported directed-energy and kinetic counter-UAS systems that are opera
 | Layer | Tool | Count | Status |
 |---|---|---|---|
 | Agent Eval Harness | `evals/harness.py` (golden suite `evals/golden/dataset.yaml`) | 15 deterministic tests | 100% pass |
-| DeepEval-style pytest | `evals/test_deep_eval.py` (`TaskCompletionMetric`, `ToolCorrectnessMetric`) | deterministic | passing |
+|| DeepEval-style pytest | `evals/test_deep_eval.py` (`TaskCompletionMetric`, `ToolCorrectnessMetric`) | deterministic | passing |
+
+---
+
+## MAVLink Protocol Vulnerabilities
+
+The platform includes a defensive-only MAVLink vulnerability database (`c_uas/detection/mavlink_vulns.py`) covering 11 publicly disclosed weaknesses across MAVLink 1.0 and 2.0. Each entry has CVE identifiers (where assigned), affected message types, detection signatures, and mitigations.
+
+### Vulnerability Summary
+
+| Severity | Count |
+|---|---|
+| CRITICAL | 1 |
+| HIGH | 5 |
+| MEDIUM | 4 |
+| LOW | 1 |
+
+### Key Vulnerabilities
+
+| ID | CVE | Title | Version | Severity |
+|---|---|---|---|---|
+| MAV-2017-001 | CVE-2017-15872 | Missing message signing / signature validation bypass | 2.0 | HIGH |
+| MAV-2020-001 | CVE-2020-12092 | MAVLink packet injection via missing authentication | both | HIGH |
+| MAV-2021-001 | — | MAVLink 1.0 absence of any cryptographic protection | 1.0 | CRITICAL |
+| MAV-2022-001 | — | Heartbeat spoofing and false GCS presence | both | MEDIUM |
+| MAV-2022-002 | — | Command injection via MAV_CMD_LONG injection | both | HIGH |
+| MAV-2022-003 | — | Parameter manipulation via SET_PARAMETER | both | HIGH |
+| MAV-2023-001 | — | Mission item injection and waypoint hijacking | both | HIGH |
+| MAV-2023-002 | — | GPS spoofing via MAVLink telemetry injection | both | HIGH |
+| MAV-2023-003 | — | Telemetry link flooding / denial of service | both | MEDIUM |
+| MAV-2023-004 | — | Man-in-the-middle on telemetry radio links | both | HIGH |
+| MAV-2024-001 | — | Sequence number replay attack | both | MEDIUM |
+
+### CLI Usage
+
+```bash
+# List all MAVLink vulnerabilities
+c-uas mavlink-vulns
+
+# Filter by severity
+c-uas mavlink-vulns --severity CRITICAL
+
+# Filter by MAVLink version
+c-uas mavlink-vulns --version 2.0
+```
+
+---
+
+## Controller Location Detection (Long-Range RF Direction Finding)
+
+The platform includes a controller geolocation subsystem (`c_uas/detection/controller_locator.py`) that estimates the geographic position of a UAV ground controller (pilot) from RF emissions — including controllers hundreds of kilometers away beyond line-of-sight.
+
+### Supported Methods
+
+| Method | Description | Best For |
+|---|---|---|
+| TDOA | Time Difference of Arrival across synchronized sensors | Multi-site clock-synced deployments |
+| BEARING | Bearing-line intersection from directional sensors | Directional antenna sites |
+| RSSI | Signal-strength trilateration via path-loss model | Omnidirectional sensors |
+| SKYWAVE | HF ionospheric reflection for beyond-horizon | Controllers 200+ km away |
+
+### CLI Usage
+
+```bash
+# Estimate controller location (example sensor deployment)
+c-uas locate-controller
+
+# Force a specific method
+c-uas locate-controller --method BEARING
+c-uas locate-controller --method TDOA
+c-uas locate-controller --method SKYWAVE
+```
+
+### Beyond-Line-of-Sight Operation
+
+For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3–30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of ±150 km.
 
 ---
 
