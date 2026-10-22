@@ -82,6 +82,36 @@ def main(argv: Optional[list] = None) -> int:
         help="Location method (TDOA/BEARING/RSSI/SKYWAVE)",
     )
 
+    # competitive-landscape
+    cl_p = subparsers.add_parser(
+        "competitive-landscape",
+        help="List global deployed counter-UAS systems with unit economics",
+    )
+    cl_p.add_argument(
+        "--origin",
+        type=str,
+        default=None,
+        help="Filter by origin country",
+    )
+    cl_p.add_argument(
+        "--type",
+        type=str,
+        default=None,
+        help="Filter by system type (directed_energy_laser, kinetic_missile, rf_jamming, rf_detection)",
+    )
+
+    # unit-economics
+    ue_p = subparsers.add_parser(
+        "unit-economics",
+        help="Compute unit economics for C-UAS engagement types",
+    )
+    ue_p.add_argument(
+        "--type",
+        type=str,
+        default="all",
+        help="System type (directed_energy_laser, kinetic_missile, rf_jamming, software_only, all)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -181,6 +211,7 @@ def main(argv: Optional[list] = None) -> int:
             ControllerLocator,
             SensorSite,
             Detection,
+            bearing_deg,
         )
 
         # Example sensor deployment (geographically separated sites across California)
@@ -213,6 +244,61 @@ def main(argv: Optional[list] = None) -> int:
             print(f"  Sensors     : {est.sensor_count}")
         else:
             print("[C-UAS] Insufficient detections for controller localization.")
+        return 0
+
+    elif args.command == "competitive-landscape":
+        from c_uas.competitive_landscape import CUASDatabase
+
+        db = CUASDatabase()
+        systems = db.list_all()
+        if args.origin:
+            systems = db.list_by_origin(args.origin)
+        if args.type:
+            systems = db.list_by_type(args.type)
+        summary = db.summary()
+        print(f"[C-UAS] Global Counter-UAS Systems ({summary['total']} total, {summary['fielded']} fielded):")
+        for s in systems:
+            fielded_marker = " [FIELDED]" if s.is_fielded else " [demo]"
+            print(f"  {s.name}{fielded_marker}")
+            print(f"    Origin/Developer: {s.origin} — {s.developer}")
+            print(f"    Type: {s.system_type} | Power: {s.power_class}")
+            print(f"    Range: {s.effective_range_km if s.effective_range_km else 'n.d.'} km | Role: {s.role}")
+            print(f"    Status: {s.public_status} | Crew: {s.operator_crew} | Power: {s.power_draw_class}")
+            print()
+        return 0
+
+    elif args.command == "unit-economics":
+        from c_uas.unit_economics import UnitEconomicsModel
+
+        model = UnitEconomicsModel()
+        if args.type == "all":
+            results = model.compare_all()
+            print(f"[C-UAS] Unit Economics Comparison (attacker drone cost: ${model.attacker_drone_cost_usd:,}):")
+            for sys_type, econ in results.items():
+                print(f"  {sys_type}:")
+                print(f"    CPE: ${econ.total_cost_per_engagement_usd:,} per engagement")
+                print(f"    Capital amortized: ${econ.capital_amortized_per_engagement_usd:,}")
+                print(f"    Marginal: ${econ.marginal_cost_per_engagement_usd:,}")
+                print(f"    Cost-exchange ratio vs drone: {econ.cost_exchange_ratio_vs_drone}x")
+                print()
+        else:
+            method_map = {
+                "directed_energy_laser": model.directed_energy_laser,
+                "kinetic_missile": model.kinetic_missile,
+                "rf_jamming": model.rf_jamming,
+                "software_only": model.software_only,
+            }
+            if args.type not in method_map:
+                print(f"[C-UAS] Unknown type: {args.type}")
+                return 1
+            econ = method_map[args.type]()
+            print(f"[C-UAS] Unit Economics: {econ.system_type}")
+            print(f"  CPE: ${econ.total_cost_per_engagement_usd:,} per engagement")
+            print(f"  Capital amortized: ${econ.capital_amortized_per_engagement_usd:,}")
+            print(f"  Marginal: ${econ.marginal_cost_per_engagement_usd:,}")
+            print(f"  Cost-exchange ratio vs drone: {econ.cost_exchange_ratio_vs_drone}x")
+            print(f"  Annual cost: ${econ.annual_cost_usd:,}")
+            print(f"  Lifetime cost: ${econ.lifetime_cost_usd:,}")
         return 0
 
     parser.print_help()

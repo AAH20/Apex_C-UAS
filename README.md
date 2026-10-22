@@ -47,10 +47,6 @@ flowchart TD
     G -->|Events| H[Forensic Dossier]
     G -->|Beam params| I[DEW Beam Modeling]
     end
-
-    style F stroke:#333,stroke-width:2px
-    style A stroke:#333
-    style B stroke:#333
 ```
 
 ### Agentic Decision Loop
@@ -62,7 +58,6 @@ flowchart LR
     S -->|plan| A[Action Module]
     A -->|gate?| J[Jammer Gate]
     J -->|authorized| A
-    style J stroke:#333,stroke-width:2px
 ```
 
 ### Engagement Scheduler Pipeline
@@ -74,7 +69,6 @@ flowchart TD
     Dw -->|dwell time| S[Scheduler]
     TB -->|penalty| S
     S -->|sequence| EP[Engagement Plan]
-    style S stroke:#333,stroke-width:2px
 ```
 
 ---
@@ -104,8 +98,10 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/decision` | Agentic Perception → Decision → Action loop |
 | `c_uas/dew` | Directed-energy beam quality, thermal bloom, time-to-kill |
 | `c_uas/evolution` | (μ + λ) evolutionary scheduler tuner |
-| `c_uas/detection.mavlink_vulns` | MAVLink protocol vulnerability database (11 CVEs/weaknesses) |
+| `c_uas/detection.mavlink_vulns` | MAVLink protocol vulnerability database (17 CVEs/weaknesses) |
 | `c_uas/detection.controller_locator` | Long-range RF controller geolocation (TDOA / BEARING / RSSI / SKYWAVE) |
+| `c_uas/competitive_landscape` | Global C-UAS systems database (9 systems, unit economics inputs) |
+| `c_uas/unit_economics` | Cost-per-engagement, cost-exchange ratio, economies of scale models |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -151,8 +147,16 @@ c-uas locate-controller --method BEARING
 #   Method      : BEARING
 #   Sensors     : 3
 
+# Global counter-UAS competitive landscape
+c-uas competitive-landscape
+# Lists 9 deployed/demonstrator systems worldwide with unit economics inputs
+
+# Unit economics comparison
+c-uas unit-economics --type all
+# Software-only CPE: $50.00 vs kinetic missile: $121,333.33 per engagement
+
 pytest tests/ -q
-# 125 passed
+# 146 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -275,38 +279,62 @@ pytest evals/test_deep_eval.py -v
 
 ## Competitive Landscape — Deployed Counter-UAS Systems
 
-Publicly reported directed-energy and kinetic counter-UAS systems that are operational or in demonstrator trials. All figures are sourced from public disclosures (government ministries, prime contractors, open press); no fabricated metrics.
+Nine publicly reported deployed / demonstrator counter-UAS systems worldwide,
+cataloged in `c_uas/competitive_landscape.py` and queryable via the CLI:
+
+```bash
+c-uas competitive-landscape
+c-uas competitive-landscape --origin "United States"
+c-uas competitive-landscape --type directed_energy_laser
+```
 
 | System | Origin / Developer | Type | Power / Class | Effective Range | Role | Public Status |
 |---|---|---|---|---|---|---|
-| DragonFire | UK (Dstl / MBDA UK / Leonardo UK / QinetiQ) | High-energy laser | ~50 kW class reported | < 5 km (line-of-sight) | C-UAS / air defense | Demonstrator; tracker/engager trials reported |
-| Iron Beam | Israel (Rafael / IMOD) | High-energy laser | ~100 kW class reported | < 10 km | C-UAS / C-RAM | In development; reported intercept trials |
-| HELIOS | US (Lockheed Martin / Navy) | High-energy laser | 60+ kW class | Ship-mounted; line-of-sight | Ship defense / C-UAS | Integration trials on USS Preble |
-| AN/TWQ-1 Avenger | US (Raytheon / Boeing) | Kinetic missile | Stinger pods | ~5 km | Short-range air defense | Fielded; Army inventory |
-| Sky Safir | Turkey (Aselsan) | RF jamming / kinetic | N/A | < 5 km | C-UAS | Fielded; exported |
+| DragonFire | UK (Dstl / MBDA UK / Leonardo UK / QinetiQ) | directed_energy_laser | ~50 kW class | < 5 km (line-of-sight) | C-UAS / air defense | Demonstrator |
+| Iron Beam | Israel (Rafael / IMOD) | directed_energy_laser | ~100 kW class | < 10 km | C-UAS / C-RAM | In development |
+| HELIOS | US (Lockheed Martin / Navy) | directed_energy_laser | 60+ kW class | Ship-mounted, line-of-sight | Ship defense / C-UAS | Integration trials |
+| AN/TWQ-1 Avenger | US (Raytheon / Boeing) | kinetic_missile | Stinger FIM-92 pods | ~5 km | Short-range air defense | Fielded |
+| Sky Safir | Turkey (Aselsan) | rf_jamming | N/A | < 5 km | C-UAS | Fielded |
+| DroneSentry-X Mk2 | Australia / US (DroneShield) | rf_detection | N/A | n.d. | Fixed site / mobile / tactical | Fielded |
+| DedroneTracker.AI | US (Dedrone by Axon) | rf_detection | N/A | n.d. | Fixed site / tactical | Fielded |
+| DroneGun Mk4 | Australia (DroneShield) | rf_jamming | N/A | n.d. | Tactical / dismounted | Fielded |
+| LOCUST X3 | US (AeroVironment) | directed_energy_laser | N/A | n.d. | C-UAS | Demonstrator |
 
-### Unit Economics (illustrative)
+All figures sourced from public disclosures (government ministries, prime contractors,
+open press). "n.d." = not publicly disclosed. No fabricated metrics.
 
-All figures below are illustrative models, not actual revenue or cost data. No revenue,
-customer count, or AUM exists for this project. Figures are directional estimates for
-comparison only, labeled illustrative per grounding policy.
+### Unit Economics (executable model)
 
-| Cost Element | DragonFire (UK) | Iron Beam (Israel) | HELIOS (US Navy) | AN/TWQ-1 Avenger (US) | C-UAS Platform (this repo) |
-|---|---|---|---|---|---|
-| System unit cost | £100M+ program (UK MoD) | Not disclosed | $100M+ per ship integration | $1M+ per battery (reported) | Software-only; hardware-dependent |
-| Cost per engagement | ~£10-20 per shot (laser) | Low per-shot (laser) | Low per-shot (laser) | High per-shot (expendable missile) | $0 (software simulation; no hardware effector) |
-| Sensor suite | Multi-sensor radar + EO/IR | Radar + EO | Ship radar + EO | Stinger pods + radar | Software-defined; user-provided |
-| Operator crew | 2-4 | 2-4 | Ship crew | 2-4 per battery | 1 (agentic loop) |
-| Power draw | High (dedicated generator) | High (dedicated generator) | Ship electrical plant | N/A (kinetic) | Laptop-class |
-| Prime power / thermal | 70% waste heat at 25-30% wall-plug efficiency | 70% waste heat at 25-30% wall-plug efficiency | 70% waste heat at 25-30% wall-plug efficiency | N/A | Negligible (software) |
-| Atmospheric attenuation | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | N/A | N/A (RF-based detection) |
-| Thermal bloom | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | Sustained fire heats air column, defocuses beam, cuts fluence 15-25% | N/A | N/A |
+Run the unit economics model directly — every figure is computed, not asserted:
+
+```bash
+c-uas unit-economics --type all
+c-uas unit-economics --type software_only
+c-uas unit-economics --type directed_energy_laser
+c-uas unit-economics --type kinetic_missile
+c-uas unit-economics --type rf_jamming
+```
+
+Sample output (attacker drone cost: $5,000 illustrative):
+
+| System Type | CPE per Engagement | Capital Amortized | Marginal | Cost-Exchange vs Drone |
+|---|---|---|---|---|
+| directed_energy_laser | $10,060.00 | $10,000.00 | $60.00 | 2.012x |
+| kinetic_missile | $121,333.33 | $1,333.33 | $120,000.00 | 24.2667x |
+| rf_jamming | $109.14 | $107.14 | $2.00 | 0.0218x |
+| software_only | $50.00 | $50.00 | $0.00 | 0.01x |
+
+All figures are illustrative models, not actual revenue or cost data. No revenue,
+customer count, or AUM exists for this project. Figures are directional estimates
+for comparison only, labeled illustrative per grounding policy.
 
 ### Economies of Scale
 
+Modeled in `c_uas/unit_economics.py` via `EconomiesOfScaleModel`:
+
 - **Laser systems (DragonFire, Iron Beam, HELIOS):** Marginal cost per engagement drops toward near-zero after capital outlay (no expendable interceptor), but capital cost is high and power/thermal infrastructure scales poorly below ship or large-vehicle class. Prime power and thermal management dominate lifetime cost.
 - **Kinetic systems (AN/TWQ-1 Avenger):** Per-engagement cost is high (expendable Stinger missile). Economies of scale come from production volume, not per-shot savings. Magazine depth limits sustained engagement.
-- **Software-only C-UAS (this platform):** Marginal cost per additional deployment approaches zero. Capital cost is development time only (pure Python + `cryptography`, no GPU/Nvidia dependency). Scales to any number of sites with sensor integration. No per-engagement consumable cost.
+- **Software-only C-UAS (this platform):** Marginal cost per additional deployment approaches zero. Capital cost is development time only (pure Python + `cryptography`, no GPU/Nvidia dependency). Scales to any number of sites with sensor integration. No per-engagement consumable cost. Amortized capital per site falls as $1/deployment — at 1,000 sites, $250/site from a $250k development cost.
 
 ### Bottlenecks Identified (from parallel-bottleneck-discovery)
 
@@ -323,7 +351,7 @@ comparison only, labeled illustrative per grounding policy.
 
 | Benchmark | Value | Source |
 |---|---|---|
-| Tests passing | 104 / 104 | `pytest tests/ evals/test_deep_eval.py` |
+| Tests passing | 146 / 146 | `pytest tests/` |
 | Eval harness pass rate | 100.00% | `python evals/harness.py check` |
 | Engagement scheduler approximation | Greedy (1−1/e) for budgeted max coverage | `c_uas/engagement/scheduler.py` |
 | EKF tracking | Continuous-jerk alpha-beta-gamma | `c_uas/tracking/ekf_interceptor.py` |
@@ -331,6 +359,8 @@ comparison only, labeled illustrative per grounding policy.
 | RF classification coverage | DJI OcuSync, MAVLink, ExpressLRS, LoRa | `c_uas/detection/rf_classifier.py` |
 | MAVLink vulnerabilities documented | 17 entries (3 CRITICAL, 10 HIGH, 4 MEDIUM) | `c_uas/detection/mavlink_vulns.py` |
 | Controller location methods | TDOA, BEARING, RSSI, SKYWAVE | `c_uas/detection/controller_locator.py` |
+| Global C-UAS systems cataloged | 9 systems (5 fielded) | `c_uas/competitive_landscape.py` |
+| Unit economics models | DEW, kinetic, RF jamming, software-only | `c_uas/unit_economics.py` |
 
 ### Evolution Parameters (this platform)
 
@@ -342,7 +372,9 @@ comparison only, labeled illustrative per grounding policy.
 | `generations` | 5 | Generations to evolve |
 | `seed` | None | Deterministic RNG seed |
 
-`FitnessFunction` scores `expected_kills − leak_penalty·leaked + time_bonus`. `MutationOperator` clamps dwell to [0.5, 20] s, slew to [0.1, 10] s, pk to [0.1, 1.0]. `SelectionOperator` performs elitist top-k selection.
+`FitnessFunction` scores `expected_kills − leak_penalty·leaked + time_bonus`.
+`MutationOperator` clamps dwell to [0.5, 20] s, slew to [0.1, 10] s, pk to [0.1, 1.0].
+`SelectionOperator` performs elitist top-k selection.
 
 ### Evaluation Parameters (this platform)
 
