@@ -112,6 +112,36 @@ def main(argv: Optional[list] = None) -> int:
         help="System type (directed_energy_laser, kinetic_missile, rf_jamming, software_only, all)",
     )
 
+    # swarm
+    sw_p = subparsers.add_parser(
+        "swarm",
+        help="Simulate a drone swarm and test scheduler saturation",
+    )
+    sw_p.add_argument(
+        "--num-drones", type=int, default=16, help="Number of drones in swarm"
+    )
+    sw_p.add_argument(
+        "--spread-s", type=float, default=10.0, help="Arrival spread in seconds"
+    )
+    sw_p.add_argument(
+        "--speed-mps", type=float, default=30.0, help="Drone speed in m/s"
+    )
+    sw_p.add_argument(
+        "--evasion", type=float, default=0.3, help="Evasion probability (0.0-1.0)"
+    )
+    sw_p.add_argument(
+        "--seed", type=int, default=42, help="RNG seed"
+    )
+
+    # benchmarks
+    bm_p = subparsers.add_parser(
+        "benchmarks",
+        help="Run performance benchmarks (scheduler, EKF, end-to-end, swarm saturation)",
+    )
+    bm_p.add_argument(
+        "--max-drones", type=int, default=128, help="Max drone count for scheduler benchmark"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -301,9 +331,87 @@ def main(argv: Optional[list] = None) -> int:
             print(f"  Lifetime cost: ${econ.lifetime_cost_usd:,}")
         return 0
 
+    elif args.command == "swarm":
+        from c_uas.swarm import SwarmSimulator, SwarmConfig, saturate_scheduler
+        from c_uas.engagement.scheduler import EngagementScheduler
+
+        config = SwarmConfig(
+            num_drones=args.num_drones,
+            arrival_spread_s=args.spread_s,
+            speed_mps=args.speed_mps,
+            start_distance_km=2.0,
+            evasion_probability=args.evasion,
+            seed=args.seed,
+        )
+        sim = SwarmSimulator(config)
+        tracks = sim.generate_tracks()
+        summary = sim.summary()
+        print(f"[C-UAS] Swarm Simulation ({summary['num_drones']} drones)")
+        print(f"  Arrival spread   : {summary['arrival_spread_s']}s")
+        print(f"  Speed            : {summary['speed_mps']} m/s")
+        print(f"  Evasion prob     : {summary['evasion_probability']}")
+        print(f"  Swarm density    : {summary['swarm_density_drones_per_s']} drones/s")
+        print(f"  Seed             : {summary['seed']}")
+        print(f"  Tracks generated : {len(tracks)}")
+        print()
+
+        # Run scheduler against the swarm
+        scheduler = EngagementScheduler(dwell_s=4.0, slew_s=1.5, time_limit_s=40.0)
+        from c_uas.engagement.scheduler import DroneTrack
+        drone_tracks = [
+            DroneTrack(
+                track_id=t.track_id,
+                arrival_time_s=t.arrival_time_s,
+                pk_base=t.pk_base,
+                priority=t.priority,
+            )
+            for t in tracks
+        ]
+        plan = scheduler.schedule(tracks=drone_tracks)
+        print(f"[C-UAS] Engagement Results:")
+        print(f"  Expected kills   : {plan.expected_kills:.2f}")
+        print(f"  Engaged targets  : {plan.engaged_targets}")
+        print(f"  Leaked targets   : {plan.leaked_targets}")
+        print(f"  Leak rate        : {plan.leaked_targets / len(tracks):.1%}")
+        print(f"  Total time       : {plan.total_time_s:.1f}s")
+        return 0
+
+    if args.command == "benchmarks":
+        from c_uas.benchmarks.performance import BenchmarkSuite
+
+        suite = BenchmarkSuite()
+        result = suite.run_all()
+
+        print(f"[C-UAS] Performance Benchmarks (max {args.max_drones} drones)")
+        print()
+
+        print("Scheduler (wall-clock time vs drone count):")
+        for r in result.scheduler_results:
+            print(f"  {r.num_drones:4d} drones: {r.scheduler_seconds*1000:6.2f}ms, "
+                  f"kills={r.expected_kills:5.2f}, engaged={r.engaged_targets:3d}, "
+                  f"leaked={r.leaked_targets:3d}, {r.drones_per_second:9.0f} drones/s")
+
+        print()
+        print(f"EKF tracking (horizon={result.ekf_result.horizon_s}s, "
+              f"measurements={result.ekf_result.num_measurements}):")
+        print(f"  Position error : {result.ekf_result.position_error_m:.2f}m")
+        print(f"  Velocity error : {result.ekf_result.velocity_error_mps:.2f} m/s")
+        print(f"  Compute time   : {result.ekf_result.compute_seconds*1000:.3f}ms")
+
+        print()
+        print(f"End-to-end pipeline ({result.end_to_end_result.pipeline_stages} stages):")
+        print(f"  Total time   : {result.end_to_end_result.total_seconds*1000:.2f}ms")
+        print(f"  Per stage    : {result.end_to_end_result.per_stage_ms:.2f}ms")
+        print(f"  Dossier signed: {result.end_to_end_result.dossier_generated}")
+
+        print()
+        print("Swarm saturation (leak rate vs swarm size):")
+        for count in sorted(result.swarm_saturation.keys()):
+            print(f"  {count:4d} drones: {result.swarm_saturation[count]:.1%} leak rate")
+        return 0
+
     parser.print_help()
     return 1
-
 
 if __name__ == "__main__":
     sys.exit(main())

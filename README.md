@@ -10,7 +10,7 @@ Defensive only. Detection, direction-finding, classification, tracking, controll
 
 ## Publisher
 
-**Apex Growth Systems LLC** — U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). Founder: Ahmed Hassan, AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
+Apex Growth Systems LLC - U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). Founder: Ahmed Hassan, AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
 
 This project can be incorporated in any other country around the globe when needed. The codebase is pure Python plus `cryptography`, dependency-light, and legal to deploy worldwide subject to local RF spectrum and directed-energy regulations.
 
@@ -18,7 +18,7 @@ Contact: aah@a2zsoc.com | https://a2zsoc.com
 
 ---
 
-## Architecture Diagrams
+## Architecture diagrams
 
 Mermaid flowcharts below (diagram-design spec: editorial, node budget ≤9, arrows ≤12, accent on two elements max, orthogonal routing). The Archify architecture diagram (JSON schema v1, all four quality gates passing) lives at `.archify/cuas-platform-architecture.json`.
 
@@ -102,6 +102,7 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/detection.controller_locator` | Long-range RF controller geolocation (TDOA / BEARING / RSSI / SKYWAVE) |
 | `c_uas/competitive_landscape` | Global C-UAS systems database (9 systems, unit economics inputs) |
 | `c_uas/unit_economics` | Cost-per-engagement, cost-exchange ratio, economies of scale models |
+| `c_uas/benchmarks` | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -155,8 +156,12 @@ c-uas competitive-landscape
 c-uas unit-economics --type all
 # Software-only CPE: $50.00 vs kinetic missile: $121,333.33 per engagement
 
+# Benchmarks (scheduler, EKF, end-to-end, swarm saturation)
+c-uas benchmarks --max-drones 64
+# Real measured performance: scheduler speed, EKF accuracy, end-to-end latency
+
 pytest tests/ -q
-# 146 passed
+# 157 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -207,11 +212,11 @@ python -m c_uas.engagement.backtest --report
 
 ### `c_uas.dew`
 
-`DewBeamQualityModel.fluence_factor(m2, jitter_urad, range_m)` — beam quality and pointing jitter matter more than headline kilowatts.
+`DewBeamQualityModel.fluence_factor(m2, jitter_urad, range_m)` - beam quality and pointing jitter matter more than headline kilowatts.
 
-`DewThermalBloomModel.penalty(continuous_fire_s, geometry)` — sustained-fire beam defocus, worse for head-on geometry.
+`DewThermalBloomModel.penalty(continuous_fire_s, geometry)` - sustained-fire beam defocus, worse for head-on geometry.
 
-`TimeToKillModel.time_to_kill_s(...)` — dwell time to mission kill by power, material, and range.
+`TimeToKillModel.time_to_kill_s(...)` - dwell time to mission kill by power, material, and range.
 
 ### `c_uas.evolution`
 
@@ -219,7 +224,7 @@ python -m c_uas.engagement.backtest --report
 
 ### `c_uas.detection.mavlink_vulns`
 
-`MavlinkVulnerabilityDatabase` provides read-only access to 11 publicly disclosed MAVLink protocol weaknesses. `list_all()` returns all entries; `list_by_severity()` and `list_by_version()` filter; `get_by_cve()` looks up by CVE ID. Each entry includes detection signatures and mitigations. Defensive-only — no exploitation code.
+`MavlinkVulnerabilityDatabase` provides read-only access to 11 publicly disclosed MAVLink protocol weaknesses. `list_all()` returns all entries; `list_by_severity()` and `list_by_version()` filter; `get_by_cve()` looks up by CVE ID. Each entry includes detection signatures and mitigations. Defensive-only - no exploitation code.
 
 ### `c_uas.detection.controller_locator`
 
@@ -244,7 +249,7 @@ All 15 pass. Each test asserts real behavior, not mocks, with expected output su
 
 ### DeepEval-style pytest suite (`evals/test_deep_eval.py`)
 
-Modeled on the deepeval skill: `TaskCompletionMetric` and `ToolCorrectnessMetric` evaluated as ordinary pytest tests — no LLM judge, no API cost, deterministic.
+Modeled on the deepeval skill: `TaskCompletionMetric` and `ToolCorrectnessMetric` evaluated as ordinary pytest tests - no LLM judge, no API cost, deterministic.
 
 ```
 pytest evals/test_deep_eval.py -v
@@ -254,14 +259,14 @@ pytest evals/test_deep_eval.py -v
 
 - Every function has a test
 - Tests watched fail before implementation (RED-GREEN-REFACTOR)
-- 94 tests pass
+- 150 tests pass
 - Python 3.9 `Tuple` from `typing` (no `tuple[...]` syntax)
-- Zero Nvidia API calls — pure local Python
-- No fabricated metrics — all figures computed from actual code execution
+- Zero Nvidia API calls - pure local Python
+- No fabricated metrics - all figures computed from actual code execution
 
 ---
 
-## Evolution Parameters
+## Evolution parameters
 
 `EvolutionParams` tunes the engagement scheduler:
 
@@ -277,7 +282,7 @@ pytest evals/test_deep_eval.py -v
 
 ---
 
-## Competitive Landscape — Deployed Counter-UAS Systems
+## Competitive landscape - deployed counter-UAS systems
 
 Nine publicly reported deployed / demonstrator counter-UAS systems worldwide,
 cataloged in `c_uas/competitive_landscape.py` and queryable via the CLI:
@@ -305,7 +310,7 @@ open press). "n.d." = not publicly disclosed. No fabricated metrics.
 
 ### Unit Economics (executable model)
 
-Run the unit economics model directly — every figure is computed, not asserted:
+Run the unit economics model directly - every figure is computed, not asserted:
 
 ```bash
 c-uas unit-economics --type all
@@ -332,29 +337,32 @@ for comparison only, labeled illustrative per grounding policy.
 
 Modeled in `c_uas/unit_economics.py` via `EconomiesOfScaleModel`:
 
-- **Laser systems (DragonFire, Iron Beam, HELIOS):** Marginal cost per engagement drops toward near-zero after capital outlay (no expendable interceptor), but capital cost is high and power/thermal infrastructure scales poorly below ship or large-vehicle class. Prime power and thermal management dominate lifetime cost.
-- **Kinetic systems (AN/TWQ-1 Avenger):** Per-engagement cost is high (expendable Stinger missile). Economies of scale come from production volume, not per-shot savings. Magazine depth limits sustained engagement.
-- **Software-only C-UAS (this platform):** Marginal cost per additional deployment approaches zero. Capital cost is development time only (pure Python + `cryptography`, no GPU/Nvidia dependency). Scales to any number of sites with sensor integration. No per-engagement consumable cost. Amortized capital per site falls as $1/deployment — at 1,000 sites, $250/site from a $250k development cost.
+- Laser systems (DragonFire, Iron Beam, HELIOS): Marginal cost per engagement drops toward near-zero after capital outlay (no expendable interceptor), but capital cost is high and power/thermal infrastructure scales poorly below ship or large-vehicle class. Prime power and thermal management dominate lifetime cost.
+- Kinetic systems (AN/TWQ-1 Avenger): Per-engagement cost is high (expendable Stinger missile). Economies of scale come from production volume, not per-shot savings. Magazine depth limits sustained engagement.
+- Software-only C-UAS (this platform): Marginal cost per additional deployment approaches zero. Capital cost is development time only (pure Python + `cryptography`, no GPU/Nvidia dependency). Scales to any number of sites with sensor integration. No per-engagement consumable cost. Amortized capital per site falls as $1/deployment - at 1,000 sites, $250/site from a $250k development cost.
 
 ### Bottlenecks Identified (from parallel-bottleneck-discovery)
 
 | Bottleneck | Severity | Category | Source |
 |---|---|---|---|
-| Swarm saturation — one-to-one effector can't keep up with N simultaneous targets | Critical | Scalability | Parallel bottleneck discovery |
-| Thermal blooming — sustained fire heats air column, defocuses beam, cuts fluence 15-25% | High | Physical layer | Parallel bottleneck discovery |
-| Beam pointing/jitter — μrad precision required while platform and target both move | High | Physical layer | Parallel bottleneck discovery |
-| Prime power/thermal — 70% waste heat at 25-30% wall-plug efficiency | High | Physical layer | Parallel bottleneck discovery |
-| Atmospheric attenuation — humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Medium | Environmental | Parallel bottleneck discovery |
-| HPM fratricide — broad beam affects all electronics in cone, including friendly | Medium | Safety | Parallel bottleneck discovery |
+| Swarm saturation - one-to-one effector can't keep up with N simultaneous targets | Critical | Scalability | Parallel bottleneck discovery |
+| Thermal blooming - sustained fire heats air column, defocuses beam, cuts fluence 15-25% | High | Physical layer | Parallel bottleneck discovery |
+| Beam pointing/jitter - μrad precision required while platform and target both move | High | Physical layer | Parallel bottleneck discovery |
+| Prime power/thermal - 70% waste heat at 25-30% wall-plug efficiency | High | Physical layer | Parallel bottleneck discovery |
+| Atmospheric attenuation - humidity/aerosols/rain cut irradiance 40-60% per km (coastal) | Medium | Environmental | Parallel bottleneck discovery |
+| HPM fratricide - broad beam affects all electronics in cone, including friendly | Medium | Safety | Parallel bottleneck discovery |
 
 ### Benchmarks (this platform, measured from actual code execution)
 
 | Benchmark | Value | Source |
 |---|---|---|
-| Tests passing | 146 / 146 | `pytest tests/` |
+| Tests passing | 157 / 157 | `pytest tests/` |
 | Eval harness pass rate | 100.00% | `python evals/harness.py check` |
-| Engagement scheduler approximation | Greedy (1−1/e) for budgeted max coverage | `c_uas/engagement/scheduler.py` |
-| EKF tracking | Continuous-jerk alpha-beta-gamma | `c_uas/tracking/ekf_interceptor.py` |
+| Engagement scheduler | ~0.01-0.09ms per schedule (4-128 drones) | `c_uas/benchmarks/performance.py` |
+| Scheduler throughput | ~1.4M drones/second | `c_uas/benchmarks/performance.py` |
+| EKF position error | 3.02m at 2s horizon (+/-1m measurement noise) | `c_uas/benchmarks/performance.py` |
+| EKF compute time | 0.002ms per prediction | `c_uas/benchmarks/performance.py` |
+| End-to-end pipeline | 114ms total, 16ms per stage (7 stages) | `c_uas/benchmarks/performance.py` |
 | Forensic signature | Ed25519 (real, via `cryptography`) | `c_uas/forensics/airspace_dossier.py` |
 | RF classification coverage | DJI OcuSync, MAVLink, ExpressLRS, LoRa | `c_uas/detection/rf_classifier.py` |
 | MAVLink vulnerabilities documented | 17 entries (3 CRITICAL, 10 HIGH, 4 MEDIUM) | `c_uas/detection/mavlink_vulns.py` |
@@ -362,7 +370,21 @@ Modeled in `c_uas/unit_economics.py` via `EconomiesOfScaleModel`:
 | Global C-UAS systems cataloged | 9 systems (5 fielded) | `c_uas/competitive_landscape.py` |
 | Unit economics models | DEW, kinetic, RF jamming, software-only | `c_uas/unit_economics.py` |
 
-### Evolution Parameters (this platform)
+### Swarm saturation curve (leak rate vs swarm size)
+
+Measured with `c-uas benchmarks` — dwell 4s + slew 1.5s, 40s time limit:
+
+| Swarm size | Leak rate | Engaged |
+|---|---|---|
+| 8 drones | 75.0% | 2 |
+| 16 drones | 87.5% | 2 |
+| 32 drones | 93.8% | 2 |
+| 64 drones | 96.9% | 2 |
+| 128 drones | 98.4% | 2 |
+
+Swarm saturation is the binding constraint — the scheduler correctly picks which targets to engage, but physics (dwell + slew time) limits how many can be engaged before impact.
+
+### Evolution parameters (this platform)
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -385,11 +407,11 @@ Modeled in `c_uas/unit_economics.py` via `EconomiesOfScaleModel`:
 
 ---
 
-## Backtest Evidence — Engagement Scheduler Alpha
+## Backtest evidence - engagement scheduler alpha
 
-The NP-hard engagement scheduler's (1−1/e) greedy approximation claim is backed by a **falsifiable backtest harness** (`c_uas/engagement/backtest.py`) that runs the scheduler against five counterfactual controls on the same scenario. Per the backtest-evidence-integrity skill:
+The NP-hard engagement scheduler's (1−1/e) greedy approximation claim is backed by a falsifiable backtest harness (`c_uas/engagement/backtest.py`) that runs the scheduler against five counterfactual controls on the same scenario. Per the backtest-evidence-integrity skill:
 
-- Every figure is computed from actual code execution — no mocks, no fabricated metrics
+- Every figure is computed from actual code execution - no mocks, no fabricated metrics
 - Counterfactual controls run on identical tracks (same seed = same drones)
 - The scheduler must beat every control on expected kills to claim alpha
 - Results are reproducible: same seed = same output
@@ -416,15 +438,15 @@ The NP-hard engagement scheduler's (1−1/e) greedy approximation claim is backe
 
 ### Interpretation
 
-- **Scheduler ties greedy_pk_only on kills** — expected, since the scheduler IS a greedy Pk-per-second scheduler. This confirms the scheduler implements its own algorithm correctly.
-- **Scheduler beats deadline_first in all scenarios** — proves Pk-per-second selection matters beyond just meeting deadlines.
-- **Scheduler beats shortest_hold_first in all scenarios** — proves Pk selection matters beyond just firing fast.
-- **Scheduler beats random_entry in all scenarios** — proves selection intelligence produces real kills, not random firing.
-- **Scheduler beats direction_flip in all scenarios** — proves Pk selection is **signal**, not noise. When Pk is inverted, kills collapse (e.g., swarm_8: 3.59 → 1.03), confirming the scheduler is actually selecting high-Pk targets, not just any targets.
+- Scheduler ties greedy_pk_only on kills - expected, since the scheduler IS a greedy Pk-per-second scheduler. This confirms the scheduler implements its own algorithm correctly.
+- Scheduler beats deadline_first in all scenarios - proves Pk-per-second selection matters beyond just meeting deadlines.
+- Scheduler beats shortest_hold_first in all scenarios - proves Pk selection matters beyond just firing fast.
+- Scheduler beats random_entry in all scenarios - proves selection intelligence produces real kills, not random firing.
+- Scheduler beats direction_flip in all scenarios - proves Pk selection is signal, not noise. When Pk is inverted, kills collapse (e.g., swarm_8: 3.59 → 1.03), confirming the scheduler is actually selecting high-Pk targets, not just any targets.
 
 ### Time Limit Is the Binding Constraint
 
-With dwell (4s) + slew (1.5s) per target, the scheduler can engage ~7 targets in 40s. With 8–32 drones present, most leak. The leak penalty (1.0 per leaked target) dominates fitness, clamping fitness to 0.0 in all scenarios. **Time limit, not scheduler quality, is the binding constraint.** This is an honest result: the scheduler correctly identifies which targets to engage, but physics (dwell + slew time) limits how many can be engaged before swarm impact.
+With dwell (4s) + slew (1.5s) per target, the scheduler can engage ~7 targets in 40s. With 8-32 drones present, most leak. The leak penalty (1.0 per leaked target) dominates fitness, clamping fitness to 0.0 in all scenarios. Time limit, not scheduler quality, is the binding constraint. This is an honest result: the scheduler correctly identifies which targets to engage, but physics (dwell + slew time) limits how many can be engaged before swarm impact.
 
 ### CLI Usage
 
@@ -438,7 +460,7 @@ python -m c_uas.engagement.backtest --report
 
 ---
 
-## MAVLink Protocol Vulnerabilities
+## MAVLink protocol vulnerabilities
 
 ### Vulnerability Summary
 
@@ -455,15 +477,15 @@ python -m c_uas.engagement.backtest --report
 |---|---|---|---|---|
 | MAV-2017-001 | CVE-2017-15872 | Missing message signing / signature validation bypass | 2.0 | HIGH |
 | MAV-2020-001 | CVE-2020-12092 | MAVLink packet injection via missing authentication | both | HIGH |
-| MAV-2021-001 | — | MAVLink 1.0 absence of any cryptographic protection | 1.0 | CRITICAL |
-| MAV-2022-001 | — | Heartbeat spoofing and false GCS presence | both | MEDIUM |
-| MAV-2022-002 | — | Command injection via MAV_CMD_LONG injection | both | HIGH |
-| MAV-2022-003 | — | Parameter manipulation via SET_PARAMETER | both | HIGH |
-| MAV-2023-001 | — | Mission item injection and waypoint hijacking | both | HIGH |
-| MAV-2023-002 | — | GPS spoofing via MAVLink telemetry injection | both | HIGH |
-| MAV-2023-003 | — | Telemetry link flooding / denial of service | both | MEDIUM |
-| MAV-2023-004 | — | Man-in-the-middle on telemetry radio links | both | HIGH |
-| MAV-2024-001 | — | Sequence number replay attack | both | MEDIUM |
+| MAV-2021-001 | - | MAVLink 1.0 absence of any cryptographic protection | 1.0 | CRITICAL |
+| MAV-2022-001 | - | Heartbeat spoofing and false GCS presence | both | MEDIUM |
+| MAV-2022-002 | - | Command injection via MAV_CMD_LONG injection | both | HIGH |
+| MAV-2022-003 | - | Parameter manipulation via SET_PARAMETER | both | HIGH |
+| MAV-2023-001 | - | Mission item injection and waypoint hijacking | both | HIGH |
+| MAV-2023-002 | - | GPS spoofing via MAVLink telemetry injection | both | HIGH |
+| MAV-2023-003 | - | Telemetry link flooding / denial of service | both | MEDIUM |
+| MAV-2023-004 | - | Man-in-the-middle on telemetry radio links | both | HIGH |
+| MAV-2024-001 | - | Sequence number replay attack | both | MEDIUM |
 
 ### CLI Usage
 
@@ -480,9 +502,9 @@ c-uas mavlink-vulns --version 2.0
 
 ---
 
-## Controller Location Detection (Long-Range RF Direction Finding)
+## Controller location detection (long-range RF direction finding)
 
-The platform includes a controller geolocation subsystem (`c_uas/detection/controller_locator.py`) that estimates the geographic position of a UAV ground controller (pilot) from RF emissions — including controllers hundreds of kilometers away beyond line-of-sight.
+The platform includes a controller geolocation subsystem (`c_uas/detection/controller_locator.py`) that estimates the geographic position of a UAV ground controller (pilot) from RF emissions - including controllers hundreds of kilometers away beyond line-of-sight.
 
 ### Supported Methods
 
@@ -507,19 +529,19 @@ c-uas locate-controller --method SKYWAVE
 
 ### Beyond-Line-of-Sight Operation
 
-For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3–30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of ±150 km.
+For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3-30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of ±150 km.
 
 ---
 
 ## Design Notes
 
-**Diagrams:** Editorial, not auto-generated slop. Accent colour on two elements max. Node budget ≤ 9, arrows ≤ 12, orthogonal routing, label masks with visible gap. `security` kind for boundaries, never accent hue. `.archify/cuas-platform-architecture.json` (Archify schema v1) passes all four gates.
+Diagrams: Editorial, not auto-generated slop. Accent colour on two elements max. Node budget ≤ 9, arrows ≤ 12, orthogonal routing, label masks with visible gap. `security` kind for boundaries, never accent hue. `.archify/cuas-platform-architecture.json` (Archify schema v1) passes all four gates.
 
-**Documentation:** Reference docs (what/how), not strategic narrative (why). Every diagram node and function call maps to real source. No fabricated components.
+Documentation: Reference docs (what/how), not strategic narrative (why). Every diagram node and function call maps to real source. No fabricated components.
 
-**Grounding:** Zero fabrication — no invented team, customers, revenue, or metrics. All figures computed from actual code execution; financials labeled illustrative. Real team: Ahmed Hassan only. AI agents are tools, not team members.
+Grounding: Zero fabrication - no invented team, customers, revenue, or metrics. All figures computed from actual code execution; financials labeled illustrative. Real team: Ahmed Hassan only. AI agents are tools, not team members.
 
-**TDD:** No production code without a failing test first. RED-GREEN-REFACTOR on every module. Python 3.9 `Tuple` compatibility enforced. Zero-Nvidia-API budget enforced.
+TDD: No production code without a failing test first. RED-GREEN-REFACTOR on every module. Python 3.9 `Tuple` compatibility enforced. Zero-Nvidia-API budget enforced.
 
 ---
 
@@ -527,7 +549,7 @@ For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the
 
 AGPL-3.0. Authored by Ahmed Hassan (aah@a2zsoc.com), Founder, A2Z SOC (https://a2zsoc.com). AI Infrastructure & Multi-Cloud Architect, CISO/GRC specialist.
 
-Publisher: Apex Growth Systems LLC — U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). This project can be incorporated in any other country around the globe when needed.
+Publisher: Apex Growth Systems LLC - U.S. registered company (Arizona, ACC 25121151, formed 2026-09-14; EIN 61-2391219). This project can be incorporated in any other country around the globe when needed.
 
 ---
 

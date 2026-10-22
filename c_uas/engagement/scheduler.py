@@ -26,6 +26,12 @@ class DroneTrack:
     pk_base: float              # Base probability of kill (0-1)
     priority: int = 1           # 1=low, 5=high (e.g., headed for critical asset)
 
+    def __lt__(self, other: "DroneTrack") -> bool:
+        """Allow heapq comparison when ratios tie — compare by track_id."""
+        if not isinstance(other, DroneTrack):
+            return NotImplemented
+        return self.track_id < other.track_id
+
 
 @dataclass
 class EngagementPlan:
