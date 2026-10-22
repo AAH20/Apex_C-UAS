@@ -58,7 +58,7 @@ class EngagementScheduler:
 
     def schedule(
         self,
-        num_drones: int,
+        num_drones: Optional[int] = None,
         time_limit_s: Optional[float] = None,
         tracks: Optional[List[DroneTrack]] = None,
     ) -> EngagementPlan:
@@ -78,6 +78,8 @@ class EngagementScheduler:
         tl = time_limit_s if time_limit_s is not None else self.time_limit_s
 
         if tracks is None:
+            if num_drones is None:
+                raise ValueError("Either num_drones or tracks must be provided")
             tracks = self._generate_synthetic_tracks(num_drones, tl)
 
         # Sort by deadline (arrival time) - must engage before impact

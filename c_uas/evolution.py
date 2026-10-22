@@ -45,7 +45,7 @@ class EvolutionParams:
 
 @dataclass
 class FitnessFunction:
-    leak_penalty: float = 2.0
+    leak_penalty: float = 1.0
     time_bonus: bool = True
 
     def score(

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "C-UAS Platform: Autonomous Counter-UAS Detection, Tracking, Engagement Scheduling & Airspace Forensics."
 readme = "README.md"
 authors = [
-  { name = "Ahmed Hassan", email = "ahmed@a2zsoc.com" },
+  { name = "Ahmed Hassan", email = "aah@a2zsoc.com" },
 ]
 license = { text = "AGPL-3.0" }
 keywords = [

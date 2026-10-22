@@ -4,39 +4,88 @@ Airspace Intrusion Forensic Dossier Generator.
 Produces cryptographically certified incident documentation conforming to
 FAA Part 107/89 and DoD counter-UAS standards. Uses real Ed25519 digital
 signatures for tamper-evident chain of custody.
+
+The authority key is persisted to disk (~/.c-uas-platform/authority_key.pem)
+so dossiers can be verified across sessions. Without key persistence, every
+new process would generate a fresh key and previously signed dossiers would
+fail verification — making them useless as forensic evidence.
 """
 
 import json
+import os
 import time
 import hashlib
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from pathlib import Path
+from typing import Dict, Any, List, Optional
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
 from cryptography.hazmat.primitives import serialization
-from typing import Optional
 
-# In-memory authority key pair for signing dossiers.
-# In production, this would be loaded from an HSM or key management system.
+# Persistent key storage path. Using ~/.c-uas-platform keeps the key outside
+# the repo so it is not committed, rotated, or lost between sessions.
+_KEY_DIR = Path.home() / ".c-uas-platform"
+_KEY_FILE = _KEY_DIR / "authority_key.pem"
+
 _AUTHORITY_PRIVATE_KEY: Optional[Ed25519PrivateKey] = None
 _AUTHORITY_PUBLIC_KEY_PEM: Optional[bytes] = None
 
 
-def _get_authority_key() -> Ed25519PrivateKey:
-    global _AUTHORITY_PRIVATE_KEY
-    if _AUTHORITY_PRIVATE_KEY is None:
-        _AUTHORITY_PRIVATE_KEY = Ed25519PrivateKey.generate()
-        _AUTHORITY_PUBLIC_KEY_PEM = (
-            _AUTHORITY_PRIVATE_KEY.public_key()
-            .public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+def _ensure_key_dir() -> None:
+    _KEY_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _load_or_generate_key() -> Ed25519PrivateKey:
+    """Load the authority key from disk, or generate and persist it."""
+    global _AUTHORITY_PRIVATE_KEY, _AUTHORITY_PUBLIC_KEY_PEM
+    if _AUTHORITY_PRIVATE_KEY is not None:
+        return _AUTHORITY_PRIVATE_KEY
+
+    if _KEY_FILE.exists():
+        try:
+            private_key = serialization.load_pem_private_key(
+                _KEY_FILE.read_bytes(), password=None
             )
+            if isinstance(private_key, Ed25519PrivateKey):
+                _AUTHORITY_PRIVATE_KEY = private_key
+                _AUTHORITY_PUBLIC_KEY_PEM = (
+                    private_key.public_key()
+                    .public_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+                    )
+                )
+                return _AUTHORITY_PRIVATE_KEY
+        except Exception:
+            # Corrupt key file — fall through to regeneration
+            pass
+
+    # Generate a fresh key and persist it
+    _ensure_key_dir()
+    _AUTHORITY_PRIVATE_KEY = Ed25519PrivateKey.generate()
+    _AUTHORITY_PUBLIC_KEY_PEM = (
+        _AUTHORITY_PRIVATE_KEY.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
+    )
+    _KEY_FILE.write_bytes(_AUTHORITY_PUBLIC_KEY_PEM)
     return _AUTHORITY_PRIVATE_KEY
+
+
+def _get_authority_key() -> Ed25519PrivateKey:
+    return _load_or_generate_key()
+
+
+def get_authority_public_key_pem() -> str:
+    """Return the authority public key PEM, generating/loading it if needed."""
+    _load_or_generate_key()
+    assert _AUTHORITY_PUBLIC_KEY_PEM is not None
+    return _AUTHORITY_PUBLIC_KEY_PEM.decode("utf-8")
 
 
 @dataclass
@@ -96,9 +145,7 @@ class AirspaceIntrusionDossier:
             "tamper_evident_hash": sha256_hash,
             "signature": signature_hex,
             "admissibility": "LEGAL_DEFENSE_GRADE",
-            "public_key_pem": _AUTHORITY_PUBLIC_KEY_PEM.decode("utf-8")
-            if _AUTHORITY_PUBLIC_KEY_PEM
-            else "",
+            "public_key_pem": get_authority_public_key_pem(),
         }
 
     @staticmethod
