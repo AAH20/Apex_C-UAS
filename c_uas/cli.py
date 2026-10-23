@@ -413,6 +413,27 @@ def main(argv: Optional[list] = None) -> int:
         "--campaign-id", type=str, default=None, help="Campaign ID (for campaign dispatch/analytics)"
     )
 
+    # hardware
+    hw_p = subparsers.add_parser(
+        "hardware",
+        help="Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion",
+    )
+    hw_p.add_argument(
+        "--list", action="store_true", help="List sensors and capabilities"
+    )
+    hw_p.add_argument(
+        "--scan", action="store_true", help="Run detection on all sensors"
+    )
+    hw_p.add_argument(
+        "--fuse", action="store_true", help="Fuse detections into tracks"
+    )
+    hw_p.add_argument(
+        "--status", action="store_true", help="Health-check all sensors"
+    )
+    hw_p.add_argument(
+        "--seed", type=int, default=42, help="Deterministic RNG seed"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -993,6 +1014,15 @@ def main(argv: Optional[list] = None) -> int:
         run(host=args.host, port=args.port)
         return 0
 
+    if args.command == "deploy":
+        from c_uas.deployment.cli import deploy
+
+        return deploy(
+            docker=args.docker,
+            k8s=args.k8s,
+            check_config=args.config_check,
+        )
+
     if args.command == "dashboard":
         from c_uas.dashboard.server import open_dashboard
 
@@ -1274,27 +1304,6 @@ def main(argv: Optional[list] = None) -> int:
 
         print("[C-UAS] threat-intel: specify --export, --serve, --alert, or --test")
         return 1
-
-    # hardware
-    hw_p = subparsers.add_parser(
-        "hardware",
-        help="Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion",
-    )
-    hw_p.add_argument(
-        "--list", action="store_true", help="List sensors and capabilities"
-    )
-    hw_p.add_argument(
-        "--scan", action="store_true", help="Run detection on all sensors"
-    )
-    hw_p.add_argument(
-        "--fuse", action="store_true", help="Fuse detections into tracks"
-    )
-    hw_p.add_argument(
-        "--status", action="store_true", help="Health-check all sensors"
-    )
-    hw_p.add_argument(
-        "--seed", type=int, default=42, help="Deterministic RNG seed"
-    )
 
     if args.command == "broker":
         from c_uas.broker import (
