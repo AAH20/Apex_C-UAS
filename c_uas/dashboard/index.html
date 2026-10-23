@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C-UAS Platform - SOC Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-mark">C-UAS</span>
+        <span class="brand-name">Platform - SOC Dashboard</span>
+      </div>
+      <div class="api-status" id="apiStatus" role="status" aria-live="polite">
+        <span class="indicator" id="statusIndicator"></span>
+        <span id="statusText">connecting to API</span>
+      </div>
+      <div class="meta">
+        <span id="lastUpdated">last updated: never</span>
+        <button class="button button-sm" id="pollNow">poll now</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- status strip -->
+    <section class="stat-strip" aria-label="Key indicators">
+      <div class="stat-card">
+        <span class="stat-label">ISO 42001 compliance</span>
+        <span class="stat-value" id="statCompliance">-- %</span>
+        <span class="stat-sub" id="statComplianceStatus">--</span>
+        <canvas id="complianceGauge" width="140" height="140" aria-hidden="true"></canvas>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">swarm leak rate</span>
+        <span class="stat-value" id="statLeakRate">-- %</span>
+        <span class="stat-sub" id="statLeakNote">no data</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">expected kills</span>
+        <span class="stat-value" id="statExpectedKills">--</span>
+        <span class="stat-sub" id="statEngaged">engaged 0 / leaked 0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">drones tracked</span>
+        <span class="stat-value" id="statTracks">--</span>
+        <span class="stat-sub" id="statDensity">swarm density --</span>
+      </div>
+    </section>
+
+    <!-- panels -->
+    <section class="panels">
+      <article class="panel" aria-label="Drone tracks">
+        <header class="panel-head">
+          <h2>Drone tracks</h2>
+          <span class="panel-tag">scatter swarm view</span>
+        </header>
+        <div class="panel-body chart-wrap">
+          <canvas id="tracksChart" aria-label="Drone tracks scatter plot"></canvas>
+          <div class="hint">Positions derived live from the swarm configuration returned by /swarm/simulate, using the platform deterministic swarm model. Asset at origin.</div>
+        </div>
+      </article>
+
+      <article class="panel" aria-label="Engagement schedule">
+        <header class="panel-head">
+          <h2>Engagement schedule</h2>
+          <span class="panel-tag">timeline from /engagement/schedule</span>
+        </header>
+        <div class="panel-body chart-wrap">
+          <canvas id="engagementChart" aria-label="Engagement schedule Gantt chart"></canvas>
+          <div class="hint">Each bar is one engaged track (start to end seconds). Pk shown on the bar. Leaked targets plotted as red markers at arrival time.</div>
+        </div>
+      </article>
+
+      <article class="panel" aria-label="Swarm saturation">
+        <header class="panel-head">
+          <h2>Swarm saturation</h2>
+          <span class="panel-tag">leak rate vs drone count from /benchmarks</span>
+        </header>
+        <div class="panel-body chart-wrap">
+          <canvas id="saturationChart" aria-label="Swarm saturation curve"></canvas>
+          <div class="hint">Leak rate (leaked / total drones) measured by the benchmark suite as swarm size grows. Physics, not scheduler quality, is the binding constraint.</div>
+        </div>
+      </article>
+
+      <article class="panel" aria-label="Governance compliance">
+        <header class="panel-head">
+          <h2>Governance compliance</h2>
+          <span class="panel-tag">ISO 42001 from /compliance</span>
+        </header>
+        <div class="panel-body gov-panel">
+          <div class="gov-readings">
+            <div class="gov-reading">
+              <span class="gov-label">AI systems</span>
+              <span class="gov-value" id="govSystems">--</span>
+            </div>
+            <div class="gov-reading">
+              <span class="gov-label">open risks</span>
+              <span class="gov-value" id="govOpenRisks">--</span>
+            </div>
+            <div class="gov-reading">
+              <span class="gov-label">controls implemented</span>
+              <span class="gov-value" id="govControls">--</span>
+            </div>
+            <div class="gov-reading">
+              <span class="gov-label">open incidents</span>
+              <span class="gov-value" id="govIncidents">--</span>
+            </div>
+          </div>
+          <table class="gov-table" aria-label="Registered AI systems">
+            <caption>AI systems</caption>
+            <thead><tr><th>name</th><th>stage</th><th>risk level</th></tr></thead>
+            <tbody id="govSystemsTable"></tbody>
+          </table>
+          <table class="gov-table" aria-label="Risks and controls">
+            <caption>Risks and controls</caption>
+            <thead><tr><th>open risks</th><th>implemented controls</th><th>evidence chain</th></tr></thead>
+            <tbody id="govRisksControlsTable"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel" aria-label="DEW beam model">
+        <header class="panel-head">
+          <h2>DEW beam</h2>
+          <span class="panel-tag">spot size vs range from /dew/model</span>
+        </header>
+        <div class="panel-body chart-wrap">
+          <canvas id="dewChart" aria-label="DEW spot size vs range"></canvas>
+          <div class="dew-readings">
+            <div class="dew-reading">
+              <span class="dew-label">spot at 3 km</span>
+              <span class="dew-value" id="dewSpot">-- cm</span>
+            </div>
+            <div class="dew-reading">
+              <span class="dew-label">dwell time</span>
+              <span class="dew-value" id="dewDwell">-- s</span>
+            </div>
+            <div class="dew-reading">
+              <span class="dew-label">transmission</span>
+              <span class="dew-value" id="dewTransmission">--</span>
+            </div>
+          </div>
+          <div class="hint">Directed-energy beam model (modeling only, no hardware control). Spot diameter grows with range; atmospheric attenuation cuts transmission and lengthens dwell. POST /dew/model per range point.</div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <p>All values are read live from the C-UAS REST API at http://127.0.0.1:8000. No metrics are fabricated. If the API is offline, panels show the last known state and never invent data.</p>
+      <p>Defensive only: detection, tracking, scheduling, forensics, governance, and beam modeling. No weapons employment, no live SDR.</p>
+    </footer>
+  </main>
+  <script src="vendor/chart.js" integrity="sha384-f6785ccf152a2bcedb70a1e1db47d241c4c60f8aaae4685ac8d612616ab006420d06139f40b83f3f91c6e65175bab9f8" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -18,6 +18,7 @@ Endpoints:
   POST /detection/spoof          Evaluate GNSS spoofing
   POST /engagement/schedule      Compute engagement schedule
   POST /swarm/simulate           Simulate drone swarm
+  POST /dew/model                Directed-energy beam model (spot size, dwell, fluence)
   GET  /competitive-landscape    List deployed C-UAS systems
   POST /unit-economics           Compute unit economics
   GET  /benchmarks               Run performance benchmarks
@@ -49,6 +50,11 @@ from c_uas.engagement.backtest import Scenario, run_backtest
 from c_uas.engagement.scheduler import (
     DroneTrack,
     EngagementScheduler,
+)
+from c_uas.dew.atmospheric import (
+    AtmosphericConditions,
+    LASER_SPECS,
+    time_to_kill_with_attenuation,
 )
 from c_uas.swarm import SwarmConfig, SwarmSimulator
 from c_uas.unit_economics import UnitEconomicsModel
@@ -139,6 +145,14 @@ class UnitEconomicsRequest(BaseModel):
     service_life_years: int = Field(5, gt=0)
     marginal_cost_usd: float = Field(0.0, ge=0)
     attacker_drone_cost_usd: float = Field(5_000, gt=0)
+
+
+class DewModelRequest(BaseModel):
+    laser: str = Field("fiber_50kw", description="Laser spec key (fiber_50kw, fiber_100kw, solid_state_150kw, chemical_100kw)")
+    range_m: float = Field(3000.0, gt=0, description="Slant range to target in meters")
+    material: str = Field("aluminum", description="Target material: aluminum, carbon_fiber, plastic, composite")
+    rain_mm_hr: float = Field(0.0, ge=0, description="Rain rate in mm/hr")
+    visibility_km: float = Field(20.0, gt=0, description="Aerosol visibility in km")
 
 
 # ---------------------------------------------------------------------------
@@ -390,6 +404,30 @@ def unit_economics(req: UnitEconomicsRequest) -> dict[str, Any]:
     )
     result = model.cost_per_engagement(params)
     return asdict(result)
+
+
+# ---------------------------------------------------------------------------
+# Directed-energy beam modeling
+# ---------------------------------------------------------------------------
+@app.post("/dew/model")
+def dew_model(req: DewModelRequest) -> dict[str, Any]:
+    if req.laser not in LASER_SPECS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown laser: {req.laser}. Available: {', '.join(LASER_SPECS.keys())}",
+        )
+    spec = LASER_SPECS[req.laser]
+    conditions = AtmosphericConditions(
+        rainfall_mm_hr=req.rain_mm_hr,
+        aerosol_visibility_km=req.visibility_km,
+    )
+    result = time_to_kill_with_attenuation(
+        spec,
+        range_m=req.range_m,
+        target_material=req.material,
+        conditions=conditions,
+    )
+    return result
 
 
 # ---------------------------------------------------------------------------
