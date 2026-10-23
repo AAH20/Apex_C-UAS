@@ -107,6 +107,7 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/contract_readiness` | Burn rate, CAC:LTV, MVP scope for contract readiness |
 | `c_uas/dew` | Directed-energy beam modeling with atmospheric attenuation |
 | `c_uas/detection.opendew_classifier` | OpenDEW neural network signal classifier |
+| `c_uas/api` | REST API server (FastAPI) — all platform capabilities over HTTP |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -185,8 +186,13 @@ c-uas opendew --samples 100
 c-uas contract-readiness
 # Software-only CPE: $50.00 vs kinetic missile: $121,333.33 per engagement
 
+# REST API server
+c-uas api --host 127.0.0.1 --port 8000
+# Docs: http://127.0.0.1:8000/docs
+# ReDoc: http://127.0.0.1:8000/redoc
+
 pytest tests/ -q
-# 210 passed
+# 227 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -481,6 +487,37 @@ c-uas contract-readiness
 | Earliest contract | Month 3 |
 
 MVP phases: (1) Detection + forensics (4 weeks), (2) Tracking + scheduling + controller location (6 weeks), (3) ISO 42001 governance + DEW modeling (4 weeks). Sellable after Phase 1.
+
+### REST API Server
+
+`c_uas/api/` exposes every platform capability via a FastAPI HTTP server, making the platform integrable by system integrators, SOC operators, and broker channels.
+
+```bash
+c-uas api --host 127.0.0.1 --port 8000
+# Interactive docs: http://127.0.0.1:8000/docs
+# ReDoc: http://127.0.0.1:8000/redoc
+```
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Health check |
+| `/systems` | GET/POST | AI system inventory (ISO 42001 A.5.2) |
+| `/risks` | GET/POST | Risk assessment & treatment (Clause 6.1) |
+| `/controls/{id}/implement` | POST | Annex A control implementation |
+| `/incidents` | POST | Incident management (Clause 10) |
+| `/compliance` | GET | ISO 42001 compliance report |
+| `/evidence/verify` | GET | Audit chain tamper verification |
+| `/detection/scan-rf` | POST | RF protocol classification |
+| `/detection/spoof` | POST | GNSS spoofing detection |
+| `/detection/opendew` | POST | Neural signal classifier (OpenDEW) |
+| `/engagement/schedule` | POST | NP-hard engagement scheduling |
+| `/engagement/backtest` | POST | Counterfactual alpha backtest |
+| `/swarm/simulate` | POST | Drone swarm simulation |
+| `/competitive-landscape` | GET | 9 deployed C-UAS systems |
+| `/unit-economics` | POST | Cost-per-engagement model |
+| `/benchmarks` | GET | Real measured performance |
+
+All endpoints return real computed values — no mocks, no fabricated metrics.
 
 ### Evolution parameters (this platform)
 

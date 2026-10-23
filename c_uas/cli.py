@@ -226,6 +226,18 @@ def main(argv: Optional[list] = None) -> int:
         help="Contract readiness: burn rate, CAC:LTV, MVP scope",
     )
 
+    # api
+    api_p = subparsers.add_parser(
+        "api",
+        help="Run the REST API server",
+    )
+    api_p.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Bind host"
+    )
+    api_p.add_argument(
+        "--port", type=int, default=8000, help="Bind port"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -687,6 +699,17 @@ def main(argv: Optional[list] = None) -> int:
         print(f"  Payback       : {cac['payback_months']} months")
         print(f"  MVP build     : {analysis['mvp_scope']['total_weeks']} weeks")
         print(f"  Earliest contract: month {frc['earliest_contract_month']}")
+        return 0
+
+    if args.command == "api":
+        import uvicorn  # type: ignore
+
+        from c_uas.api.server import app
+
+        print(f"[C-UAS] Starting API server on {args.host}:{args.port}")
+        print(f"  Docs: http://{args.host}:{args.port}/docs")
+        print(f"  ReDoc: http://{args.host}:{args.port}/redoc")
+        uvicorn.run(app, host=args.host, port=args.port)
         return 0
 
     parser.print_help()
