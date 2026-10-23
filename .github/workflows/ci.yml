@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install ruff
+        run: pip install ruff
+      - name: ruff check
+        run: ruff check c_uas tests
+      - name: ruff format check
+        run: ruff format --check c_uas tests
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install mypy
+        run: pip install mypy
+      - name: mypy
+        run: mypy c_uas
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install dependencies
+        run: pip install -e . pytest
+      - name: collect tests (packaging/import gate)
+        run: pytest tests/ --collect-only -q
+      - name: run tests
+        run: pytest tests/ -q
+
+  docker:
+    name: docker-build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: build docker image
+        run: docker build -t c-uas-platform -f c_uas/deployment/Dockerfile .

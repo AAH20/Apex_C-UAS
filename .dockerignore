@@ -1,0 +1,16 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+.archify
+.benchmarks
+build
+dist
+*.egg-info
+.venv
+venv
+.ipynb_checkpoints
+.DS_Store

@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: c_uas/deployment/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      CUAS_API_HOST: "0.0.0.0"
+      CUAS_API_PORT: "8000"
+      CUAS_LOG_LEVEL: "INFO"
+      CUAS_STRUCTURED_LOGGING: "true"
+      CUAS_METRICS_ENABLED: "true"
+      # Inject API keys at runtime, e.g. from a Docker secret or env file.
+      # CUAS_API_KEYS: ""
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
