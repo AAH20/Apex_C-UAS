@@ -1,7 +1,8 @@
 """Tests for NP-hard engagement scheduler."""
 
 import unittest
-from c_uas.engagement.scheduler import EngagementScheduler, EngagementPlan
+
+from c_uas.engagement.scheduler import EngagementPlan, EngagementScheduler
 
 
 class TestEngagementScheduler(unittest.TestCase):
@@ -28,8 +29,7 @@ class TestEngagementScheduler(unittest.TestCase):
         plan_small = sched.schedule(num_drones=5, time_limit_s=30.0)
         plan_large = sched.schedule(num_drones=20, time_limit_s=30.0)
         # With fixed time, engaging more drones means lower per-target kill ratio
-        self.assertGreater(plan_small.expected_kills / 5.0,
-                          plan_large.expected_kills / 20.0)
+        self.assertGreater(plan_small.expected_kills / 5.0, plan_large.expected_kills / 20.0)
 
     def test_leaked_targets(self):
         sched = EngagementScheduler(dwell_s=10.0, slew_s=5.0)
@@ -59,8 +59,7 @@ class TestEngagementScheduler(unittest.TestCase):
         plan_short = sched_short.schedule(num_drones=10, time_limit_s=30.0)
         plan_long = sched_long.schedule(num_drones=10, time_limit_s=30.0)
         # Shorter dwell = more targets can be engaged in same time
-        self.assertGreaterEqual(plan_short.engaged_targets,
-                              plan_long.engaged_targets)
+        self.assertGreaterEqual(plan_short.engaged_targets, plan_long.engaged_targets)
 
     def test_zero_drones_returns_empty_plan(self):
         sched = EngagementScheduler(dwell_s=4.0, slew_s=1.5)

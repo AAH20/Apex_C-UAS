@@ -20,9 +20,8 @@ from typing import List, Optional
 from .sensor_interface import (
     Detection,
     HardwareCapability,
-    SensorStatus,
     SensorInterface,
-    logger,
+    SensorStatus,
 )
 
 _FORBIDDEN_METADATA_KEYS = {"face", "identity", "identities", "targeting", "aim_point", "weapon"}
@@ -132,9 +131,7 @@ class CameraAdapter(SensorInterface):
             capability=self.capability,
             last_seen=self._last_seen or 0.0,
             message=(
-                "simulation mode: no hardware"
-                if not self._hardware_present
-                else "hardware present"
+                "simulation mode: no hardware" if not self._hardware_present else "hardware present"
             ),
         )
 

@@ -1,7 +1,8 @@
 """Tests for the global C-UAS competitive landscape database."""
 
 import unittest
-from c_uas.competitive_landscape import CUASSystem, CUASDatabase
+
+from c_uas.competitive_landscape import CUASDatabase, CUASSystem
 
 
 class TestCUASDatabase(unittest.TestCase):
@@ -45,7 +46,9 @@ class TestCUASDatabase(unittest.TestCase):
         self.assertIn("by_type", summary)
         self.assertIn("origins", summary)
         self.assertGreater(summary["total"], 0)
-        self.assertEqual(summary["fielded"] + summary["demonstrator_or_development"], summary["total"])
+        self.assertEqual(
+            summary["fielded"] + summary["demonstrator_or_development"], summary["total"]
+        )
 
     def test_system_properties(self):
         s = self.db.get("AN/TWQ-1 Avenger")

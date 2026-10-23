@@ -175,6 +175,51 @@ c-uas governance --action register-system --name 'EKF Tracking' --module c_uas.t
 c-uas governance --action assess-risk --system-id <system-id> --description 'EKF drift under noise' --likelihood medium --impact high
 c-uas governance --action implement-control --control-id A.8.2 --evidence 'Input validation added'
 
+## Compliance automation
+
+Automated compliance evidence collection for ISO 42001 audits. The collector pulls
+evidence from all platform components (detection, tracking, engagement, forensics,
+governance, threat intel, broker campaigns, edge node health). The packager signs
+each bundle with Ed25519 and SHA-256 content addressing. The audit trail records
+who did what, when, and with what evidence. The reporter maps collected evidence to
+Annex A controls A.5.1 through A.11.1.
+
+All state persists to ~/.c-uas-platform/compliance/ outside the repo. Packages are
+deterministic: the same collected evidence always produces the same signed package
+id and signature.
+
+```mermaid
+flowchart LR
+    subgraph Collect [Evidence collection]
+    A[All platform components] --> B[Evidence records]
+    end
+    C[Package + Ed25519 sign] --> D[Signed package]
+    E[Audit trail] --> D
+    B --> C
+    D --> F[Export JSON / ZIP]
+    D --> G[Compliance report A.5.1-A.11.1]
+```
+
+# c-uas compliance --collect
+# Compliance evidence collected: 87 record(s)
+#   governance: 50
+#   threat_intel: 37
+
+# c-uas compliance --package
+# Evidence package signed: pkg-18fa7a8af17c2b95
+#   Evidence records : 87
+#   Signature (Ed25519): e0174098...
+#   Chain valid      : True
+
+# c-uas compliance --report
+# ISO 42001 Compliance Report
+#   Controls         : 8/10
+#   Coverage         : 80.0%
+#   Overall status   : partial
+
+# c-uas compliance --export --format json --out /tmp/pkg.json
+# Package exported (JSON): /tmp/pkg.json
+
 # DEW beam modeling with atmospheric attenuation
 c-uas dew --laser fiber_50kw --range-m 3000 --material aluminum
 # 50 kW fiber laser: 0.87s dwell, 6.4cm spot, 78% transmission at 3km

@@ -1,10 +1,11 @@
 """Tests for OpenDEW signal classifier integration."""
 
 import unittest
+
 from c_uas.detection.opendew_classifier import (
+    OPENDEW_PATH,
     OpenDEWSignalClassifier,
     get_opendew_classifier,
-    OPENDEW_PATH,
 )
 
 
@@ -46,4 +47,5 @@ class TestOpenDEWClassifier(unittest.TestCase):
     def test_opendew_path_exists(self):
         # The OpenDEW project path should exist on this system
         import os
+
         self.assertTrue(os.path.exists(OPENDEW_PATH))

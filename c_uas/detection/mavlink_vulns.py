@@ -205,7 +205,12 @@ MAVLINK_VULNERABILITIES: Dict[str, MavlinkVulnerability] = {
         cve=None,
         title="Mission item injection and waypoint hijacking",
         mavlink_version="both",
-        affected_messages=["MISSION_ITEM", "MISSION_ITEM_INT", "MISSION_COUNT", "MISSION_SET_CURRENT"],
+        affected_messages=[
+            "MISSION_ITEM",
+            "MISSION_ITEM_INT",
+            "MISSION_COUNT",
+            "MISSION_SET_CURRENT",
+        ],
         severity="HIGH",
         description=(
             "MAVLink mission protocol uploads waypoints and mission items to "

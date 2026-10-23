@@ -1,10 +1,10 @@
 """Tests for MAVLink vulnerability database."""
 
 import unittest
+
 from c_uas.detection.mavlink_vulns import (
-    MavlinkVulnerability,
-    MavlinkVulnerabilityDatabase,
     MAVLINK_VULNERABILITIES,
+    MavlinkVulnerabilityDatabase,
 )
 
 
@@ -82,7 +82,13 @@ class TestMavlinkVulnerabilityDatabase(unittest.TestCase):
         self.assertGreater(len(hits), 0)
 
     def test_new_cves_are_lookupable(self):
-        for cve in ["CVE-2026-1579", "CVE-2026-32743", "CVE-2026-32724", "CVE-2024-33844", "CVE-2020-10282"]:
+        for cve in [
+            "CVE-2026-1579",
+            "CVE-2026-32743",
+            "CVE-2026-32724",
+            "CVE-2024-33844",
+            "CVE-2020-10282",
+        ]:
             vuln = self.db.get_by_cve(cve)
             self.assertIsNotNone(vuln, f"{cve} not found in database")
             self.assertIsNotNone(vuln.title)

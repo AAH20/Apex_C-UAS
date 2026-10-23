@@ -1,6 +1,7 @@
 """Tests for RF signal classifier."""
 
 import unittest
+
 from c_uas.detection.rf_classifier import RFSignalClassifier
 
 

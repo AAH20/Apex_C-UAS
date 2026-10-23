@@ -25,11 +25,8 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
 
-from .models import ChannelConfig
 from .store import ThreatIntelStore
-from .stix_builder import STIXBundleBuilder, bundle_hash
 
 API_ROOT_ID = "cuas-platform"
 TITLE = "C-UAS Platform Threat Intelligence"
@@ -82,9 +79,7 @@ def app_factory(store: Optional[ThreatIntelStore] = None) -> FastAPI:
                     "description": _api_root_envelope()["description"],
                     "versions": ["2.1"],
                     "max_page_size": 1000,
-                    "collections": [
-                        f"/taxii2/collections/{COLLECTION_ID}/"
-                    ],
+                    "collections": [f"/taxii2/collections/{COLLECTION_ID}/"],
                 }
             ],
         }
@@ -153,8 +148,13 @@ def app_factory(store: Optional[ThreatIntelStore] = None) -> FastAPI:
         obj_type = payload.get("type")
         if obj_type == "bundle":
             store.save_bundle(payload)
-        elif obj_type in ("indicator", "observed-data", "attack-pattern",
-                          "intrusion-set", "marking-definition"):
+        elif obj_type in (
+            "indicator",
+            "observed-data",
+            "attack-pattern",
+            "intrusion-set",
+            "marking-definition",
+        ):
             # Wrap a single STIX object in a bundle for persistence.
             bundle = {
                 "type": "bundle",
@@ -185,13 +185,12 @@ def main() -> None:
         prog="c-uas taxii-server",
         description="Run the C-UAS TAXII 2.1 threat intelligence server.",
     )
-    parser.add_argument("--host", type=str, default="127.0.0.1",
-                        help="Bind host")
-    parser.add_argument("--port", type=int, default=8001,
-                        help="Bind port")
+    parser.add_argument("--host", type=str, default="127.0.0.1", help="Bind host")
+    parser.add_argument("--port", type=int, default=8001, help="Bind port")
     args = parser.parse_args()
 
     import uvicorn  # type: ignore
+
     print(f"[C-UAS] TAXII 2.1 server on {args.host}:{args.port}")
     print(f"  Discovery: http://{args.host}:{args.port}/taxii2/")
     uvicorn.run(app, host=args.host, port=args.port)

@@ -51,23 +51,32 @@ class TestDewModel:
             "/dew/model", json={"laser": "fiber_50kw", "range_m": 3000, "material": "aluminum"}
         ).json()
         high = self.client.post(
-            "/dew/model", json={"laser": "solid_state_150kw", "range_m": 3000, "material": "aluminum"}
+            "/dew/model",
+            json={"laser": "solid_state_150kw", "range_m": 3000, "material": "aluminum"},
         ).json()
         assert high["dwell_s"] < low["dwell_s"]
 
     def test_dew_model_rain_cuts_transmission(self):
         dry = self.client.post(
             "/dew/model",
-            json={"laser": "fiber_50kw", "range_m": 3000, "material": "aluminum", "rain_mm_hr": 0.0},
+            json={
+                "laser": "fiber_50kw",
+                "range_m": 3000,
+                "material": "aluminum",
+                "rain_mm_hr": 0.0,
+            },
         ).json()
         wet = self.client.post(
             "/dew/model",
-            json={"laser": "fiber_50kw", "range_m": 3000, "material": "aluminum", "rain_mm_hr": 50.0},
+            json={
+                "laser": "fiber_50kw",
+                "range_m": 3000,
+                "material": "aluminum",
+                "rain_mm_hr": 50.0,
+            },
         ).json()
         assert wet["transmission"] < dry["transmission"]
 
     def test_dew_model_unknown_laser(self):
-        resp = self.client.post(
-            "/dew/model", json={"laser": "no_such_laser", "range_m": 3000}
-        )
+        resp = self.client.post("/dew/model", json={"laser": "no_such_laser", "range_m": 3000})
         assert resp.status_code == 400

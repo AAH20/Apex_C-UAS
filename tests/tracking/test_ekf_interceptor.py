@@ -1,7 +1,8 @@
 """Tests for EKF trajectory predictor."""
 
 import unittest
-from c_uas.tracking.ekf_interceptor import EKFTrajectoryPredictor, DroneState3D
+
+from c_uas.tracking.ekf_interceptor import DroneState3D, EKFTrajectoryPredictor
 
 
 class TestEKFTrajectoryPredictor(unittest.TestCase):

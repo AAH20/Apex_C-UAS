@@ -6,14 +6,14 @@ inconsistencies. Pure Python, no SDR, no hardware.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass(frozen=True)
 class GNSSMeasurement:
     carrier_to_noise_db_hz: float  # C/N0 (typically 35-50 dB-Hz)
-    pseudorange_rate_mps: float    # Doppler velocity
-    clock_drift_ppm: float         # Oscillator drift
+    pseudorange_rate_mps: float  # Doppler velocity
+    clock_drift_ppm: float  # Oscillator drift
     num_satellites: int
 
 

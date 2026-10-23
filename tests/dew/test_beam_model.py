@@ -1,6 +1,7 @@
 """Tests for DEW beam modeling."""
 
 import unittest
+
 from c_uas.dew.beam_model import DewBeamQualityModel, DewThermalBloomModel
 from c_uas.dew.time_to_kill import TimeToKillModel
 
@@ -47,14 +48,22 @@ class TestDewThermalBloomModel(unittest.TestCase):
 class TestTimeToKillModel(unittest.TestCase):
     def test_ttk_decreases_with_higher_power(self):
         model = TimeToKillModel()
-        t1 = model.time_to_kill_s(laser_power_kw=50.0, target_material="carbon_fiber", range_m=3000.0)
-        t2 = model.time_to_kill_s(laser_power_kw=100.0, target_material="carbon_fiber", range_m=3000.0)
+        t1 = model.time_to_kill_s(
+            laser_power_kw=50.0, target_material="carbon_fiber", range_m=3000.0
+        )
+        t2 = model.time_to_kill_s(
+            laser_power_kw=100.0, target_material="carbon_fiber", range_m=3000.0
+        )
         self.assertLess(t2, t1)
 
     def test_ttk_increases_with_range(self):
         model = TimeToKillModel()
-        t_near = model.time_to_kill_s(laser_power_kw=50.0, target_material="aluminum", range_m=1000.0)
-        t_far = model.time_to_kill_s(laser_power_kw=50.0, target_material="aluminum", range_m=5000.0)
+        t_near = model.time_to_kill_s(
+            laser_power_kw=50.0, target_material="aluminum", range_m=1000.0
+        )
+        t_far = model.time_to_kill_s(
+            laser_power_kw=50.0, target_material="aluminum", range_m=5000.0
+        )
         self.assertGreater(t_far, t_near)
 
     def test_ttk_positive(self):

@@ -1,6 +1,5 @@
 """Tests for the C-UAS SOC dashboard static file server."""
 
-import threading
 import unittest
 from http.client import HTTPConnection
 

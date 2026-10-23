@@ -15,7 +15,6 @@ weights_only=True is used when available; older torch versions fall back.
 from __future__ import annotations
 
 try:
-    import torch  # type: ignore
     import torch.nn as nn  # type: ignore
 
     _TORCH_AVAILABLE = True

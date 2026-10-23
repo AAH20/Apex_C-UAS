@@ -1,10 +1,11 @@
 """Tests for engagement constraint models."""
 
 import unittest
+
 from c_uas.engagement.constraints import (
-    ThermalBloomModel,
     BeamQualityModel,
     DwellModel,
+    ThermalBloomModel,
 )
 
 

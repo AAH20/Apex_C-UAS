@@ -14,7 +14,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # Fixed STIX namespace so every object ID is content-addressed and
 # deterministic across runs/sessions. Never changes.

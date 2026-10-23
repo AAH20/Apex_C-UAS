@@ -1,12 +1,13 @@
 """Tests for controller location / RF direction finding."""
 
 import unittest
+
 from c_uas.detection.controller_locator import (
-    SensorSite,
-    Detection,
     ControllerLocator,
-    haversine_km,
+    Detection,
+    SensorSite,
     bearing_deg,
+    haversine_km,
 )
 
 
@@ -88,26 +89,16 @@ class TestControllerLocator(unittest.TestCase):
 
     def test_rssi_insufficient_detections(self):
         locator = ControllerLocator(self.sites)
-        locator.add_detection(
-            Detection("S1", 1000.0, 2450.0, rssi_dbm=-70.0)
-        )
-        locator.add_detection(
-            Detection("S2", 1000.0, 2450.0, rssi_dbm=-75.0)
-        )
+        locator.add_detection(Detection("S1", 1000.0, 2450.0, rssi_dbm=-70.0))
+        locator.add_detection(Detection("S2", 1000.0, 2450.0, rssi_dbm=-75.0))
         est = locator.locate(prefer_method="RSSI")
         self.assertIsNone(est)  # need 3+ for RSSI trilateration
 
     def test_rssi_three_detections(self):
         locator = ControllerLocator(self.sites)
-        locator.add_detection(
-            Detection("S1", 1000.0, 2450.0, rssi_dbm=-70.0)
-        )
-        locator.add_detection(
-            Detection("S2", 1000.0, 2450.0, rssi_dbm=-75.0)
-        )
-        locator.add_detection(
-            Detection("S3", 1000.0, 2450.0, rssi_dbm=-73.0)
-        )
+        locator.add_detection(Detection("S1", 1000.0, 2450.0, rssi_dbm=-70.0))
+        locator.add_detection(Detection("S2", 1000.0, 2450.0, rssi_dbm=-75.0))
+        locator.add_detection(Detection("S3", 1000.0, 2450.0, rssi_dbm=-73.0))
         est = locator.locate(prefer_method="RSSI")
         # May or may not converge depending on geometry; just check it doesn't crash
         if est is not None:

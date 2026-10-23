@@ -1,21 +1,20 @@
 """Tests for the expanded DEW atmospheric and beam modeling."""
 
 import unittest
+
 from c_uas.dew.atmospheric import (
+    DEW_SYSTEMS,
+    LASER_SPECS,
     AtmosphericConditions,
     LaserSpec,
+    aerosol_attenuation_db_km,
     diffraction_limit_spot_cm,
-    jitter_spot_cm,
     effective_spot_cm,
-    fluence_on_target_j_per_cm2,
+    jitter_spot_cm,
+    oxygen_attenuation_db_km,
     time_to_kill_with_attenuation,
     total_attenuation_db_km,
-    aerosol_attenuation_db_km,
-    rain_attenuation_db_km,
-    oxygen_attenuation_db_km,
     water_vapor_attenuation_db_km,
-    LASER_SPECS,
-    DEW_SYSTEMS,
 )
 
 
@@ -23,9 +22,7 @@ class TestAtmosphericAttenuation(unittest.TestCase):
     def test_clear_air_low_attenuation(self):
         att = total_attenuation_db_km(
             wavelength_nm=1070.0,
-            conditions=AtmosphericConditions(
-                rainfall_mm_hr=0.0, aerosol_visibility_km=20.0
-            ),
+            conditions=AtmosphericConditions(rainfall_mm_hr=0.0, aerosol_visibility_km=20.0),
         )
         self.assertGreaterEqual(att, 0.0)
 
@@ -65,16 +62,24 @@ class TestDiffractionAndSpot(unittest.TestCase):
 
     def test_effective_spot_combines(self):
         spec = LaserSpec(
-            name="test", wavelength_nm=1070.0, power_kw=50.0,
-            m2=1.2, jitter_urad=5.0, aperture_cm=20.0,
+            name="test",
+            wavelength_nm=1070.0,
+            power_kw=50.0,
+            m2=1.2,
+            jitter_urad=5.0,
+            aperture_cm=20.0,
         )
         spot = effective_spot_cm(spec, 5000.0)
         self.assertGreater(spot, 0.0)
 
     def test_adaptive_optics_reduces_turbulence(self):
         spec = LaserSpec(
-            name="test", wavelength_nm=1070.0, power_kw=50.0,
-            m2=1.2, jitter_urad=5.0, aperture_cm=20.0,
+            name="test",
+            wavelength_nm=1070.0,
+            power_kw=50.0,
+            m2=1.2,
+            jitter_urad=5.0,
+            aperture_cm=20.0,
             adaptive_optics=True,
         )
         spot_no_ao = effective_spot_cm(spec, 5000.0, use_adaptive_optics=False)
@@ -100,9 +105,7 @@ class TestLaserSpecs(unittest.TestCase):
 class TestTimeToKillAttenuation(unittest.TestCase):
     def test_ttk_returns_dict(self):
         spec = LASER_SPECS["fiber_50kw"]
-        result = time_to_kill_with_attenuation(
-            spec, range_m=3000.0, target_material="aluminum"
-        )
+        result = time_to_kill_with_attenuation(spec, range_m=3000.0, target_material="aluminum")
         self.assertIn("dwell_s", result)
         self.assertIn("fluence_j_cm2", result)
         self.assertIn("transmission", result)
@@ -112,11 +115,13 @@ class TestTimeToKillAttenuation(unittest.TestCase):
     def test_ttk_worse_in_rain(self):
         spec = LASER_SPECS["fiber_50kw"]
         dry = time_to_kill_with_attenuation(
-            spec, range_m=3000.0,
+            spec,
+            range_m=3000.0,
             conditions=AtmosphericConditions(rainfall_mm_hr=0.0),
         )
         wet = time_to_kill_with_attenuation(
-            spec, range_m=3000.0,
+            spec,
+            range_m=3000.0,
             conditions=AtmosphericConditions(rainfall_mm_hr=50.0),
         )
         # Rain should increase dwell time (lower transmission)

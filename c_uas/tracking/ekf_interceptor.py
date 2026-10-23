@@ -41,9 +41,9 @@ class EKFTrajectoryPredictor:
             return
 
         # State projection (constant acceleration kinematics)
-        pred_x = self.state.x + self.state.vx * dt + 0.5 * self.state.ax * (dt ** 2)
-        pred_y = self.state.y + self.state.vy * dt + 0.5 * self.state.ay * (dt ** 2)
-        pred_z = self.state.z + self.state.vz * dt + 0.5 * self.state.az * (dt ** 2)
+        pred_x = self.state.x + self.state.vx * dt + 0.5 * self.state.ax * (dt**2)
+        pred_y = self.state.y + self.state.vy * dt + 0.5 * self.state.ay * (dt**2)
+        pred_z = self.state.z + self.state.vz * dt + 0.5 * self.state.az * (dt**2)
 
         pred_vx = self.state.vx + self.state.ax * dt
         pred_vy = self.state.vy + self.state.ay * dt
@@ -68,7 +68,7 @@ class EKFTrajectoryPredictor:
     def predict_intercept(self, horizon_seconds: float) -> Tuple[float, float, float]:
         """Predicts 3D coordinate at t + horizon_seconds."""
         t = horizon_seconds
-        ix = self.state.x + self.state.vx * t + 0.5 * self.state.ax * (t ** 2)
-        iy = self.state.y + self.state.vy * t + 0.5 * self.state.ay * (t ** 2)
-        iz = self.state.z + self.state.vz * t + 0.5 * self.state.az * (t ** 2)
+        ix = self.state.x + self.state.vx * t + 0.5 * self.state.ax * (t**2)
+        iy = self.state.y + self.state.vy * t + 0.5 * self.state.ay * (t**2)
+        iz = self.state.z + self.state.vz * t + 0.5 * self.state.az * (t**2)
         return (round(ix, 2), round(iy, 2), round(iz, 2))

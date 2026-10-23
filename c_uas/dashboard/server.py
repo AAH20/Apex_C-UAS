@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from typing import Optional
 
 from . import DASHBOARD_DIR
 

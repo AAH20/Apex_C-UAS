@@ -19,10 +19,9 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from .sensor_interface import (
-    Detection,
     FUSION_NAMESPACE,
+    Detection,
     Track,
-    distance_m,
     track_distance_m,
 )
 
@@ -158,12 +157,12 @@ class SensorFusion:
                         vz_mps=track.vz_mps,
                         timestamp=track.timestamp,
                         confidence=track.confidence,
-                        sensors=list(dict.fromkeys(
-                            previous_tracks[best_idx].sensors + track.sensors
-                        )),
-                        sources=list(dict.fromkeys(
-                            previous_tracks[best_idx].sources + track.sources
-                        )),
+                        sensors=list(
+                            dict.fromkeys(previous_tracks[best_idx].sensors + track.sensors)
+                        ),
+                        sources=list(
+                            dict.fromkeys(previous_tracks[best_idx].sources + track.sources)
+                        ),
                     )
                 )
             else:
@@ -174,9 +173,7 @@ class SensorFusion:
 
     def _matches_cluster(self, det: Detection, cluster: dict) -> bool:
         cx, cy, cz = cluster["centroid"]
-        dist = math.sqrt(
-            (det.x_m - cx) ** 2 + (det.y_m - cy) ** 2 + (det.z_m - cz) ** 2
-        )
+        dist = math.sqrt((det.x_m - cx) ** 2 + (det.y_m - cy) ** 2 + (det.z_m - cz) ** 2)
         time_ok = abs(det.timestamp - cluster["t0"]) <= self.config.time_window_s
         return dist <= self.config.proximity_m and time_ok
 

@@ -26,7 +26,6 @@ from c_uas.engagement.scheduler import (
 )
 from c_uas.swarm import SwarmConfig, SwarmSimulator, SwarmTrack
 
-
 # ---------------------------------------------------------------------------
 # Site agent
 # ---------------------------------------------------------------------------
@@ -238,9 +237,7 @@ class Federation:
             "sites": len(self.sites),
             "total_tracks_exported": sum(len(v) for v in all_exported.values()),
             "total_tracks_ingested": total_ingested,
-            "tracks_per_site": {
-                sid: len(agent.tracks) for sid, agent in self.sites.items()
-            },
+            "tracks_per_site": {sid: len(agent.tracks) for sid, agent in self.sites.items()},
         }
         self.fusion_history.append(record)
         return record
@@ -308,9 +305,7 @@ class Federation:
         self.deconfliction_log.append(record)
         return record
 
-    def run_round(
-        self, swarm_config: SwarmConfig, current_time_s: float = 0.0
-    ) -> dict:
+    def run_round(self, swarm_config: SwarmConfig, current_time_s: float = 0.0) -> dict:
         """
         Execute one full orchestration round:
         1. Each site detects and tracks from swarm
@@ -340,9 +335,7 @@ class Federation:
                 "engaged_targets": plan.engaged_targets,
                 "leaked_targets": plan.leaked_targets,
                 "total_time_s": plan.total_time_s,
-                "leak_rate": round(
-                    plan.leaked_targets / max(len(agent.tracks), 1), 4
-                ),
+                "leak_rate": round(plan.leaked_targets / max(len(agent.tracks), 1), 4),
             }
 
         # Phase 4: Deconfliction
@@ -359,9 +352,7 @@ class Federation:
 
     def summary(self) -> dict:
         return {
-            "sites": {
-                sid: agent.summary() for sid, agent in self.sites.items()
-            },
+            "sites": {sid: agent.summary() for sid, agent in self.sites.items()},
             "links": len(self.links),
             "fusion_rounds": len(self.fusion_history),
             "deconfliction_rounds": len(self.deconfliction_log),
@@ -388,8 +379,8 @@ def build_demo_federation(num_sites: int = 3) -> Federation:
         lon = radius_km * math.sin(angle_rad) / 111.0
         site = SiteAgent(
             config=SiteConfig(
-                site_id=f"site-{i+1}",
-                name=f"C-UAS Site {i+1}",
+                site_id=f"site-{i + 1}",
+                name=f"C-UAS Site {i + 1}",
                 latitude_deg=lat,
                 longitude_deg=lon,
                 detection_range_km=5.0,

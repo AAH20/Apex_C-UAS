@@ -50,6 +50,7 @@ class ActionModule:
         if self.sim_mode:
             await asyncio.sleep(0.1)
             import random
+
             return {
                 "status": "scan_complete",
                 "detections": random.randint(0, 5),
@@ -60,6 +61,7 @@ class ActionModule:
         if self.sim_mode:
             await asyncio.sleep(0.05)
             import random
+
             return {
                 "status": "df_complete",
                 "bearing": random.uniform(-180, 180),
@@ -83,6 +85,7 @@ class ActionModule:
         if self.sim_mode:
             await asyncio.sleep(0.2)
             import random
+
             return {
                 "status": "triangulation_complete",
                 "position": (

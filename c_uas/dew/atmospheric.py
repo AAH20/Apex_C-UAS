@@ -13,24 +13,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-
 # ---------------------------------------------------------------------------
 # Atmospheric attenuation models (open literature, ITU-R P.676 / P.835)
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AtmosphericConditions:
     """Atmospheric state for attenuation calculations."""
 
-    temperature_c: float = 15.0      # Ambient temperature (C)
-    pressure_hpa: float = 1013.25    # Pressure (hPa)
-    humidity_percent: float = 50.0   # Relative humidity (%)
-    rainfall_mm_hr: float = 0.0      # Rain rate (mm/hr)
+    temperature_c: float = 15.0  # Ambient temperature (C)
+    pressure_hpa: float = 1013.25  # Pressure (hPa)
+    humidity_percent: float = 50.0  # Relative humidity (%)
+    rainfall_mm_hr: float = 0.0  # Rain rate (mm/hr)
     aerosol_visibility_km: float = 20.0  # Visibility (km)
 
 
 def oxygen_attenuation_db_km(
-    freq_ghz: float, temp_c: float, pressure_hpa: float,
+    freq_ghz: float,
+    temp_c: float,
+    pressure_hpa: float,
 ) -> float:
     """
     Specific attenuation due to atmospheric oxygen (dB/km).
@@ -47,7 +49,10 @@ def oxygen_attenuation_db_km(
 
 
 def water_vapor_attenuation_db_km(
-    freq_ghz: float, temp_c: float, pressure_hpa: float, humidity: float,
+    freq_ghz: float,
+    temp_c: float,
+    pressure_hpa: float,
+    humidity: float,
 ) -> float:
     """
     Specific attenuation due to water vapor (dB/km).
@@ -59,7 +64,8 @@ def water_vapor_attenuation_db_km(
 
 
 def rain_attenuation_db_km(
-    freq_ghz: float, rain_rate_mm_hr: float,
+    freq_ghz: float,
+    rain_rate_mm_hr: float,
 ) -> float:
     """
     Specific attenuation due to rain (dB/km).
@@ -71,13 +77,14 @@ def rain_attenuation_db_km(
     if rain_rate_mm_hr <= 0:
         return 0.0
     # Simplified: rain attenuation grows with frequency and rain rate
-    k = 0.0001 * (freq_ghz ** 0.5)  # representative
+    k = 0.0001 * (freq_ghz**0.5)  # representative
     alpha = 0.7
-    return k * (rain_rate_mm_hr ** alpha)
+    return k * (rain_rate_mm_hr**alpha)
 
 
 def aerosol_attenuation_db_km(
-    wavelength_nm: float, visibility_km: float,
+    wavelength_nm: float,
+    visibility_km: float,
 ) -> float:
     """
     Aerosol attenuation (dB/km) using Kruse model.
@@ -131,16 +138,17 @@ def total_attenuation_db_km(
 # Multi-wavelength laser models
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class LaserSpec:
     """Laser system specification."""
 
     name: str
-    wavelength_nm: float       # Laser wavelength (nm)
-    power_kw: float            # Output power (kW)
-    m2: float                  # Beam quality (M^2, 1.0 = diffraction limited)
-    jitter_urad: float         # Pointing jitter (microradians)
-    aperture_cm: float         # Transmit aperture diameter (cm)
+    wavelength_nm: float  # Laser wavelength (nm)
+    power_kw: float  # Output power (kW)
+    m2: float  # Beam quality (M^2, 1.0 = diffraction limited)
+    jitter_urad: float  # Pointing jitter (microradians)
+    aperture_cm: float  # Transmit aperture diameter (cm)
     wall_plug_efficiency: float = 0.30  # Efficiency (0-1)
     adaptive_optics: bool = False  # Whether AO compensates turbulence
 
@@ -183,7 +191,10 @@ LASER_SPECS: dict[str, LaserSpec] = {
 
 
 def diffraction_limit_spot_cm(
-    wavelength_nm: float, range_m: float, aperture_cm: float, m2: float = 1.0,
+    wavelength_nm: float,
+    range_m: float,
+    aperture_cm: float,
+    m2: float = 1.0,
 ) -> float:
     """
     Diffraction-limited spot diameter at range (cm).
@@ -197,7 +208,8 @@ def diffraction_limit_spot_cm(
 
 
 def jitter_spot_cm(
-    jitter_urad: float, range_m: float,
+    jitter_urad: float,
+    range_m: float,
 ) -> float:
     """
     Spot diameter contribution from pointing jitter (cm).
@@ -208,7 +220,8 @@ def jitter_spot_cm(
 
 
 def effective_spot_cm(
-    spec: LaserSpec, range_m: float,
+    spec: LaserSpec,
+    range_m: float,
     conditions: Optional[AtmosphericConditions] = None,
     use_adaptive_optics: bool = False,
 ) -> float:
@@ -221,9 +234,7 @@ def effective_spot_cm(
     c = conditions or AtmosphericConditions()
 
     # Diffraction limit
-    diff_cm = diffraction_limit_spot_cm(
-        spec.wavelength_nm, range_m, spec.aperture_cm, spec.m2
-    )
+    diff_cm = diffraction_limit_spot_cm(spec.wavelength_nm, range_m, spec.aperture_cm, spec.m2)
 
     # Jitter contribution
     jit_cm = jitter_spot_cm(spec.jitter_urad, range_m)
@@ -240,7 +251,7 @@ def effective_spot_cm(
         turb_cm *= 0.2  # AO corrects ~80% of turbulence
 
     # RSS combination
-    spot_cm = (diff_cm ** 2 + jit_cm ** 2 + turb_cm ** 2) ** 0.5
+    spot_cm = (diff_cm**2 + jit_cm**2 + turb_cm**2) ** 0.5
 
     # Attenuation reduces effective power but doesn't change spot size;
     # accounted separately in fluence calculation.
@@ -248,7 +259,9 @@ def effective_spot_cm(
 
 
 def fluence_on_target_j_per_cm2(
-    spec: LaserSpec, range_m: float, dwell_s: float,
+    spec: LaserSpec,
+    range_m: float,
+    dwell_s: float,
     conditions: Optional[AtmosphericConditions] = None,
     use_adaptive_optics: bool = False,
 ) -> float:
@@ -260,9 +273,7 @@ def fluence_on_target_j_per_cm2(
     c = conditions or AtmosphericConditions()
 
     # Total attenuation along path
-    att_db_km = total_attenuation_db_km(
-        wavelength_nm=spec.wavelength_nm, conditions=c
-    )
+    att_db_km = total_attenuation_db_km(wavelength_nm=spec.wavelength_nm, conditions=c)
     path_km = range_m / 1000.0
     transmission = 10.0 ** (-(att_db_km * path_km) / 10.0)
 
@@ -274,7 +285,8 @@ def fluence_on_target_j_per_cm2(
     spot_cm = effective_spot_cm(spec, range_m, c, use_adaptive_optics)
     spot_radius_cm = spot_cm / 2.0
     import math
-    area_cm2 = math.pi * spot_radius_cm ** 2
+
+    area_cm2 = math.pi * spot_radius_cm**2
 
     if area_cm2 <= 0:
         return 0.0
@@ -283,7 +295,9 @@ def fluence_on_target_j_per_cm2(
 
 
 def time_to_kill_with_attenuation(
-    spec: LaserSpec, range_m: float, target_material: str = "aluminum",
+    spec: LaserSpec,
+    range_m: float,
+    target_material: str = "aluminum",
     conditions: Optional[AtmosphericConditions] = None,
     use_adaptive_optics: bool = False,
 ) -> dict:
@@ -295,8 +309,10 @@ def time_to_kill_with_attenuation(
     c = conditions or AtmosphericConditions()
 
     from c_uas.dew.time_to_kill import (
-        MATERIAL_ENERGY_KJ, MATERIAL_ABSORPTION, DEFAULT_ENERGY_KJ,
         DEFAULT_ABSORPTION,
+        DEFAULT_ENERGY_KJ,
+        MATERIAL_ABSORPTION,
+        MATERIAL_ENERGY_KJ,
     )
 
     energy_kj = MATERIAL_ENERGY_KJ.get(target_material, DEFAULT_ENERGY_KJ)
@@ -310,21 +326,15 @@ def time_to_kill_with_attenuation(
     lo, hi = 0.001, 300.0  # 1 ms to 5 min
     for _ in range(50):
         mid = (lo + hi) / 2.0
-        fluence = fluence_on_target_j_per_cm2(
-            spec, range_m, mid, c, use_adaptive_optics
-        )
+        fluence = fluence_on_target_j_per_cm2(spec, range_m, mid, c, use_adaptive_optics)
         if fluence >= required_fluence_j_cm2:
             hi = mid
         else:
             lo = mid
 
     dwell_s = hi
-    actual_fluence = fluence_on_target_j_per_cm2(
-        spec, range_m, dwell_s, c, use_adaptive_optics
-    )
-    att_db_km = total_attenuation_db_km(
-        wavelength_nm=spec.wavelength_nm, conditions=c
-    )
+    actual_fluence = fluence_on_target_j_per_cm2(spec, range_m, dwell_s, c, use_adaptive_optics)
+    att_db_km = total_attenuation_db_km(wavelength_nm=spec.wavelength_nm, conditions=c)
     transmission = 10.0 ** (-(att_db_km * (range_m / 1000.0)) / 10.0)
     spot_cm = effective_spot_cm(spec, range_m, c, use_adaptive_optics)
 

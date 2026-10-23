@@ -1,6 +1,7 @@
 """Tests for airspace intrusion forensic dossier."""
 
 import unittest
+
 from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier, SignedDossier
 
 

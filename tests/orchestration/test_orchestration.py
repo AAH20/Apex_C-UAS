@@ -15,22 +15,22 @@ from c_uas.swarm import SwarmConfig, SwarmSimulator
 class TestSiteAgent(unittest.TestCase):
     def test_site_agent_creation(self):
         site = SiteAgent(
-            config=SiteConfig(
-                site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0)
         )
         self.assertEqual(site.config.site_id, "s1")
         self.assertEqual(len(site.tracks), 0)
 
     def test_detect_and_track(self):
         site = SiteAgent(
-            config=SiteConfig(
-                site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0)
         )
         sim_config = SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=4,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         from c_uas.swarm import SwarmSimulator
 
@@ -41,13 +41,15 @@ class TestSiteAgent(unittest.TestCase):
 
     def test_schedule_engagements(self):
         site = SiteAgent(
-            config=SiteConfig(
-                site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="s1", name="Site 1", latitude_deg=0.0, longitude_deg=0.0)
         )
         sim_config = SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=4,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         from c_uas.swarm import SwarmSimulator
 
@@ -59,18 +61,18 @@ class TestSiteAgent(unittest.TestCase):
 
     def test_export_and_ingest_tracks(self):
         site_a = SiteAgent(
-            config=SiteConfig(
-                site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0)
         )
         site_b = SiteAgent(
-            config=SiteConfig(
-                site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0)
         )
         sim_config = SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=4,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         from c_uas.swarm import SwarmSimulator
 
@@ -84,18 +86,18 @@ class TestSiteAgent(unittest.TestCase):
 
     def test_ingest_dedup(self):
         site_a = SiteAgent(
-            config=SiteConfig(
-                site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0)
         )
         site_b = SiteAgent(
-            config=SiteConfig(
-                site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0)
         )
         sim_config = SwarmConfig(
-            num_drones=2, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=2,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         from c_uas.swarm import SwarmSimulator
 
@@ -117,9 +119,7 @@ class TestFederation(unittest.TestCase):
     def test_add_and_remove_site(self):
         fed = Federation()
         site = SiteAgent(
-            config=SiteConfig(
-                site_id="s1", name="S1", latitude_deg=0.0, longitude_deg=0.0
-            )
+            config=SiteConfig(site_id="s1", name="S1", latitude_deg=0.0, longitude_deg=0.0)
         )
         fed.add_site(site)
         self.assertEqual(len(fed.sites), 1)
@@ -128,12 +128,8 @@ class TestFederation(unittest.TestCase):
 
     def test_link_sites(self):
         fed = Federation()
-        a = SiteAgent(
-            config=SiteConfig(site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0)
-        )
-        b = SiteAgent(
-            config=SiteConfig(site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0)
-        )
+        a = SiteAgent(config=SiteConfig(site_id="a", name="A", latitude_deg=0.0, longitude_deg=0.0))
+        b = SiteAgent(config=SiteConfig(site_id="b", name="B", latitude_deg=0.1, longitude_deg=0.0))
         fed.add_site(a)
         fed.add_site(b)
         fed.link_sites("a", "b", latency_ms=10.0)
@@ -143,14 +139,26 @@ class TestFederation(unittest.TestCase):
     def test_fuse_tracks(self):
         fed = build_demo_federation(num_sites=2)
         # Each site detects a different subset of the swarm (different seeds)
-        sim_a = SwarmSimulator(SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
-        ))
-        sim_b = SwarmSimulator(SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=99,
-        ))
+        sim_a = SwarmSimulator(
+            SwarmConfig(
+                num_drones=4,
+                arrival_spread_s=5.0,
+                speed_mps=30.0,
+                start_distance_km=2.0,
+                evasion_probability=0.0,
+                seed=42,
+            )
+        )
+        sim_b = SwarmSimulator(
+            SwarmConfig(
+                num_drones=4,
+                arrival_spread_s=5.0,
+                speed_mps=30.0,
+                start_distance_km=2.0,
+                evasion_probability=0.0,
+                seed=99,
+            )
+        )
         site_a = list(fed.sites.values())[0]
         site_b = list(fed.sites.values())[1]
         site_a.detect_and_track(sim_a)
@@ -176,8 +184,12 @@ class TestFederation(unittest.TestCase):
     def test_deconflict_engagements(self):
         fed = build_demo_federation(num_sites=2)
         sim_config = SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=4,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         report = fed.deconflict_engagements()
         self.assertIn("conflicts_detected", report)
@@ -186,8 +198,12 @@ class TestFederation(unittest.TestCase):
     def test_run_round(self):
         fed = build_demo_federation(num_sites=2)
         sim_config = SwarmConfig(
-            num_drones=4, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=4,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         result = fed.run_round(sim_config)
         self.assertIn("detections", result)
@@ -207,8 +223,12 @@ class TestOrchestrationEdgeCases(unittest.TestCase):
     def test_empty_federation_run_round(self):
         fed = Federation()
         sim_config = SwarmConfig(
-            num_drones=2, arrival_spread_s=5.0, speed_mps=30.0,
-            start_distance_km=2.0, evasion_probability=0.0, seed=42,
+            num_drones=2,
+            arrival_spread_s=5.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.0,
+            seed=42,
         )
         result = fed.run_round(sim_config)
         self.assertEqual(result["sites"], 0)

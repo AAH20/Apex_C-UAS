@@ -91,6 +91,7 @@ def _hash_entry(prev_hash: str, payload: Dict[str, Any]) -> str:
 # Dataclasses
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AISystem:
     """An ISO 42001 AI system registered in the C-UAS platform."""
@@ -201,6 +202,7 @@ class ComplianceReport:
 # Risk scoring
 # ---------------------------------------------------------------------------
 
+
 def _compute_risk_level(likelihood: str, impact: str) -> str:
     """Compute ISO 42001 risk level from likelihood and impact."""
     scores = {"low": 1, "medium": 2, "high": 3}
@@ -219,6 +221,7 @@ def _compute_risk_level(likelihood: str, impact: str) -> str:
 # ---------------------------------------------------------------------------
 # Managers
 # ---------------------------------------------------------------------------
+
 
 class AISystemRegistry:
     """Registry of ISO 42001 AI systems in the C-UAS platform."""
@@ -626,7 +629,9 @@ class ComplianceReporter:
 
         risk_penalty = len(open_risks) * 0.1
         incident_penalty = len(open_incidents) * 0.05
-        compliance_pct = max(0.0, min(100.0, impl_ratio * 100.0 - risk_penalty * 10 - incident_penalty * 10))
+        compliance_pct = max(
+            0.0, min(100.0, impl_ratio * 100.0 - risk_penalty * 10 - incident_penalty * 10)
+        )
 
         if compliance_pct >= 90:
             status = "compliant"

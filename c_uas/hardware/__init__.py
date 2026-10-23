@@ -10,10 +10,11 @@ State persists under ~/.c-uas-platform/hardware/ (outside the repo).
 
 from .camera_adapter import CameraAdapter
 from .radar_adapter import RadarAdapter
+from .sdr_adapter import SDRAdapter
 from .sensor_fusion import SensorFusion
 from .sensor_interface import (
-    Detection,
     FUSION_NAMESPACE,
+    Detection,
     HardwareCapability,
     RadarTrack,
     SensorInterface,
@@ -23,7 +24,6 @@ from .sensor_interface import (
     distance_m,
     track_distance_m,
 )
-from .sdr_adapter import SDRAdapter
 
 __all__ = [
     "CameraAdapter",

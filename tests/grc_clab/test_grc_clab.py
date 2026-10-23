@@ -14,6 +14,10 @@ All state is isolated to a per-test temp dir under ~/.c-uas-platform/grc_clab
 so tests never share or leak persisted data.
 """
 
+import pytest
+
+import c_uas.governance as gov
+import c_uas.grc_clab as grc
 from c_uas.governance import (
     AISystemRegistry,
     AuditEvidenceChain,
@@ -23,9 +27,6 @@ from c_uas.governance import (
     Risk,
     RiskAssessment,
 )
-
-import c_uas.grc_clab as grc
-import c_uas.governance as gov
 from c_uas.grc_clab import (
     AutonomousAgent,
     ComplianceMonitor,
@@ -33,8 +34,6 @@ from c_uas.grc_clab import (
     GRCClabEngine,
     RemediationPlanner,
 )
-
-import pytest
 
 
 @pytest.fixture
@@ -78,6 +77,7 @@ def isolated(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # AutonomousAgent
 # ---------------------------------------------------------------------------
+
 
 def test_agent_scan_creates_risk_for_unassessed_system(isolated):
     reg = AISystemRegistry()
@@ -162,6 +162,7 @@ def test_schedule_state_persists_across_instances(isolated):
 # EvidenceAutoLogger
 # ---------------------------------------------------------------------------
 
+
 def test_evidence_auto_logger_all_event_types(isolated):
     chain = AuditEvidenceChain()
     chain._entries.clear()
@@ -204,6 +205,7 @@ def test_evidence_auto_logger_rejects_unknown_event_type(isolated):
 # ---------------------------------------------------------------------------
 # ComplianceMonitor
 # ---------------------------------------------------------------------------
+
 
 def test_compliance_monitor_first_score_has_no_drift(isolated):
     reg = AISystemRegistry()
@@ -291,6 +293,7 @@ def test_compliance_monitor_detects_upward_drift(isolated):
 # RemediationPlanner
 # ---------------------------------------------------------------------------
 
+
 def test_remediation_planner_proposes_and_applies_control(isolated):
     reg = AISystemRegistry()
     reg._systems.clear()
@@ -320,19 +323,40 @@ def test_remediation_planner_proposes_and_applies_control(isolated):
 
 def test_risk_to_control_mapping_is_deterministic(isolated):
     risk_input = Risk(
-        risk_id="r1", system_id="s1", description="EKF input validation gap",
-        likelihood="high", impact="high", risk_level="critical",
-        treatment="mitigate", treatment_plan="", status="open", identified_at=1.0,
+        risk_id="r1",
+        system_id="s1",
+        description="EKF input validation gap",
+        likelihood="high",
+        impact="high",
+        risk_level="critical",
+        treatment="mitigate",
+        treatment_plan="",
+        status="open",
+        identified_at=1.0,
     )
     risk_third = Risk(
-        risk_id="r2", system_id="s1", description="third-party model supply chain risk",
-        likelihood="medium", impact="medium", risk_level="medium",
-        treatment="mitigate", treatment_plan="", status="open", identified_at=1.0,
+        risk_id="r2",
+        system_id="s1",
+        description="third-party model supply chain risk",
+        likelihood="medium",
+        impact="medium",
+        risk_level="medium",
+        treatment="mitigate",
+        treatment_plan="",
+        status="open",
+        identified_at=1.0,
     )
     risk_incident = Risk(
-        risk_id="r3", system_id="s1", description="AI incident response gap",
-        likelihood="medium", impact="high", risk_level="high",
-        treatment="mitigate", treatment_plan="", status="open", identified_at=1.0,
+        risk_id="r3",
+        system_id="s1",
+        description="AI incident response gap",
+        likelihood="medium",
+        impact="high",
+        risk_level="high",
+        treatment="mitigate",
+        treatment_plan="",
+        status="open",
+        identified_at=1.0,
     )
     assert grc._risk_to_control(risk_input) == "A.8.2"
     assert grc._risk_to_control(risk_third) == "A.11.1"
@@ -352,10 +376,13 @@ def test_event_risk_level_is_deterministic():
 # GRCClabEngine (full agentic cycle)
 # ---------------------------------------------------------------------------
 
+
 def test_full_agentic_cycle(isolated):
     engine = GRCClabEngine()
     engine.agent._state = grc.ScheduleState(last_tick=0.0, interval_s=1.0)
-    engine.registry.register("EKF Tracking", "c_uas.tracking.ekf_interceptor", "operation", "medium")
+    engine.registry.register(
+        "EKF Tracking", "c_uas.tracking.ekf_interceptor", "operation", "medium"
+    )
     engine.registry.register("RF Classifier", "c_uas.detection.rf_classifier", "operation", "high")
 
     summary = engine.run_cycle()

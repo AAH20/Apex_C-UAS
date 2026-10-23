@@ -1,12 +1,13 @@
 """Tests for the evolution module — adaptive engagement scheduler parameters."""
 
 import unittest
+
 from c_uas.evolution import (
     EvolutionParams,
+    EvolvedScheduler,
     FitnessFunction,
     MutationOperator,
     SelectionOperator,
-    EvolvedScheduler,
 )
 
 

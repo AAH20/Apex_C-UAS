@@ -1,16 +1,14 @@
 """Tests for the ISO 42001 AI Governance chassis."""
 
 import unittest
+
 from c_uas.governance import (
-    AISystem,
     AISystemRegistry,
     AuditEvidenceChain,
     ComplianceReporter,
     ControlImplementation,
     EvidenceEntry,
-    Incident,
     IncidentManager,
-    Risk,
     RiskAssessment,
     _compute_risk_level,
     _hash_entry,
@@ -83,7 +81,9 @@ class TestRiskAssessment(unittest.TestCase):
     def test_assess_and_get(self):
         assessor = RiskAssessment()
         assessor._risks.clear()
-        risk = assessor.assess("sys-1", "EKF drift", "high", "high", "mitigate", "Add input validation")
+        risk = assessor.assess(
+            "sys-1", "EKF drift", "high", "high", "mitigate", "Add input validation"
+        )
         self.assertIsNotNone(risk)
         self.assertEqual(risk.risk_level, "critical")
         self.assertEqual(risk.status, "open")

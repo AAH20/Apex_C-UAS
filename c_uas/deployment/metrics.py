@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Iterable
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def _sanitize(name: str) -> str:
@@ -40,6 +40,9 @@ class Metric:
         self.labelnames = tuple(labelnames)
         self._lock = threading.RLock()
 
+    def collect(self) -> Iterable[str]:
+        return iter(())
+
 
 class Counter(Metric):
     def __init__(
@@ -51,7 +54,9 @@ class Counter(Metric):
         super().__init__(name, documentation, labelnames)
         self._values: Dict[Tuple[Tuple[str, str], ...], float] = {}
 
-    def inc(self, value: float = 1.0, labels: Dict[str, str] = None) -> None:
+    def inc(
+        self, value: float = 1.0, labels: Optional[Dict[str, str]] = None
+    ) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
@@ -75,13 +80,17 @@ class Gauge(Metric):
         super().__init__(name, documentation, labelnames)
         self._values: Dict[Tuple[Tuple[str, str], ...], float] = {}
 
-    def set(self, value: float, labels: Dict[str, str] = None) -> None:
+    def set(
+        self, value: float, labels: Optional[Dict[str, str]] = None
+    ) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
             self._values[key] = float(value)
 
-    def inc(self, value: float = 1.0, labels: Dict[str, str] = None) -> None:
+    def inc(
+        self, value: float = 1.0, labels: Optional[Dict[str, str]] = None
+    ) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
@@ -101,7 +110,7 @@ class Histogram(Metric):
         name: str,
         documentation: str,
         labelnames: Tuple[str, ...] = (),
-        buckets: Tuple[float, ...] = None,
+        buckets: Optional[Tuple[float, ...]] = None,
     ) -> None:
         super().__init__(name, documentation, labelnames)
         self._buckets = tuple(buckets or (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10))
@@ -109,7 +118,9 @@ class Histogram(Metric):
         self._sums: Dict[Tuple[Tuple[str, str], ...], float] = {}
         self._bucket_counts: Dict[Tuple[Tuple[Tuple[str, str], ...], float], int] = {}
 
-    def observe(self, value: float, labels: Dict[str, str] = None) -> None:
+    def observe(
+        self, value: float, labels: Optional[Dict[str, str]] = None
+    ) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
@@ -165,7 +176,7 @@ class MetricsRegistry:
         name: str,
         documentation: str,
         labelnames: Tuple[str, ...] = (),
-        buckets: Tuple[float, ...] = None,
+        buckets: Optional[Tuple[float, ...]] = None,
     ) -> Histogram:
         with self._lock:
             metric = Histogram(name, documentation, labelnames, buckets)

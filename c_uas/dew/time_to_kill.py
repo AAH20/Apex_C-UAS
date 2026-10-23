@@ -7,13 +7,12 @@ target material, range, and beam quality. Modeling only — no hardware.
 
 from typing import Optional
 
-
 # Energy required (kJ) to achieve mission kill on different materials
 MATERIAL_ENERGY_KJ = {
-    "carbon_fiber": 200.0,   # Composite airframe - needs ablation
-    "aluminum": 150.0,       # Metal skin - needs melting
-    "plastic": 50.0,         # Hobby drone - weak structure
-    "composite": 180.0,      # Mixed materials
+    "carbon_fiber": 200.0,  # Composite airframe - needs ablation
+    "aluminum": 150.0,  # Metal skin - needs melting
+    "plastic": 50.0,  # Hobby drone - weak structure
+    "composite": 180.0,  # Mixed materials
 }
 
 # Absorptivity by material (0-1)
@@ -69,6 +68,7 @@ class TimeToKillModel:
         # Beam quality penalty: worse beam = longer dwell (fluence already
         # accounts for range, so don't double-count)
         from c_uas.dew.beam_model import DewBeamQualityModel
+
         bqm = DewBeamQualityModel()
         fluence = bqm.fluence_factor(m2=m2, jitter_urad=jitter_urad, range_m=range_m)
         beam_factor = 1.0 / max(fluence, 0.01)

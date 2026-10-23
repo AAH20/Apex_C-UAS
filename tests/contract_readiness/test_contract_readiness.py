@@ -1,7 +1,8 @@
 """Tests for contract readiness model."""
 
 import unittest
-from c_uas.contract_readiness import ContractReadinessModel, BurnRateInput, CACLTVInput
+
+from c_uas.contract_readiness import BurnRateInput, CACLTVInput, ContractReadinessModel
 
 
 class TestBurnRate(unittest.TestCase):

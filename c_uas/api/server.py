@@ -32,9 +32,21 @@ from dataclasses import asdict
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from c_uas.detection.opendew_classifier import get_opendew_classifier
+from c_uas.detection.rf_classifier import RFSignalClassifier
+from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
+from c_uas.dew.atmospheric import (
+    LASER_SPECS,
+    AtmosphericConditions,
+    time_to_kill_with_attenuation,
+)
+from c_uas.engagement.backtest import Scenario, run_backtest
+from c_uas.engagement.scheduler import (
+    DroneTrack,
+    EngagementScheduler,
+)
 from c_uas.governance import (
     AISystemRegistry,
     AuditEvidenceChain,
@@ -42,19 +54,6 @@ from c_uas.governance import (
     ControlImplementation,
     IncidentManager,
     RiskAssessment,
-)
-from c_uas.detection.opendew_classifier import get_opendew_classifier
-from c_uas.detection.rf_classifier import RFSignalClassifier
-from c_uas.detection.spoof_detector import GNSSSpoofDetector, GNSSMeasurement
-from c_uas.engagement.backtest import Scenario, run_backtest
-from c_uas.engagement.scheduler import (
-    DroneTrack,
-    EngagementScheduler,
-)
-from c_uas.dew.atmospheric import (
-    AtmosphericConditions,
-    LASER_SPECS,
-    time_to_kill_with_attenuation,
 )
 from c_uas.swarm import SwarmConfig, SwarmSimulator
 from c_uas.unit_economics import UnitEconomicsModel
@@ -74,9 +73,7 @@ _assessor = RiskAssessment()
 _controller = ControlImplementation()
 _chain = AuditEvidenceChain()
 _mgr = IncidentManager()
-_reporter = ComplianceReporter(
-    _registry, _assessor, _controller, _chain, _mgr
-)
+_reporter = ComplianceReporter(_registry, _assessor, _controller, _chain, _mgr)
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +136,10 @@ class SwarmRequest(BaseModel):
 
 
 class UnitEconomicsRequest(BaseModel):
-    system_type: str = Field("software_only", description="directed_energy_laser/kinetic_missile/rf_jamming/software_only")
+    system_type: str = Field(
+        "software_only",
+        description="directed_energy_laser/kinetic_missile/rf_jamming/software_only",
+    )
     capital_cost_usd: float = Field(250_000, gt=0)
     annual_engagements: int = Field(1_000, gt=0)
     service_life_years: int = Field(5, gt=0)
@@ -148,9 +148,14 @@ class UnitEconomicsRequest(BaseModel):
 
 
 class DewModelRequest(BaseModel):
-    laser: str = Field("fiber_50kw", description="Laser spec key (fiber_50kw, fiber_100kw, solid_state_150kw, chemical_100kw)")
+    laser: str = Field(
+        "fiber_50kw",
+        description="Laser spec key (fiber_50kw, fiber_100kw, solid_state_150kw, chemical_100kw)",
+    )
     range_m: float = Field(3000.0, gt=0, description="Slant range to target in meters")
-    material: str = Field("aluminum", description="Target material: aluminum, carbon_fiber, plastic, composite")
+    material: str = Field(
+        "aluminum", description="Target material: aluminum, carbon_fiber, plastic, composite"
+    )
     rain_mm_hr: float = Field(0.0, ge=0, description="Rain rate in mm/hr")
     visibility_km: float = Field(20.0, gt=0, description="Aerosol visibility in km")
 
@@ -185,8 +190,11 @@ def list_systems() -> dict[str, Any]:
 def register_system(req: RegisterSystemRequest) -> dict[str, Any]:
     try:
         sid = _registry.register(
-            req.name, req.module_path, req.lifecycle_stage,
-            req.risk_level, req.description,
+            req.name,
+            req.module_path,
+            req.lifecycle_stage,
+            req.risk_level,
+            req.description,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=str(exc))
@@ -208,8 +216,12 @@ def list_risks() -> dict[str, Any]:
 def assess_risk(req: AssessRiskRequest) -> dict[str, Any]:
     try:
         risk = _assessor.assess(
-            req.system_id, req.description, req.likelihood,
-            req.impact, req.treatment, req.treatment_plan,
+            req.system_id,
+            req.description,
+            req.likelihood,
+            req.impact,
+            req.treatment,
+            req.treatment_plan,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=str(exc))
@@ -228,9 +240,7 @@ def list_controls() -> dict[str, Any]:
 
 
 @app.post("/controls/{control_id}/implement")
-def implement_control(
-    control_id: str, req: ImplementControlRequest
-) -> dict[str, Any]:
+def implement_control(control_id: str, req: ImplementControlRequest) -> dict[str, Any]:
     ctrl = _controller.implement(control_id, req.evidence)
     if ctrl is None:
         raise HTTPException(status_code=404, detail=f"Unknown control: {control_id}")
@@ -454,5 +464,6 @@ def run_benchmarks() -> dict[str, Any]:
 def opendew_classify() -> dict[str, Any]:
     clf = get_opendew_classifier()
     import random
+
     samples = [random.uniform(-1.0, 1.0) for _ in range(100)]
     return clf.classify_iq(samples)

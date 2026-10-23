@@ -1,13 +1,14 @@
 """Tests for agentic decision loop modules."""
 
 import unittest
-from c_uas.decision.perception import PerceptionModule
+
+from c_uas.decision.action_module import ActionModule, SystemCommand
 from c_uas.decision.decision_engine import (
     DecisionModule,
-    ThreatLevel,
     ResponseStrategy,
+    ThreatLevel,
 )
-from c_uas.decision.action_module import ActionModule, SystemCommand
+from c_uas.decision.perception import PerceptionModule
 
 
 class TestPerceptionModule(unittest.TestCase):
@@ -26,18 +27,22 @@ class TestPerceptionModule(unittest.TestCase):
 class TestDecisionModule(unittest.TestCase):
     def test_threat_level_none(self):
         dm = DecisionModule({})
+
         # Create a mock swarm state with 0 drones
         class SwarmState:
             num_drones = 0
             controller_location = None
+
         threat = dm.assess_threat(SwarmState())
         self.assertEqual(threat, ThreatLevel.NONE)
 
     def test_threat_level_critical(self):
         dm = DecisionModule({})
+
         class SwarmState:
             num_drones = 25
             controller_location = None
+
         threat = dm.assess_threat(SwarmState())
         self.assertEqual(threat, ThreatLevel.CRITICAL)
 
@@ -69,20 +74,30 @@ class TestActionModule(unittest.TestCase):
     def test_execute_scan_rf_simulation(self):
         am = ActionModule({}, simulation_mode=True)
         import asyncio
-        result = asyncio.run(am.execute(SystemCommand(
-            action="scan_rf", params={"duration_s": 1.0},
-            timestamp=0.0, priority=1
-        )))
+
+        result = asyncio.run(
+            am.execute(
+                SystemCommand(
+                    action="scan_rf", params={"duration_s": 1.0}, timestamp=0.0, priority=1
+                )
+            )
+        )
         self.assertEqual(result["status"], "executed")
 
     def test_execute_jammer_denied_when_unauthorized(self):
         am = ActionModule({"jamming": {"authorized": False}}, simulation_mode=True)
         import asyncio
-        result = asyncio.run(am.execute(SystemCommand(
-            action="activate_jammer",
-            params={"bands": [2.44e9], "power_dBm": 20},
-            timestamp=0.0, priority=3
-        )))
+
+        result = asyncio.run(
+            am.execute(
+                SystemCommand(
+                    action="activate_jammer",
+                    params={"bands": [2.44e9], "power_dBm": 20},
+                    timestamp=0.0,
+                    priority=3,
+                )
+            )
+        )
         self.assertEqual(result["status"], "denied")
         self.assertIn("reason", result["details"])
 

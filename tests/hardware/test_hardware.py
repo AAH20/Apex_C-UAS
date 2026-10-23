@@ -14,17 +14,17 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import c_uas.hardware.state as state
 from c_uas.hardware import (
     CameraAdapter,
     HardwareCapability,
     RadarAdapter,
     RadarTrack,
-    SensorFusion,
     SDRAdapter,
+    SensorFusion,
     Track,
 )
 from c_uas.hardware.sensor_interface import Detection, SensorInterface, SensorStatus
-import c_uas.hardware.state as state
 
 
 def _tmp_state_dir() -> str:
@@ -91,9 +91,7 @@ class TestSDRAdapter(unittest.TestCase):
     def test_detect_is_deterministic(self):
         a = SDRAdapter(sensor_id="sdr-det-a", seed=42)
         b = SDRAdapter(sensor_id="sdr-det-b", seed=42)
-        self.assertEqual(
-            [d.detection_id for d in a.detect()], [d.detection_id for d in b.detect()]
-        )
+        self.assertEqual([d.detection_id for d in a.detect()], [d.detection_id for d in b.detect()])
         self.assertEqual(
             [(d.x_m, d.y_m, d.z_m) for d in a.detect()],
             [(d.x_m, d.y_m, d.z_m) for d in b.detect()],
@@ -123,10 +121,14 @@ class TestRadarAdapter(unittest.TestCase):
             self.assertIn("velocity_mps", md)
             br = math.radians(float(md["bearing_deg"]))  # type: ignore[arg-type]
             self.assertAlmostEqual(
-                d.x_m, float(md["range_m"]) * math.sin(br), places=2  # type: ignore[arg-type]
+                d.x_m,
+                float(md["range_m"]) * math.sin(br),
+                places=2,  # type: ignore[arg-type]
             )
             self.assertAlmostEqual(
-                d.y_m, float(md["range_m"]) * math.cos(br), places=2  # type: ignore[arg-type]
+                d.y_m,
+                float(md["range_m"]) * math.cos(br),
+                places=2,  # type: ignore[arg-type]
             )
             self.assertAlmostEqual(d.z_m, float(md["altitude_m"]), places=2)  # type: ignore[arg-type]
 
@@ -150,12 +152,8 @@ class TestRadarAdapter(unittest.TestCase):
 
     def test_correlation_leaves_far_tracks_unmatched(self):
         radar = RadarAdapter(sensor_id="radar-corr2", seed=5)
-        near = RadarTrack(
-            "t-new", 10.0, 1000.0, 100.0, 20.0, 1000.0, 10.0
-        )
-        far = RadarTrack(
-            "t-prev", 10.0, 50000.0, 100.0, 20.0, 1000.0, 10.0
-        )
+        near = RadarTrack("t-new", 10.0, 1000.0, 100.0, 20.0, 1000.0, 10.0)
+        far = RadarTrack("t-prev", 10.0, 50000.0, 100.0, 20.0, 1000.0, 10.0)
         corr = radar.correlate_tracks([near], [far], max_distance_m=150.0)
         self.assertEqual(len(corr), 1)
         self.assertFalse(corr[0].correlated)
@@ -208,7 +206,14 @@ class TestSensorFusion(unittest.TestCase):
         fusion = SensorFusion(seed=1)
         dets = [
             Detection(
-                "d1", "sdr-1", 100.0, "rf", 100.0, 0.0, 100.0, 0.8,
+                "d1",
+                "sdr-1",
+                100.0,
+                "rf",
+                100.0,
+                0.0,
+                100.0,
+                0.8,
                 {"frequency_mhz": 2440.0, "rssi_dbm": -50.0},
             )
         ]
@@ -254,9 +259,7 @@ class TestSensorFusion(unittest.TestCase):
         t1 = fusion_tracks = SensorFusion(seed=5).fuse(dets)
         t2 = SensorFusion(seed=5).fuse(dets)
         self.assertEqual([t.track_id for t in t1], [t.track_id for t in t2])
-        self.assertEqual(
-            [(t.x_m, t.y_m, t.z_m) for t in t1], [(t.x_m, t.y_m, t.z_m) for t in t2]
-        )
+        self.assertEqual([(t.x_m, t.y_m, t.z_m) for t in t1], [(t.x_m, t.y_m, t.z_m) for t in t2])
 
     def test_fuse_empty_input(self):
         self.assertEqual(SensorFusion(seed=1).fuse([]), [])
@@ -273,9 +276,7 @@ class TestSensorFusion(unittest.TestCase):
 
     def test_fuse_with_history_preserves_ids(self):
         fusion = SensorFusion(seed=1)
-        prev = [
-            Track("track--keep", 100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0, 0.8, ["s1"], ["rf"])
-        ]
+        prev = [Track("track--keep", 100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0, 0.8, ["s1"], ["rf"])]
         dets = [
             Detection("d1", "s1", 100.1, "rf", 102.0, 1.0, 101.0, 0.8, {}),
         ]
@@ -301,9 +302,7 @@ class TestStatePersistence(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_detections_save_and_load_round_trip(self):
-        dets = [
-            Detection("d1", "sdr-0", 100.0, "rf", 1.0, 2.0, 3.0, 0.8, {})
-        ]
+        dets = [Detection("d1", "sdr-0", 100.0, "rf", 1.0, 2.0, 3.0, 0.8, {})]
         state.save_detections("sdr-0", dets)
         records = state.load_detections()
         self.assertEqual(len(records), 1)
@@ -312,9 +311,7 @@ class TestStatePersistence(unittest.TestCase):
         self.assertEqual(records[0]["detections"][0]["detection_id"], "d1")
 
     def test_tracks_save_and_load_round_trip(self):
-        tracks = [
-            Track("track--x", 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 100.0, 0.8, ["s1"], ["rf"])
-        ]
+        tracks = [Track("track--x", 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 100.0, 0.8, ["s1"], ["rf"])]
         state.save_tracks(tracks)
         loaded = state.load_tracks()
         self.assertEqual(len(loaded), 1)

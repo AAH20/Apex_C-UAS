@@ -1,12 +1,12 @@
 """NP-hard engagement scheduler sub-package."""
 
-from .scheduler import EngagementScheduler, EngagementPlan
 from .backtest import (
+    ControlResult,
     Scenario,
     run_backtest,
     run_sweep,
-    ControlResult,
 )
+from .scheduler import EngagementPlan, EngagementScheduler
 
 __all__ = [
     "EngagementScheduler",

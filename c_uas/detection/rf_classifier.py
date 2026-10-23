@@ -5,7 +5,7 @@ Classifies protocol from packet preamble, hopping frequency, and frame duty cycl
 Pure function: no SDR, no hardware, no network. Defensive-only.
 """
 
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 
 class RFSignalClassifier:

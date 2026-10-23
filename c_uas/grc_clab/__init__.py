@@ -283,9 +283,7 @@ class AutonomousAgent:
         self.registry = registry or AISystemRegistry()
         self.assessor = assessor or RiskAssessment()
         self.chain = chain or AuditEvidenceChain()
-        self._scans: List[ScanRecord] = [
-            ScanRecord(**row) for row in _load_json(_SCANS_FILE)
-        ]
+        self._scans: List[ScanRecord] = [ScanRecord(**row) for row in _load_json(_SCANS_FILE)]
         state_raw = _load_object(_STATE_FILE, None)
         if isinstance(state_raw, dict):
             state_raw.setdefault("interval_s", interval_s)
@@ -458,11 +456,12 @@ class EvidenceAutoLogger:
     ) -> AutoEvidenceEntry:
         return self.log_event("forensics", system_id, source, payload)
 
-    def process_event_stream(
-        self, events: List[Dict[str, Any]]
-    ) -> List[AutoEvidenceEntry]:
+    def process_event_stream(self, events: List[Dict[str, Any]]) -> List[AutoEvidenceEntry]:
         """Log a batch of events; each event dict needs event_type/system_id/source/payload."""
-        return [self.log_event(e["event_type"], e.get("system_id"), e["source"], e["payload"]) for e in events]
+        return [
+            self.log_event(e["event_type"], e.get("system_id"), e["source"], e["payload"])
+            for e in events
+        ]
 
     def list_all(self) -> List[AutoEvidenceEntry]:
         return list(self._entries)
@@ -492,9 +491,7 @@ class ComplianceMonitor:
         self._snapshots: List[ComplianceSnapshot] = [
             ComplianceSnapshot(**row) for row in _load_json(_SNAPSHOTS_FILE)
         ]
-        self._alerts: List[DriftAlert] = [
-            DriftAlert(**row) for row in _load_json(_ALERTS_FILE)
-        ]
+        self._alerts: List[DriftAlert] = [DriftAlert(**row) for row in _load_json(_ALERTS_FILE)]
 
     def _last_snapshot(self) -> Optional[ComplianceSnapshot]:
         return self._snapshots[-1] if self._snapshots else None
@@ -756,7 +753,10 @@ class GRCClabEngine:
         report = self.reporter.generate()
         self.chain.log(
             "scheduled_compliance_report",
-            {"compliance_percentage": report.compliance_percentage, "status": report.overall_status},
+            {
+                "compliance_percentage": report.compliance_percentage,
+                "status": report.overall_status,
+            },
             None,
         )
         # score() snapshots the report and runs drift detection.

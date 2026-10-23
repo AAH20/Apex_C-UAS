@@ -1,10 +1,11 @@
 """Tests for the unit economics model."""
 
 import unittest
+
 from c_uas.unit_economics import (
-    EngagementParams,
-    EngagementEconomics,
     EconomiesOfScaleModel,
+    EngagementEconomics,
+    EngagementParams,
     UnitEconomicsModel,
 )
 
@@ -77,9 +78,15 @@ class TestUnitEconomicsModel(unittest.TestCase):
 
     def test_compare_all(self):
         results = self.model.compare_all()
-        self.assertEqual(set(results.keys()), {
-            "directed_energy_laser", "kinetic_missile", "rf_jamming", "software_only",
-        })
+        self.assertEqual(
+            set(results.keys()),
+            {
+                "directed_energy_laser",
+                "kinetic_missile",
+                "rf_jamming",
+                "software_only",
+            },
+        )
         # Software-only should have lowest CPE
         self.assertEqual(
             results["software_only"].total_cost_per_engagement_usd,
@@ -121,9 +128,11 @@ class TestEconomiesOfScaleModel(unittest.TestCase):
         )
         self.assertEqual(len(points), 10)
         # Amortized capital per site should decrease as deployments grow
-        self.assertGreater(points[0].amortized_capital_per_site_usd, points[-1].amortized_capital_per_site_usd)
-        self.assertEqual(points[0].amortized_capital_per_site_usd, 2500.0)   # 250k/100
-        self.assertEqual(points[-1].amortized_capital_per_site_usd, 250.0)   # 250k/1000
+        self.assertGreater(
+            points[0].amortized_capital_per_site_usd, points[-1].amortized_capital_per_site_usd
+        )
+        self.assertEqual(points[0].amortized_capital_per_site_usd, 2500.0)  # 250k/100
+        self.assertEqual(points[-1].amortized_capital_per_site_usd, 250.0)  # 250k/1000
 
     def test_software_marginal_approaches_zero(self):
         points = self.scale.software_scale_curve(

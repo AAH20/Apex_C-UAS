@@ -19,14 +19,13 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from .models import (
+    STIX_NAMESPACE,
     CompetitiveIntelEntry,
     DetectionEvent,
     ForensicDossierRef,
-    STIX_NAMESPACE,
     _stix_id,
     _utc_now,
 )
@@ -178,13 +177,9 @@ class STIXBundleBuilder:
         self.objects.append(observed)
 
         # Indicator for the RF protocol / detection signature.
-        pattern_parts: List[str] = [
-            f"[x-cuas-detection:detection_id = '{event.event_id}']"
-        ]
+        pattern_parts: List[str] = [f"[x-cuas-detection:detection_id = '{event.event_id}']"]
         if event.protocol:
-            pattern_parts.append(
-                f"AND [x-cuas-detection:rf_protocol = '{event.protocol}']"
-            )
+            pattern_parts.append(f"AND [x-cuas-detection:rf_protocol = '{event.protocol}']")
         pattern = " ".join(pattern_parts)
 
         indicator: Dict[str, Any] = {
@@ -193,8 +188,7 @@ class STIXBundleBuilder:
             "created": self.created,
             "modified": self.created,
             "name": f"Detection: {event.target_id}",
-            "description": f"{event.source} detected {event.target_id} at "
-            f"{level} threat level.",
+            "description": f"{event.source} detected {event.target_id} at {level} threat level.",
             "pattern_type": "stix",
             "pattern": pattern,
             "valid_from": self.created,

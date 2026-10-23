@@ -11,19 +11,18 @@ new process would generate a fresh key and previously signed dossiers would
 fail verification — making them useless as forensic evidence.
 """
 
-import json
-import os
-import time
 import hashlib
+import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
-from cryptography.hazmat.primitives import serialization
 
 # Persistent key storage path. Using ~/.c-uas-platform keeps the key outside
 # the repo so it is not committed, rotated, or lost between sessions.
@@ -46,17 +45,12 @@ def _load_or_generate_key() -> Ed25519PrivateKey:
 
     if _KEY_FILE.exists():
         try:
-            private_key = serialization.load_pem_private_key(
-                _KEY_FILE.read_bytes(), password=None
-            )
+            private_key = serialization.load_pem_private_key(_KEY_FILE.read_bytes(), password=None)
             if isinstance(private_key, Ed25519PrivateKey):
                 _AUTHORITY_PRIVATE_KEY = private_key
-                _AUTHORITY_PUBLIC_KEY_PEM = (
-                    private_key.public_key()
-                    .public_bytes(
-                        encoding=serialization.Encoding.PEM,
-                        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-                    )
+                _AUTHORITY_PUBLIC_KEY_PEM = private_key.public_key().public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 )
                 return _AUTHORITY_PRIVATE_KEY
         except Exception:
@@ -66,12 +60,9 @@ def _load_or_generate_key() -> Ed25519PrivateKey:
     # Generate a fresh key and persist it
     _ensure_key_dir()
     _AUTHORITY_PRIVATE_KEY = Ed25519PrivateKey.generate()
-    _AUTHORITY_PUBLIC_KEY_PEM = (
-        _AUTHORITY_PRIVATE_KEY.public_key()
-        .public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
+    _AUTHORITY_PUBLIC_KEY_PEM = _AUTHORITY_PRIVATE_KEY.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
     _KEY_FILE.write_bytes(_AUTHORITY_PUBLIC_KEY_PEM)
     return _AUTHORITY_PRIVATE_KEY

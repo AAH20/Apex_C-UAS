@@ -13,7 +13,7 @@ Usage:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -23,8 +23,8 @@ class BurnRateInput:
 
     monthly_engineer_cost_usd: float = 15_000
     monthly_infra_cost_usd: float = 500  # free-tier only
-    monthly_tool_cost_usd: float = 0     # no proprietary subscriptions
-    num_engineers: int = 1               # founder-led
+    monthly_tool_cost_usd: float = 0  # no proprietary subscriptions
+    num_engineers: int = 1  # founder-led
     months_of_runway: int = 12
 
 
@@ -113,16 +113,10 @@ class ContractReadinessModel:
         # CAC = marketing spend / contracts won per year
         cac = inp.marketing_spend_usd / max(inp.contracts_won_per_year, 1)
         # LTV = ACV * margin * lifespan
-        ltv = (
-            inp.avg_contract_value_usd
-            * inp.gross_margin
-            * inp.customer_lifespan_years
-        )
+        ltv = inp.avg_contract_value_usd * inp.gross_margin * inp.customer_lifespan_years
         ratio = cac / ltv if ltv > 0 else float("inf")
         # Payback = CAC / (monthly gross profit)
-        monthly_gross_profit = (
-            inp.avg_contract_value_usd * inp.gross_margin / 12.0
-        )
+        monthly_gross_profit = inp.avg_contract_value_usd * inp.gross_margin / 12.0
         payback = cac / monthly_gross_profit if monthly_gross_profit > 0 else float("inf")
         viable = ratio < 0.33  # LTV:CAC > 3:1 is healthy
         return CACLTVResult(
@@ -195,9 +189,7 @@ class ContractReadinessModel:
                 ),
             ],
         ]
-        total_weeks = sum(
-            f.effort_weeks for phase in phases for f in phase
-        )
+        total_weeks = sum(f.effort_weeks for phase in phases for f in phase)
         # Contract possible after Phase 1 (4 weeks) + sales cycle (2 months)
         earliest_contract_month = 3  # 1 month build + 2 month sales cycle
         return MVPScope(

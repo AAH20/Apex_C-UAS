@@ -5,8 +5,6 @@ Pure physics models used by the engagement scheduler to compute realistic
 time-to-kill and probability-of-kill adjustments. No hardware control.
 """
 
-from typing import Optional
-
 
 class ThermalBloomModel:
     """

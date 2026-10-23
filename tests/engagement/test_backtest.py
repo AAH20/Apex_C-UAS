@@ -1,29 +1,32 @@
 """Tests for the engagement scheduler backtest harness."""
 
 import unittest
+
 from c_uas.engagement.backtest import (
     Scenario,
-    run_backtest,
-    run_sweep,
-    ControlResult,
     _deterministic_tracks,
     _fitness,
+    run_backtest,
+    run_sweep,
 )
-from c_uas.engagement.scheduler import EngagementScheduler, DroneTrack
 
 
 class TestDeterministicTracks(unittest.TestCase):
     def test_deterministic_same_seed(self):
         t1 = _deterministic_tracks(5, 30.0, 42)
         t2 = _deterministic_tracks(5, 30.0, 42)
-        self.assertEqual([(t.track_id, t.arrival_time_s, t.pk_base) for t in t1],
-                         [(t.track_id, t.arrival_time_s, t.pk_base) for t in t2])
+        self.assertEqual(
+            [(t.track_id, t.arrival_time_s, t.pk_base) for t in t1],
+            [(t.track_id, t.arrival_time_s, t.pk_base) for t in t2],
+        )
 
     def test_different_seed_different_tracks(self):
         t1 = _deterministic_tracks(5, 30.0, 1)
         t2 = _deterministic_tracks(5, 30.0, 2)
-        self.assertNotEqual([(t.track_id, t.arrival_time_s, t.pk_base) for t in t1],
-                            [(t.track_id, t.arrival_time_s, t.pk_base) for t in t2])
+        self.assertNotEqual(
+            [(t.track_id, t.arrival_time_s, t.pk_base) for t in t1],
+            [(t.track_id, t.arrival_time_s, t.pk_base) for t in t2],
+        )
 
     def test_track_count(self):
         tracks = _deterministic_tracks(10, 30.0, 42)
@@ -80,10 +83,18 @@ class TestBacktestHarness(unittest.TestCase):
         result = run_backtest(self.scenario)
         self.assertEqual(len(result["controls"]), 5)
         control_names = {c["control_name"] for c in result["controls"]}
-        self.assertEqual(control_names, {
-            "scheduler", "random_entry", "shortest_hold_first",
-            "greedy_pk_only", "deadline_first", "direction_flip",
-        } - {"scheduler"})  # controls don't include scheduler itself
+        self.assertEqual(
+            control_names,
+            {
+                "scheduler",
+                "random_entry",
+                "shortest_hold_first",
+                "greedy_pk_only",
+                "deadline_first",
+                "direction_flip",
+            }
+            - {"scheduler"},
+        )  # controls don't include scheduler itself
 
     def test_alpha_determination_structure(self):
         result = run_backtest(self.scenario)

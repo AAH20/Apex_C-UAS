@@ -1,6 +1,7 @@
 """Tests for the performance benchmark suite."""
 
 import unittest
+
 from c_uas.benchmarks.performance import BenchmarkSuite
 
 
@@ -44,9 +45,7 @@ class TestBenchmarkSuite(unittest.TestCase):
         self.assertTrue(result.dossier_generated)
 
     def test_swarm_saturation(self):
-        saturation = self.suite.benchmark_swarm_saturation(
-            drone_counts=[8, 16, 32]
-        )
+        saturation = self.suite.benchmark_swarm_saturation(drone_counts=[8, 16, 32])
         self.assertEqual(len(saturation), 3)
         for count, leak_rate in saturation.items():
             self.assertGreaterEqual(leak_rate, 0.0)

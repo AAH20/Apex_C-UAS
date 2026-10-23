@@ -5,13 +5,12 @@ alerts fire on critical/spoof events, TAXII routes mount, and state
 persists under ~/.c-uas-platform/threat_intel/.
 """
 
-import json
-import os
 import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
 from c_uas.threat_intel import (
     AlertEngine,
     Channel,
@@ -28,13 +27,11 @@ from c_uas.threat_intel import (
     forensic_dossier_from_dict,
 )
 from c_uas.threat_intel.alert_engine import DEFAULT_RULES
-from c_uas.threat_intel.store import ThreatIntelStore
 from c_uas.threat_intel.stix_builder import (
     STIX_NAMESPACE,
     _stix_id,
-    TLP_MARKINGS,
 )
-from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
+from c_uas.threat_intel.store import ThreatIntelStore
 
 
 def _make_event(**overrides):
@@ -89,9 +86,7 @@ class TestStixBundleBuilder(unittest.TestCase):
     def test_tlp_markings_included(self):
         builder = STIXBundleBuilder()
         bundle = builder.build()
-        marking_ids = {
-            o["id"] for o in bundle["objects"] if o["type"] == "marking-definition"
-        }
+        marking_ids = {o["id"] for o in bundle["objects"] if o["type"] == "marking-definition"}
         self.assertIn(_stix_id("marking-definition", "tlp-white"), marking_ids)
         self.assertIn(_stix_id("marking-definition", "tlp-amber"), marking_ids)
         self.assertIn(_stix_id("marking-definition", "tlp-red"), marking_ids)
@@ -109,12 +104,10 @@ class TestStixBundleBuilder(unittest.TestCase):
         self.assertEqual(observed["objects"]["0"]["target_id"], "UAV-ROGUE-01")
         self.assertEqual(observed["objects"]["0"]["threat_level"], "CRITICAL")
         # TLP RED for CRITICAL.
-        self.assertIn(_stix_id("marking-definition", "tlp-red"),
-                      observed["marking_refs"])
+        self.assertIn(_stix_id("marking-definition", "tlp-red"), observed["marking_refs"])
 
         # Indicator present: at least one indicator, pattern references the event.
-        indicators = [o for o in builder.build()["objects"]
-                      if o["type"] == "indicator"]
+        indicators = [o for o in builder.build()["objects"] if o["type"] == "indicator"]
         self.assertGreaterEqual(len(indicators), 1)
         self.assertIn("detection_id = 'DET-EVT-01'", indicators[0]["pattern"])
 
@@ -130,27 +123,32 @@ class TestStixBundleBuilder(unittest.TestCase):
         self.assertEqual(len(obs0["signature"]), 128)  # Ed25519 hex
         self.assertIn("-----BEGIN PUBLIC KEY-----", obs0["public_key_pem"])
         self.assertEqual(obs0["x_cuas_evidence_type"], "ed25519_signed_airspace_dossier")
-        self.assertIn(_stix_id("marking-definition", "tlp-red"),
-                      observed["marking_refs"])
+        self.assertIn(_stix_id("marking-definition", "tlp-red"), observed["marking_refs"])
 
     def test_competitive_intel_tlp_white(self):
         builder = STIXBundleBuilder()
         entry = CompetitiveIntelEntry(
-            name="DragonFire", origin="United Kingdom",
-            developer="Dstl / MBDA UK", system_type="directed_energy_laser",
-            power_class="~50 kW class", effective_range_km=5.0,
-            role="C-UAS / air defense", public_status="Demonstrator",
+            name="DragonFire",
+            origin="United Kingdom",
+            developer="Dstl / MBDA UK",
+            system_type="directed_energy_laser",
+            power_class="~50 kW class",
+            effective_range_km=5.0,
+            role="C-UAS / air defense",
+            public_status="Demonstrator",
             is_fielded=False,
         )
         builder.add_competitive_intel(entry)
         objs = {o["id"]: o for o in builder.build()["objects"]}
-        comp = [o for o in objs.values()
-                if o.get("type") == "observed-data"
-                and o["objects"]["0"].get("type") == "x_cuas_competitive_system"]
+        comp = [
+            o
+            for o in objs.values()
+            if o.get("type") == "observed-data"
+            and o["objects"]["0"].get("type") == "x_cuas_competitive_system"
+        ]
         self.assertEqual(len(comp), 1)
         self.assertEqual(comp[0]["objects"]["0"]["name"], "DragonFire")
-        self.assertIn(_stix_id("marking-definition", "tlp-white"),
-                      comp[0]["marking_refs"])
+        self.assertIn(_stix_id("marking-definition", "tlp-white"), comp[0]["marking_refs"])
 
     def test_bundle_determinism(self):
         e1 = _make_event()
@@ -187,16 +185,16 @@ class TestStixBundleBuilder(unittest.TestCase):
 
     def test_stix_namespace_is_fixed(self):
         self.assertIsInstance(STIX_NAMESPACE, __import__("uuid").UUID)
-        self.assertEqual(_stix_id("bundle", "x"), "bundle--" + str(
-            __import__("uuid").uuid5(STIX_NAMESPACE, "x")))
+        self.assertEqual(
+            _stix_id("bundle", "x"), "bundle--" + str(__import__("uuid").uuid5(STIX_NAMESPACE, "x"))
+        )
 
 
 class TestAlertEngine(unittest.TestCase):
     def test_critical_event_fires_alert(self):
-        engine = AlertEngine(channels=[
-            Channel(config=ChannelConfig(kind="console"),
-                    send=ConsoleChannel().send)
-        ])
+        engine = AlertEngine(
+            channels=[Channel(config=ChannelConfig(kind="console"), send=ConsoleChannel().send)]
+        )
         alerts = engine.process_event(_make_event(threat_level="CRITICAL"))
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].severity, "CRITICAL")
@@ -204,16 +202,13 @@ class TestAlertEngine(unittest.TestCase):
 
     def test_spoof_detection_always_alerts(self):
         engine = AlertEngine()
-        alerts = engine.process_event(_make_event(
-            source="spoof_detector", threat_level="MEDIUM"
-        ))
+        alerts = engine.process_event(_make_event(source="spoof_detector", threat_level="MEDIUM"))
         self.assertGreaterEqual(len(alerts), 1)
 
     def test_high_event_alerts(self):
-        engine = AlertEngine(channels=[
-            Channel(config=ChannelConfig(kind="console"),
-                    send=ConsoleChannel().send)
-        ])
+        engine = AlertEngine(
+            channels=[Channel(config=ChannelConfig(kind="console"), send=ConsoleChannel().send)]
+        )
         alerts = engine.process_event(_make_event(threat_level="HIGH"))
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].severity, "HIGH")
@@ -235,10 +230,14 @@ class TestAlertEngine(unittest.TestCase):
         self.assertIn("compliance_drop", rule_ids)
 
     def test_email_stub_is_log_only(self):
-        engine = AlertEngine(channels=[
-            Channel(config=ChannelConfig(kind="email", email_to="soc@a2zsoc.com"),
-                    send=EmailStubChannel("soc@a2zsoc.com").send)
-        ])
+        engine = AlertEngine(
+            channels=[
+                Channel(
+                    config=ChannelConfig(kind="email", email_to="soc@a2zsoc.com"),
+                    send=EmailStubChannel("soc@a2zsoc.com").send,
+                )
+            ]
+        )
         with patch("sys.stdout") as _mock_stdout:
             alerts = engine.process_event(_make_event(threat_level="CRITICAL"))
         self.assertEqual(len(alerts), 1)

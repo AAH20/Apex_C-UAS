@@ -34,7 +34,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
@@ -125,6 +125,7 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
 # ---------------------------------------------------------------------------
 # Enums and dataclasses
 # ---------------------------------------------------------------------------
+
 
 class DistributionChannel(str, Enum):
     FACEBOOK = "facebook"
@@ -236,6 +237,7 @@ _META_FILE = "meta.json"  # logical clock + per-broker campaign sequence
 # BrokerTenantManager — registration + tenant CRUD
 # ---------------------------------------------------------------------------
 
+
 class BrokerTenantManager:
     """Registers brokers and keeps tenant records durable and deterministic."""
 
@@ -268,8 +270,11 @@ class BrokerTenantManager:
             raise ValueError("max_agent_slots must be positive")
 
         broker_id = "BR-" + _content_id(
-            name.strip(), region.strip(), contact_email.strip().lower(),
-            whatsapp_number.strip(), facebook_page_id.strip(),
+            name.strip(),
+            region.strip(),
+            contact_email.strip().lower(),
+            whatsapp_number.strip(),
+            facebook_page_id.strip(),
         )
         existing = self.get(broker_id)
         if existing is not None:
@@ -356,6 +361,7 @@ class BrokerTenantManager:
 # AgentSlotManager — allocate / revoke slots, utilization, waitlist
 # ---------------------------------------------------------------------------
 
+
 class AgentSlotManager:
     """Manages per-broker agent slots (330 default max) with a waitlist."""
 
@@ -401,9 +407,7 @@ class AgentSlotManager:
             raise ValueError("slots must be positive")
         tenant = self._require_tenant(broker_id)
         new_used = max(0, tenant.agent_slots_allocated - slots)
-        tenant = BrokerTenant(
-            **{**tenant.to_dict(), "agent_slots_allocated": new_used}
-        )
+        tenant = BrokerTenant(**{**tenant.to_dict(), "agent_slots_allocated": new_used})
         self._persist_tenant(tenant)
         self._bump_clock()
         self._promote_waitlist()
@@ -412,13 +416,12 @@ class AgentSlotManager:
     def utilization(self, broker_id: str) -> Utilization:
         tenant = self._require_tenant(broker_id)
         waitlist = self._load_waitlist()
-        waitlisted = sum(
-            int(w["requested_slots"]) for w in waitlist if w["broker_id"] == broker_id
-        )
+        waitlisted = sum(int(w["requested_slots"]) for w in waitlist if w["broker_id"] == broker_id)
         free = max(0, tenant.max_agent_slots - tenant.agent_slots_allocated)
         ratio = (
             tenant.agent_slots_allocated / tenant.max_agent_slots
-            if tenant.max_agent_slots > 0 else 0.0
+            if tenant.max_agent_slots > 0
+            else 0.0
         )
         return Utilization(
             broker_id=broker_id,
@@ -431,9 +434,7 @@ class AgentSlotManager:
 
     def waitlist(self, broker_id: str) -> List[WaitlistEntry]:
         waitlist = self._load_waitlist()
-        return [
-            WaitlistEntry.from_dict(w) for w in waitlist if w["broker_id"] == broker_id
-        ]
+        return [WaitlistEntry.from_dict(w) for w in waitlist if w["broker_id"] == broker_id]
 
     # -- internals ----------------------------------------------------------
 
@@ -512,6 +513,7 @@ class AgentSlotManager:
 # CampaignManager — create and dispatch campaigns
 # ---------------------------------------------------------------------------
 
+
 class CampaignManager:
     """Creates campaigns and simulates deterministic delivery per channel."""
 
@@ -537,17 +539,27 @@ class CampaignManager:
             raise KeyError(f"broker not found: {broker_id}")
         if tenant.status != "active":
             raise ValueError(f"broker {broker_id} is {tenant.status}; cannot create campaigns")
-        if not DistributionChannel.has_value(channel.value if isinstance(channel, DistributionChannel) else channel):
+        if not DistributionChannel.has_value(
+            channel.value if isinstance(channel, DistributionChannel) else channel
+        ):
             raise ValueError(f"unknown channel: {channel}")
         if recipient_count <= 0:
             raise ValueError("recipient_count must be positive")
 
-        channel = DistributionChannel(channel) if not isinstance(channel, DistributionChannel) else channel
+        channel = (
+            DistributionChannel(channel)
+            if not isinstance(channel, DistributionChannel)
+            else channel
+        )
         seq = tenant_mgr._bump_campaign_seq(broker_id)
         clock = tenant_mgr._clock()
         campaign_id = "CAMP-" + _content_id(
-            broker_id, channel.value, target_region.strip(), message_template,
-            str(recipient_count), str(seq),
+            broker_id,
+            channel.value,
+            target_region.strip(),
+            message_template,
+            str(recipient_count),
+            str(seq),
         )
         campaign = Campaign(
             campaign_id=campaign_id,
@@ -633,6 +645,7 @@ class CampaignManager:
 # CampaignAnalytics — delivery + illustrative conversion economics
 # ---------------------------------------------------------------------------
 
+
 class CampaignAnalyticsEngine:
     """Computes delivery rates and illustrative conversion economics."""
 
@@ -657,11 +670,10 @@ class CampaignAnalyticsEngine:
         conversions = round(read * ILLUSTRATIVE_CONVERSION_RATE)
         conversion_rate = (
             round(conversions / campaign.recipient_count, 6)
-            if campaign.recipient_count > 0 else 0.0
+            if campaign.recipient_count > 0
+            else 0.0
         )
-        cpa = (
-            ILLUSTRATIVE_CPA_USD if conversions > 0 else 0.0
-        )
+        cpa = ILLUSTRATIVE_CPA_USD if conversions > 0 else 0.0
 
         basis = (
             "illustrative — simulated delivery counts, conversion rate and CPA "

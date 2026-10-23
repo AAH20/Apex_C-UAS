@@ -21,10 +21,9 @@ from typing import List, Optional
 from .sensor_interface import (
     Detection,
     HardwareCapability,
+    SensorInterface,
     SensorStatus,
     Signal,
-    SensorInterface,
-    logger,
 )
 
 
@@ -54,9 +53,7 @@ class SDRAdapter(SensorInterface):
         noise_floor_dbm: float = -95.0,
         detection_threshold_dbm: float = -70.0,
     ) -> None:
-        super().__init__(
-            sensor_id, HardwareCapability.RF_SCAN, seed=seed, simulation=simulation
-        )
+        super().__init__(sensor_id, HardwareCapability.RF_SCAN, seed=seed, simulation=simulation)
         self.noise_floor_dbm = noise_floor_dbm
         self.detection_threshold_dbm = detection_threshold_dbm
         self._last_scan: Optional[ScanResult] = None
@@ -155,9 +152,7 @@ class SDRAdapter(SensorInterface):
             capability=self.capability,
             last_seen=self._last_seen or 0.0,
             message=(
-                "simulation mode: no hardware"
-                if not self._hardware_present
-                else "hardware present"
+                "simulation mode: no hardware" if not self._hardware_present else "hardware present"
             ),
         )
 

@@ -13,18 +13,19 @@ fractional relaxation; near-optimal for the discrete case with small dwell varia
 Defensive-only: computes engagement schedules. No effector control.
 """
 
+import heapq
 from dataclasses import dataclass, field
 from typing import List, Optional
-import heapq
 
 
 @dataclass
 class DroneTrack:
     """A detected drone track with engagement parameters."""
+
     track_id: int
-    arrival_time_s: float       # Time until drone reaches impact point
-    pk_base: float              # Base probability of kill (0-1)
-    priority: int = 1           # 1=low, 5=high (e.g., headed for critical asset)
+    arrival_time_s: float  # Time until drone reaches impact point
+    pk_base: float  # Base probability of kill (0-1)
+    priority: int = 1  # 1=low, 5=high (e.g., headed for critical asset)
 
     def __lt__(self, other: "DroneTrack") -> bool:
         """Allow heapq comparison when ratios tie — compare by track_id."""
@@ -36,6 +37,7 @@ class DroneTrack:
 @dataclass
 class EngagementPlan:
     """Result of the engagement scheduler."""
+
     expected_kills: float
     total_time_s: float
     engaged_targets: int
@@ -130,13 +132,15 @@ class EngagementScheduler:
             engaged_count += 1
             bloom_penalty += self.thermal_bloom_penalty_per_target
 
-            sequence.append({
-                "track_id": track.track_id,
-                "engage_start_s": round(time_used - time_cost, 2),
-                "engage_end_s": round(time_used, 2),
-                "pk": round(effective_pk, 3),
-                "time_cost_s": round(time_cost, 2),
-            })
+            sequence.append(
+                {
+                    "track_id": track.track_id,
+                    "engage_start_s": round(time_used - time_cost, 2),
+                    "engage_end_s": round(time_used, 2),
+                    "pk": round(effective_pk, 3),
+                    "time_cost_s": round(time_cost, 2),
+                }
+            )
 
         leaked = len(tracks) - engaged_count
 
@@ -148,21 +152,22 @@ class EngagementScheduler:
             sequence=sequence,
         )
 
-    def _generate_synthetic_tracks(
-        self, num_drones: int, time_limit_s: float
-    ) -> List[DroneTrack]:
+    def _generate_synthetic_tracks(self, num_drones: int, time_limit_s: float) -> List[DroneTrack]:
         """Generate deterministic synthetic drone tracks for testing."""
         import random
+
         rng = random.Random(42)  # Deterministic
         tracks = []
         for i in range(num_drones):
             arrival = rng.uniform(5.0, time_limit_s)
             pk = rng.uniform(0.6, 0.95)
             priority = rng.randint(1, 5)
-            tracks.append(DroneTrack(
-                track_id=i,
-                arrival_time_s=arrival,
-                pk_base=pk,
-                priority=priority,
-            ))
+            tracks.append(
+                DroneTrack(
+                    track_id=i,
+                    arrival_time_s=arrival,
+                    pk_base=pk,
+                    priority=priority,
+                )
+            )
         return tracks

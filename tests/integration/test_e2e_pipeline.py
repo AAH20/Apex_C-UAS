@@ -10,19 +10,18 @@ Each test asserts real behavior across module boundaries, not mocked interaction
 import asyncio
 import unittest
 
-from c_uas.detection.rf_classifier import RFSignalClassifier
-from c_uas.detection.spoof_detector import GNSSSpoofDetector, GNSSMeasurement
-from c_uas.tracking.ekf_interceptor import EKFTrajectoryPredictor
-from c_uas.engagement.scheduler import EngagementScheduler, DroneTrack
 from c_uas.decision import (
-    PerceptionModule,
-    DecisionModule,
     ActionModule,
-    ThreatLevel,
+    DecisionModule,
+    PerceptionModule,
     ResponseStrategy,
-    SystemCommand,
+    ThreatLevel,
 )
+from c_uas.detection.rf_classifier import RFSignalClassifier
+from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
+from c_uas.engagement.scheduler import DroneTrack, EngagementScheduler
 from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
+from c_uas.tracking.ekf_interceptor import EKFTrajectoryPredictor
 
 
 class TestEndToEndPipeline(unittest.TestCase):

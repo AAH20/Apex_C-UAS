@@ -55,9 +55,7 @@ class OpenDEWSignalClassifier:
     ]
 
     def __init__(self, model_path: Optional[str] = None) -> None:
-        self.model_path = model_path or os.path.join(
-            OPENDEW_PATH, "models", "drone_classifier.pth"
-        )
+        self.model_path = model_path or os.path.join(OPENDEW_PATH, "models", "drone_classifier.pth")
         self._model: Any = None
         self._available = False
         self._load_model()
@@ -82,9 +80,7 @@ class OpenDEWSignalClassifier:
 
             self._model = DroneSignalClassifier(num_classes=12)
             try:
-                state = torch.load(
-                    self.model_path, map_location="cpu", weights_only=True
-                )
+                state = torch.load(self.model_path, map_location="cpu", weights_only=True)
             except TypeError:
                 # Older torch versions without weights_only support
                 state = torch.load(self.model_path, map_location="cpu")
@@ -121,8 +117,8 @@ class OpenDEWSignalClassifier:
                 "probabilities": {},
             }
 
-        import torch  # type: ignore
         import numpy as np  # type: ignore
+        import torch  # type: ignore
 
         try:
             # Normalize IQ samples to [-1, 1]
@@ -142,9 +138,9 @@ class OpenDEWSignalClassifier:
             real = arr[::2] if len(arr) % 2 == 0 else arr
             imag = arr[1::2] if len(arr) % 2 == 0 else arr
             n = min(len(real), len(imag))
-            tensor = torch.tensor(
-                [real[:n], imag[:n]], dtype=torch.float32
-            ).unsqueeze(0)  # (1, 2, N)
+            tensor = torch.tensor([real[:n], imag[:n]], dtype=torch.float32).unsqueeze(
+                0
+            )  # (1, 2, N)
 
             with torch.no_grad():
                 logits = self._model(tensor)
@@ -158,8 +154,7 @@ class OpenDEWSignalClassifier:
                 "method": "opendew_neural_net",
                 "available": True,
                 "probabilities": {
-                    self.CLASS_NAMES[i]: round(float(p), 4)
-                    for i, p in enumerate(probs.tolist())
+                    self.CLASS_NAMES[i]: round(float(p), 4) for i, p in enumerate(probs.tolist())
                 },
             }
         except Exception:

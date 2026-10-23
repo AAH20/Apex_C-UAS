@@ -18,10 +18,10 @@ Usage:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List, Optional
 import math
 import random
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
 @dataclass(frozen=True)
@@ -79,9 +79,7 @@ class SwarmSimulator:
         tracks: List[SwarmTrack] = []
         for i in range(self.config.num_drones):
             # Arrival time spread across the window
-            arrival = self.rng.uniform(
-                5.0, 5.0 + self.config.arrival_spread_s
-            )
+            arrival = self.rng.uniform(5.0, 5.0 + self.config.arrival_spread_s)
 
             # Base pk depends on drone characteristics
             # Faster/closer drones are harder to kill (lower pk)
@@ -163,9 +161,7 @@ class SwarmSimulator:
         }
 
 
-def saturate_scheduler(
-    scheduler, num_drones: int, arrival_spread_s: float, seed: int = 42
-) -> dict:
+def saturate_scheduler(scheduler, num_drones: int, arrival_spread_s: float, seed: int = 42) -> dict:
     """
     Run the engagement scheduler against a saturated swarm and return results.
 

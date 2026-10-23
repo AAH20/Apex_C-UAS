@@ -63,8 +63,7 @@ def _severity_rank(severity: str) -> int:
     return _SEVERITY_ORDER.get((severity or "INFO").upper(), 0)
 
 
-def _alert_id(severity: str, event_type: str, target_id: str,
-              timestamp: str) -> str:
+def _alert_id(severity: str, event_type: str, target_id: str, timestamp: str) -> str:
     payload = f"{severity}|{event_type}|{target_id}|{timestamp}"
     return "alert--" + hashlib.sha256(payload.encode()).hexdigest()[:16]
 
@@ -166,16 +165,19 @@ class AlertEngine:
         return matched
 
     # ---- alert emission ---------------------------------------------
-    def emit(self, severity: str, event_type: str, message: str,
-             source: str, target_id: Optional[str] = None,
-             metadata: Optional[Dict[str, Any]] = None) -> Alert:
+    def emit(
+        self,
+        severity: str,
+        event_type: str,
+        message: str,
+        source: str,
+        target_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Alert:
         """Create and dispatch an alert."""
-        timestamp = datetime.datetime.now(
-            datetime.timezone.utc
-        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         alert = Alert(
-            alert_id=_alert_id(severity, event_type, target_id or "-",
-                               timestamp),
+            alert_id=_alert_id(severity, event_type, target_id or "-", timestamp),
             timestamp=timestamp,
             severity=severity,
             event_type=event_type,
@@ -207,17 +209,14 @@ class AlertEngine:
         matched = self.should_alert(event)
 
         # Always alert on CRITICAL threat level or spoof detection.
-        always = (
-            (event.threat_level or "NONE").upper() == "CRITICAL"
-            or "spoof" in (event.source or "").lower()
-        )
+        always = (event.threat_level or "NONE").upper() == "CRITICAL" or "spoof" in (
+            event.source or ""
+        ).lower()
         if not matched and not always:
             return emitted
 
         level = (event.threat_level or "NONE").upper()
-        sev = ("CRITICAL" if level == "CRITICAL"
-               else "HIGH" if level == "HIGH"
-               else "MEDIUM")
+        sev = "CRITICAL" if level == "CRITICAL" else "HIGH" if level == "HIGH" else "MEDIUM"
         etype = event.source or "detection"
         protocol = event.protocol or "-"
         msg = "{} detected {} ({}; protocol={})".format(
@@ -232,8 +231,11 @@ class AlertEngine:
             message=msg,
             source=event.source,
             target_id=event.target_id,
-            metadata={"threat_level": level, "protocol": event.protocol,
-                      "anomalies": list(event.anomalies)},
+            metadata={
+                "threat_level": level,
+                "protocol": event.protocol,
+                "anomalies": list(event.anomalies),
+            },
         )
         emitted.append(alert)
         return emitted

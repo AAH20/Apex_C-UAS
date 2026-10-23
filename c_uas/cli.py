@@ -22,20 +22,14 @@ def main(argv: Optional[list] = None) -> int:
     rf_p.add_argument("--bw", type=float, default=20.0, help="Bandwidth in MHz")
 
     # detect-spoof
-    subparsers.add_parser(
-        "detect-spoof", help="Evaluate GNSS telemetry for spoofing / meaconing"
-    )
+    subparsers.add_parser("detect-spoof", help="Evaluate GNSS telemetry for spoofing / meaconing")
 
     # track
-    track_p = subparsers.add_parser(
-        "track", help="Predict drone intercept trajectory (EKF)"
-    )
+    track_p = subparsers.add_parser("track", help="Predict drone intercept trajectory (EKF)")
     track_p.add_argument("--horizon", type=float, default=2.0, help="Prediction horizon in seconds")
 
     # schedule-engagement
-    sched_p = subparsers.add_parser(
-        "schedule", help="Compute optimal engagement sequence"
-    )
+    sched_p = subparsers.add_parser("schedule", help="Compute optimal engagement sequence")
     sched_p.add_argument("--num-drones", type=int, default=5, help="Number of detected drones")
     sched_p.add_argument("--dwell-s", type=float, default=4.0, help="Dwell seconds per target")
     sched_p.add_argument(
@@ -43,20 +37,12 @@ def main(argv: Optional[list] = None) -> int:
     )
 
     # generate-dossier
-    doss_p = subparsers.add_parser(
-        "dossier", help="Generate signed airspace intrusion dossier"
-    )
-    doss_p.add_argument(
-        "--target-id", type=str, default="UAV-ROGUE-00", help="Target identifier"
-    )
-    doss_p.add_argument(
-        "--threat", type=str, default="CRITICAL", help="Threat classification"
-    )
+    doss_p = subparsers.add_parser("dossier", help="Generate signed airspace intrusion dossier")
+    doss_p.add_argument("--target-id", type=str, default="UAV-ROGUE-00", help="Target identifier")
+    doss_p.add_argument("--threat", type=str, default="CRITICAL", help="Threat classification")
 
     # mavlink-vulns
-    mv_p = subparsers.add_parser(
-        "mavlink-vulns", help="List MAVLink protocol vulnerabilities"
-    )
+    mv_p = subparsers.add_parser("mavlink-vulns", help="List MAVLink protocol vulnerabilities")
     mv_p.add_argument(
         "--severity",
         type=str,
@@ -117,21 +103,11 @@ def main(argv: Optional[list] = None) -> int:
         "swarm",
         help="Simulate a drone swarm and test scheduler saturation",
     )
-    sw_p.add_argument(
-        "--num-drones", type=int, default=16, help="Number of drones in swarm"
-    )
-    sw_p.add_argument(
-        "--spread-s", type=float, default=10.0, help="Arrival spread in seconds"
-    )
-    sw_p.add_argument(
-        "--speed-mps", type=float, default=30.0, help="Drone speed in m/s"
-    )
-    sw_p.add_argument(
-        "--evasion", type=float, default=0.3, help="Evasion probability (0.0-1.0)"
-    )
-    sw_p.add_argument(
-        "--seed", type=int, default=42, help="RNG seed"
-    )
+    sw_p.add_argument("--num-drones", type=int, default=16, help="Number of drones in swarm")
+    sw_p.add_argument("--spread-s", type=float, default=10.0, help="Arrival spread in seconds")
+    sw_p.add_argument("--speed-mps", type=float, default=30.0, help="Drone speed in m/s")
+    sw_p.add_argument("--evasion", type=float, default=0.3, help="Evasion probability (0.0-1.0)")
+    sw_p.add_argument("--seed", type=int, default=42, help="RNG seed")
 
     # benchmarks
     bm_p = subparsers.add_parser(
@@ -156,9 +132,7 @@ def main(argv: Optional[list] = None) -> int:
     gov_p.add_argument(
         "--name", type=str, default=None, help="AI system name (for register-system)"
     )
-    gov_p.add_argument(
-        "--module", type=str, default=None, help="Module path (for register-system)"
-    )
+    gov_p.add_argument("--module", type=str, default=None, help="Module path (for register-system)")
     gov_p.add_argument(
         "--stage", type=str, default="operation", help="Lifecycle stage (for register-system)"
     )
@@ -168,20 +142,19 @@ def main(argv: Optional[list] = None) -> int:
     gov_p.add_argument(
         "--system-id", type=str, default=None, help="AI system ID (for risk/incident/evidence)"
     )
-    gov_p.add_argument(
-        "--description", type=str, default=None, help="Risk/incident description"
-    )
+    gov_p.add_argument("--description", type=str, default=None, help="Risk/incident description")
     gov_p.add_argument(
         "--likelihood", type=str, default="medium", help="Risk likelihood: low/medium/high"
     )
-    gov_p.add_argument(
-        "--impact", type=str, default="medium", help="Risk impact: low/medium/high"
-    )
+    gov_p.add_argument("--impact", type=str, default="medium", help="Risk impact: low/medium/high")
     gov_p.add_argument(
         "--control-id", type=str, default=None, help="Annex A control ID (for implement-control)"
     )
     gov_p.add_argument(
-        "--evidence", type=str, default=None, help="Evidence pointer (for implement-control/log-evidence)"
+        "--evidence",
+        type=str,
+        default=None,
+        help="Evidence pointer (for implement-control/log-evidence)",
     )
     gov_p.add_argument(
         "--severity", type=str, default="medium", help="Incident severity: low/medium/high/critical"
@@ -230,32 +203,27 @@ def main(argv: Optional[list] = None) -> int:
         help="Directed-energy beam modeling with atmospheric attenuation",
     )
     dew_p.add_argument(
-        "--laser", type=str, default="fiber_50kw",
+        "--laser",
+        type=str,
+        default="fiber_50kw",
         help="Laser spec: fiber_50kw, fiber_100kw, solid_state_150kw, chemical_100kw",
     )
+    dew_p.add_argument("--range-m", type=float, default=3000.0, help="Range to target in meters")
     dew_p.add_argument(
-        "--range-m", type=float, default=3000.0, help="Range to target in meters"
-    )
-    dew_p.add_argument(
-        "--material", type=str, default="aluminum",
+        "--material",
+        type=str,
+        default="aluminum",
         help="Target material: aluminum, carbon_fiber, plastic, composite",
     )
-    dew_p.add_argument(
-        "--rain-mm-hr", type=float, default=0.0, help="Rain rate in mm/hr"
-    )
-    dew_p.add_argument(
-        "--visibility-km", type=float, default=20.0, help="Visibility in km"
-    )
+    dew_p.add_argument("--rain-mm-hr", type=float, default=0.0, help="Rain rate in mm/hr")
+    dew_p.add_argument("--visibility-km", type=float, default=20.0, help="Visibility in km")
 
     # opendew
     od_p = subparsers.add_parser(
         "opendew",
         help="OpenDEW neural network signal classifier",
     )
-    od_p.add_argument(
-        "--samples", type=int, default=100,
-        help="Number of IQ samples to classify"
-    )
+    od_p.add_argument("--samples", type=int, default=100, help="Number of IQ samples to classify")
 
     # contract-readiness
     cr_p = subparsers.add_parser(
@@ -268,12 +236,8 @@ def main(argv: Optional[list] = None) -> int:
         "api",
         help="Run the REST API server",
     )
-    api_p.add_argument(
-        "--host", type=str, default="127.0.0.1", help="Bind host"
-    )
-    api_p.add_argument(
-        "--port", type=int, default=8000, help="Bind port"
-    )
+    api_p.add_argument("--host", type=str, default="127.0.0.1", help="Bind host")
+    api_p.add_argument("--port", type=int, default=8000, help="Bind port")
 
     # deploy
     dep_p = subparsers.add_parser(
@@ -301,12 +265,8 @@ def main(argv: Optional[list] = None) -> int:
         "dashboard",
         help="Serve the SOC dashboard web interface",
     )
-    db_p.add_argument(
-        "--host", type=str, default="127.0.0.1", help="Bind host"
-    )
-    db_p.add_argument(
-        "--port", type=int, default=8080, help="Bind port"
-    )
+    db_p.add_argument("--host", type=str, default="127.0.0.1", help="Bind host")
+    db_p.add_argument("--port", type=int, default=8080, help="Bind port")
     db_p.add_argument(
         "--no-open",
         action="store_true",
@@ -318,24 +278,16 @@ def main(argv: Optional[list] = None) -> int:
         "orchestrate",
         help="Run multi-site C-UAS orchestration round",
     )
-    orch_p.add_argument(
-        "--sites", type=int, default=3, help="Number of federation sites"
-    )
-    orch_p.add_argument(
-        "--drones", type=int, default=16, help="Number of drones in swarm"
-    )
+    orch_p.add_argument("--sites", type=int, default=3, help="Number of federation sites")
+    orch_p.add_argument("--drones", type=int, default=16, help="Number of drones in swarm")
 
     # agent-eval
     ae_p = subparsers.add_parser(
         "agent-eval",
         help="Run agent reliability evaluation harness",
     )
-    ae_p.add_argument(
-        "--sites", type=int, default=3, help="Number of federation sites"
-    )
-    ae_p.add_argument(
-        "--drones", type=int, default=16, help="Number of drones in swarm"
-    )
+    ae_p.add_argument("--sites", type=int, default=3, help="Number of federation sites")
+    ae_p.add_argument("--drones", type=int, default=16, help="Number of drones in swarm")
 
     # threat-intel
     ti_p = subparsers.add_parser(
@@ -394,23 +346,25 @@ def main(argv: Optional[list] = None) -> int:
         "--max-agent-slots", type=int, default=330, help="Max agent slots per broker (for register)"
     )
     bk_p.add_argument(
-        "--broker-id", type=str, default=None, help="Broker ID (for allocate/revoke/campaign/analytics)"
+        "--broker-id",
+        type=str,
+        default=None,
+        help="Broker ID (for allocate/revoke/campaign/analytics)",
     )
     bk_p.add_argument("--slots", type=int, default=1, help="Agent slots to allocate or revoke")
     bk_p.add_argument(
         "--channel", type=str, default=None, help="facebook|whatsapp|sms|email (for campaign)"
     )
-    bk_p.add_argument(
-        "--target-region", type=str, default=None, help="Campaign target region"
-    )
+    bk_p.add_argument("--target-region", type=str, default=None, help="Campaign target region")
     bk_p.add_argument(
         "--message-template", type=str, default=None, help="Campaign message template"
     )
+    bk_p.add_argument("--recipient-count", type=int, default=None, help="Campaign recipient count")
     bk_p.add_argument(
-        "--recipient-count", type=int, default=None, help="Campaign recipient count"
-    )
-    bk_p.add_argument(
-        "--campaign-id", type=str, default=None, help="Campaign ID (for campaign dispatch/analytics)"
+        "--campaign-id",
+        type=str,
+        default=None,
+        help="Campaign ID (for campaign dispatch/analytics)",
     )
 
     # hardware
@@ -418,20 +372,93 @@ def main(argv: Optional[list] = None) -> int:
         "hardware",
         help="Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion",
     )
-    hw_p.add_argument(
-        "--list", action="store_true", help="List sensors and capabilities"
+    hw_p.add_argument("--list", action="store_true", help="List sensors and capabilities")
+    hw_p.add_argument("--scan", action="store_true", help="Run detection on all sensors")
+    hw_p.add_argument("--fuse", action="store_true", help="Fuse detections into tracks")
+    hw_p.add_argument("--status", action="store_true", help="Health-check all sensors")
+    hw_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
+
+    # edge
+    edge_p = subparsers.add_parser(
+        "edge",
+        help="Deploy and operate C-UAS edge nodes: local detection/tracking and edge-to-cloud sync",
     )
-    hw_p.add_argument(
-        "--scan", action="store_true", help="Run detection on all sensors"
+    edge_p.add_argument(
+        "--deploy",
+        action="store_true",
+        help="Deploy edge node and run the first local detection cycle",
     )
-    hw_p.add_argument(
-        "--fuse", action="store_true", help="Fuse detections into tracks"
+    edge_p.add_argument(
+        "--status", action="store_true", help="Show edge node health and sync state"
     )
-    hw_p.add_argument(
-        "--status", action="store_true", help="Health-check all sensors"
+    edge_p.add_argument(
+        "--sync",
+        action="store_true",
+        help="Sync queued detections to the cloud endpoint",
     )
-    hw_p.add_argument(
-        "--seed", type=int, default=42, help="Deterministic RNG seed"
+    edge_p.add_argument("--node-id", type=str, default=None, help="Edge node identifier")
+    edge_p.add_argument(
+        "--location",
+        type=str,
+        default=None,
+        help="Site location (required for --deploy)",
+    )
+    edge_p.add_argument(
+        "--sensors",
+        type=str,
+        default="sdr,radar,camera",
+        help="Comma-separated sensor list (sdr, radar, camera)",
+    )
+    edge_p.add_argument(
+        "--sync-interval",
+        type=float,
+        default=300.0,
+        help="Cloud sync interval in seconds",
+    )
+    edge_p.add_argument("--cloud-endpoint", type=str, default=None, help="Cloud API base URL")
+    edge_p.add_argument(
+        "--offline",
+        action="store_true",
+        help="Run in offline mode (no cloud sync attempts)",
+    )
+    edge_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
+
+    # compliance
+    cp_p = subparsers.add_parser(
+        "compliance",
+        help="Automated compliance evidence collection for ISO 42001 audits",
+    )
+    cp_p.add_argument(
+        "--collect",
+        action="store_true",
+        help="Collect evidence from all platform components",
+    )
+    cp_p.add_argument(
+        "--package",
+        action="store_true",
+        help="Package collected evidence into a signed EvidencePackage",
+    )
+    cp_p.add_argument(
+        "--export",
+        action="store_true",
+        help="Export the latest signed package (requires --package or existing package)",
+    )
+    cp_p.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate ISO 42001 Annex A compliance report",
+    )
+    cp_p.add_argument(
+        "--format",
+        type=str,
+        default="json",
+        help="Export format: json or zip (default: json)",
+    )
+    cp_p.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="Output path for exported package (default: stdout for json)",
     )
 
     args = parser.parse_args(argv)
@@ -446,7 +473,7 @@ def main(argv: Optional[list] = None) -> int:
         return 0
 
     elif args.command == "detect-spoof":
-        from c_uas.detection.spoof_detector import GNSSSpoofDetector, GNSSMeasurement
+        from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
 
         detector = GNSSSpoofDetector()
         nominal = GNSSMeasurement(
@@ -456,9 +483,7 @@ def main(argv: Optional[list] = None) -> int:
             num_satellites=10,
         )
         r1 = detector.evaluate_telemetry(nominal)
-        print(
-            f"[C-UAS] Nominal GNSS: Threat={r1['threat_level']}, Flags={r1['anomaly_flags']}"
-        )
+        print(f"[C-UAS] Nominal GNSS: Threat={r1['threat_level']}, Flags={r1['anomaly_flags']}")
         spoofed = GNSSMeasurement(
             carrier_to_noise_db_hz=60.0,
             pseudorange_rate_mps=0.0,
@@ -466,9 +491,7 @@ def main(argv: Optional[list] = None) -> int:
             num_satellites=2,
         )
         r2 = detector.evaluate_telemetry(spoofed)
-        print(
-            f"[C-UAS] Spoofed GNSS: Threat={r2['threat_level']}, Flags={r2['anomaly_flags']}"
-        )
+        print(f"[C-UAS] Spoofed GNSS: Threat={r2['threat_level']}, Flags={r2['anomaly_flags']}")
         return 0
 
     elif args.command == "track":
@@ -531,9 +554,8 @@ def main(argv: Optional[list] = None) -> int:
     elif args.command == "locate-controller":
         from c_uas.detection.controller_locator import (
             ControllerLocator,
-            SensorSite,
             Detection,
-            bearing_deg,
+            SensorSite,
         )
 
         # Example sensor deployment (geographically separated sites across California)
@@ -558,7 +580,7 @@ def main(argv: Optional[list] = None) -> int:
 
         est = locator.locate(prefer_method=args.method or "BEARING")
         if est:
-            print(f"[C-UAS] Controller Location Estimate:")
+            print("[C-UAS] Controller Location Estimate:")
             print(f"  Latitude    : {est.latitude_deg} deg")
             print(f"  Longitude   : {est.longitude_deg} deg")
             print(f"  Confidence  : +/- {est.confidence_km} km")
@@ -571,21 +593,27 @@ def main(argv: Optional[list] = None) -> int:
     elif args.command == "competitive-landscape":
         from c_uas.competitive_landscape import CUASDatabase
 
-        db = CUASDatabase()
-        systems = db.list_all()
+        db = CUASDatabase()  # type: ignore[assignment]
+        systems = db.list_all()  # type: ignore[attr-defined]
         if args.origin:
-            systems = db.list_by_origin(args.origin)
+            systems = db.list_by_origin(args.origin)  # type: ignore[attr-defined]
         if args.type:
-            systems = db.list_by_type(args.type)
-        summary = db.summary()
-        print(f"[C-UAS] Global Counter-UAS Systems ({summary['total']} total, {summary['fielded']} fielded):")
-        for s in systems:
-            fielded_marker = " [FIELDED]" if s.is_fielded else " [demo]"
-            print(f"  {s.name}{fielded_marker}")
-            print(f"    Origin/Developer: {s.origin} — {s.developer}")
-            print(f"    Type: {s.system_type} | Power: {s.power_class}")
-            print(f"    Range: {s.effective_range_km if s.effective_range_km else 'n.d.'} km | Role: {s.role}")
-            print(f"    Status: {s.public_status} | Crew: {s.operator_crew} | Power: {s.power_draw_class}")
+            systems = db.list_by_type(args.type)  # type: ignore[attr-defined]
+        summary = db.summary()  # type: ignore[attr-defined]
+        print(
+            f"[C-UAS] Global Counter-UAS Systems ({summary['total']} total, {summary['fielded']} fielded):"  # type: ignore[index]
+        )
+        for s in systems:  # type: ignore[attr-defined]
+            fielded_marker = " [FIELDED]" if s.is_fielded else " [demo]"  # type: ignore[attr-defined]
+            print(f"  {s.name}{fielded_marker}")  # type: ignore[attr-defined]
+            print(f"    Origin/Developer: {s.origin} — {s.developer}")  # type: ignore[attr-defined]
+            print(f"    Type: {s.system_type} | Power: {s.power_class}")  # type: ignore[attr-defined]
+            print(
+                f"    Range: {s.effective_range_km if s.effective_range_km else 'n.d.'} km | Role: {s.role}"  # type: ignore[attr-defined]
+            )
+            print(
+                f"    Status: {s.public_status} | Crew: {s.operator_crew} | Power: {s.power_draw_class}"  # type: ignore[attr-defined]
+            )
             print()
         return 0
 
@@ -595,7 +623,9 @@ def main(argv: Optional[list] = None) -> int:
         model = UnitEconomicsModel()
         if args.type == "all":
             results = model.compare_all()
-            print(f"[C-UAS] Unit Economics Comparison (attacker drone cost: ${model.attacker_drone_cost_usd:,}):")
+            print(
+                f"[C-UAS] Unit Economics Comparison (attacker drone cost: ${model.attacker_drone_cost_usd:,}):"
+            )
             for sys_type, econ in results.items():
                 print(f"  {sys_type}:")
                 print(f"    CPE: ${econ.total_cost_per_engagement_usd:,} per engagement")
@@ -624,8 +654,8 @@ def main(argv: Optional[list] = None) -> int:
         return 0
 
     elif args.command == "swarm":
-        from c_uas.swarm import SwarmSimulator, SwarmConfig, saturate_scheduler
         from c_uas.engagement.scheduler import EngagementScheduler
+        from c_uas.swarm import SwarmConfig, SwarmSimulator
 
         config = SwarmConfig(
             num_drones=args.num_drones,
@@ -650,6 +680,7 @@ def main(argv: Optional[list] = None) -> int:
         # Run scheduler against the swarm
         scheduler = EngagementScheduler(dwell_s=4.0, slew_s=1.5, time_limit_s=40.0)
         from c_uas.engagement.scheduler import DroneTrack
+
         drone_tracks = [
             DroneTrack(
                 track_id=t.track_id,
@@ -660,7 +691,7 @@ def main(argv: Optional[list] = None) -> int:
             for t in tracks
         ]
         plan = scheduler.schedule(tracks=drone_tracks)
-        print(f"[C-UAS] Engagement Results:")
+        print("[C-UAS] Engagement Results:")
         print(f"  Expected kills   : {plan.expected_kills:.2f}")
         print(f"  Engaged targets  : {plan.engaged_targets}")
         print(f"  Leaked targets   : {plan.leaked_targets}")
@@ -679,20 +710,24 @@ def main(argv: Optional[list] = None) -> int:
 
         print("Scheduler (wall-clock time vs drone count):")
         for r in result.scheduler_results:
-            print(f"  {r.num_drones:4d} drones: {r.scheduler_seconds*1000:6.2f}ms, "
-                  f"kills={r.expected_kills:5.2f}, engaged={r.engaged_targets:3d}, "
-                  f"leaked={r.leaked_targets:3d}, {r.drones_per_second:9.0f} drones/s")
+            print(
+                f"  {r.num_drones:4d} drones: {r.scheduler_seconds * 1000:6.2f}ms, "
+                f"kills={r.expected_kills:5.2f}, engaged={r.engaged_targets:3d}, "
+                f"leaked={r.leaked_targets:3d}, {r.drones_per_second:9.0f} drones/s"
+            )
 
         print()
-        print(f"EKF tracking (horizon={result.ekf_result.horizon_s}s, "
-              f"measurements={result.ekf_result.num_measurements}):")
+        print(
+            f"EKF tracking (horizon={result.ekf_result.horizon_s}s, "
+            f"measurements={result.ekf_result.num_measurements}):"
+        )
         print(f"  Position error : {result.ekf_result.position_error_m:.2f}m")
         print(f"  Velocity error : {result.ekf_result.velocity_error_mps:.2f} m/s")
-        print(f"  Compute time   : {result.ekf_result.compute_seconds*1000:.3f}ms")
+        print(f"  Compute time   : {result.ekf_result.compute_seconds * 1000:.3f}ms")
 
         print()
         print(f"End-to-end pipeline ({result.end_to_end_result.pipeline_stages} stages):")
-        print(f"  Total time   : {result.end_to_end_result.total_seconds*1000:.2f}ms")
+        print(f"  Total time   : {result.end_to_end_result.total_seconds * 1000:.2f}ms")
         print(f"  Per stage    : {result.end_to_end_result.per_stage_ms:.2f}ms")
         print(f"  Dossier signed: {result.end_to_end_result.dossier_generated}")
 
@@ -777,7 +812,7 @@ def main(argv: Optional[list] = None) -> int:
                 return 1
             entry = chain.log("manual_entry", {"note": args.evidence}, args.system_id)
             print(f"[C-UAS] Evidence logged: {entry.entry_id}")
-            print(f"  Type       : manual_entry")
+            print("  Type       : manual_entry")
             print(f"  System ID  : {args.system_id or '(none)'}")
             print(f"  Entry hash : {entry.entry_hash[:16]}...")
             print(f"  Chain valid: {chain.verify_chain()}")
@@ -803,7 +838,7 @@ def main(argv: Optional[list] = None) -> int:
         elif action == "compliance-report":
             reporter = ComplianceReporter(reg, assessor, controller, chain, mgr)
             report = reporter.generate()
-            print(f"[C-UAS] ISO 42001 Compliance Report")
+            print("[C-UAS] ISO 42001 Compliance Report")
             print(f"  Generated       : {report.generated_at:.0f}")
             print(f"  AI systems      : {report.total_ai_systems}")
             print(f"  Total risks     : {report.total_risks}")
@@ -821,14 +856,6 @@ def main(argv: Optional[list] = None) -> int:
             return 1
 
     if args.command == "grc-clab":
-        from c_uas.grc_clab import (
-            AutonomousAgent,
-            ComplianceMonitor,
-            EvidenceAutoLogger,
-            GRCClabEngine,
-            RemediationPlanner,
-        )
-        from c_uas.grc_clab import DEFAULT_SCAN_INTERVAL_S
         from c_uas.governance import (
             AISystemRegistry,
             AuditEvidenceChain,
@@ -836,6 +863,13 @@ def main(argv: Optional[list] = None) -> int:
             ControlImplementation,
             IncidentManager,
             RiskAssessment,
+        )
+        from c_uas.grc_clab import (
+            DEFAULT_SCAN_INTERVAL_S,
+            ComplianceMonitor,
+            EvidenceAutoLogger,
+            GRCClabEngine,
+            RemediationPlanner,
         )
 
         reg = AISystemRegistry()
@@ -856,7 +890,9 @@ def main(argv: Optional[list] = None) -> int:
             print(f"  Status       : {report.overall_status}")
             print(f"  Open risks   : {report.open_risks}")
             print(f"  Open incidents: {report.open_incidents}")
-            print(f"  Controls     : {report.implemented_controls}/{report.total_controls} implemented")
+            print(
+                f"  Controls     : {report.implemented_controls}/{report.total_controls} implemented"
+            )
             print(f"  Drift delta  : {drift_delta:+.1f} points")
             print(f"  Drift alerts : {len(alerts)}")
             for alert in alerts:
@@ -882,44 +918,48 @@ def main(argv: Optional[list] = None) -> int:
 
         if action == "remediate":
             planner = RemediationPlanner(assessor, controller)
-            plans = planner.plan_for_open_risks()
+            plans = planner.plan_for_open_risks()  # type: ignore[assignment]
             print("[C-UAS] GRC_Clab Remediation Planner")
             if not plans:
-                print("  No remediation plans proposed (all open risks covered or controls implemented).")
-            for plan in plans:
-                print(f"  Plan {plan.plan_id}:")
-                print(f"    Risk ID   : {plan.risk_id}")
-                print(f"    Control   : {plan.control_id}")
-                print(f"    Rationale : {plan.rationale}")
-                print(f"    Status    : {plan.status}")
+                print(
+                    "  No remediation plans proposed (all open risks covered or controls implemented)."
+                )
+            for plan in plans:  # type: ignore[assignment]
+                print(f"  Plan {plan.plan_id}:")  # type: ignore[attr-defined]
+                print(f"    Risk ID   : {plan.risk_id}")  # type: ignore[attr-defined]
+                print(f"    Control   : {plan.control_id}")  # type: ignore[attr-defined]
+                print(f"    Rationale : {plan.rationale}")  # type: ignore[attr-defined]
+                print(f"    Status    : {plan.status}")  # type: ignore[attr-defined]
             return 0
 
         if action == "autolog":
             logger = EvidenceAutoLogger(chain)
             event_type = args.event_type or "detection"
             payload = {"note": args.description or "auto-logged via CLI"}
-            entry = logger.log_event(event_type, args.system_id, args.source or "c_uas.cli", payload)
+            entry = logger.log_event(  # type: ignore[assignment]
+                event_type, args.system_id, args.source or "c_uas.cli", payload
+            )
             print("[C-UAS] GRC_Clab Evidence Auto-Logger")
             print(f"  Entry ID          : {entry.entry_id}")
             print(f"  Event type        : {entry.event_type}")
             print(f"  System ID         : {entry.system_id or '(none)'}")
-            print(f"  Source            : {entry.source}")
-            print(f"  Governance entry  : {entry.governance_entry_id}")
+            print(f"  Source            : {entry.source}")  # type: ignore[attr-defined]
+            print(f"  Governance entry  : {entry.governance_entry_id}")  # type: ignore[attr-defined]
             print(f"  Chain valid       : {logger.verify_chain()}")
             return 0
 
         if action == "cycle":
             engine = GRCClabEngine()
-            summary = engine.run_cycle()
+            summary = engine.run_cycle()  # type: ignore[assignment]
             print("[C-UAS] GRC_Clab Agentic Cycle")
-            print(f"  Scan trigger     : {summary['scan']['trigger']}")
-            print(f"  Systems scanned  : {summary['scan']['systems_scanned']}")
-            print(f"  New risks        : {len(summary['scan']['new_risk_ids'])}")
-            print(f"  Compliance %     : {summary['compliance']['compliance_percentage']}%")
-            print(f"  Status           : {summary['compliance']['overall_status']}")
-            print(f"  Drift delta      : {summary['drift']['drift_delta']:+.1f} points")
-            print(f"  Drift alerts     : {len(summary['drift']['alerts'])}")
-            print(f"  Proposed plans   : {len(summary['remediation']['proposed_plans'])}")
+            print(f"  Scan trigger     : {summary['scan']['trigger']}")  # type: ignore[index]
+            print(f"  Systems scanned  : {summary['scan']['systems_scanned']}")  # type: ignore[index]
+            print(f"  New risks        : {len(summary['scan']['new_risk_ids'])}")  # type: ignore[index]
+            print(f"  Compliance %     : {summary['compliance']['compliance_percentage']}%")  # type: ignore[index]
+            print(f"  Status           : {summary['compliance']['overall_status']}")  # type: ignore[index]
+            print(f"  Drift delta      : {summary['drift']['drift_delta']:+.1f} points")  # type: ignore[index]
+            print(f"  Drift alerts     : {len(summary['drift']['alerts'])}")  # type: ignore[index]
+            print(f"  Proposed plans   : {len(summary['remediation']['proposed_plans'])}")  # type: ignore[index]
             return 0
 
         print(f"[C-UAS] Unknown grc-clab action: {action}")
@@ -927,7 +967,8 @@ def main(argv: Optional[list] = None) -> int:
 
     if args.command == "dew":
         from c_uas.dew.atmospheric import (
-            LASER_SPECS, AtmosphericConditions,
+            LASER_SPECS,
+            AtmosphericConditions,
             time_to_kill_with_attenuation,
         )
 
@@ -942,58 +983,62 @@ def main(argv: Optional[list] = None) -> int:
             rainfall_mm_hr=args.rain_mm_hr,
             aerosol_visibility_km=args.visibility_km,
         )
-        result = time_to_kill_with_attenuation(
-            spec, range_m=args.range_m, target_material=args.material,
+        result = time_to_kill_with_attenuation(  # type: ignore[assignment]
+            spec,
+            range_m=args.range_m,
+            target_material=args.material,
             conditions=conditions,
         )
         print(f"[C-UAS] DEW Time-to-Kill: {spec.name}")
-        print(f"  Range         : {result['range_m']} m")
-        print(f"  Material      : {result['material']}")
-        print(f"  Dwell time    : {result['dwell_s']} s")
-        print(f"  Fluence       : {result['fluence_j_cm2']} J/cm^2")
-        print(f"  Required      : {result['required_fluence_j_cm2']} J/cm^2")
-        print(f"  Transmission  : {result['transmission']}")
-        print(f"  Attenuation   : {result['attenuation_db_km']} dB/km")
-        print(f"  Spot size     : {result['spot_cm']} cm")
+        print(f"  Range         : {result['range_m']} m")  # type: ignore[index]
+        print(f"  Material      : {result['material']}")  # type: ignore[index]
+        print(f"  Dwell time    : {result['dwell_s']} s")  # type: ignore[index]
+        print(f"  Fluence       : {result['fluence_j_cm2']} J/cm^2")  # type: ignore[index]
+        print(f"  Required      : {result['required_fluence_j_cm2']} J/cm^2")  # type: ignore[index]
+        print(f"  Transmission  : {result['transmission']}")  # type: ignore[index]
+        print(f"  Attenuation   : {result['attenuation_db_km']} dB/km")  # type: ignore[index]
+        print(f"  Spot size     : {result['spot_cm']} cm")  # type: ignore[index]
         return 0
 
     if args.command == "opendew":
+        import random
+
         from c_uas.detection.opendew_classifier import (
             get_opendew_classifier,
         )
-        import random
 
         clf = get_opendew_classifier()
         # Generate random IQ samples for testing
         samples = [random.uniform(-1.0, 1.0) for _ in range(args.samples)]
-        result = clf.classify_iq(samples)
-        print(f"[C-UAS] OpenDEW Signal Classification")
-        print(f"  Available   : {result['available']}")
-        print(f"  Method      : {result['method']}")
-        print(f"  Predicted   : {result['predicted_class']}")
-        print(f"  Confidence  : {result['confidence']}")
-        if result["probabilities"]:
-            print(f"  Probabilities:")
-            for cls, prob in sorted(
-                result["probabilities"].items(),
-                key=lambda x: -x[1]
-            )[:5]:
+        result = clf.classify_iq(samples)  # type: ignore[assignment]
+        print("[C-UAS] OpenDEW Signal Classification")
+        print(f"  Available   : {result['available']}")  # type: ignore[index]
+        print(f"  Method      : {result['method']}")  # type: ignore[index]
+        print(f"  Predicted   : {result['predicted_class']}")  # type: ignore[index]
+        print(f"  Confidence  : {result['confidence']}")  # type: ignore[index]
+        if result["probabilities"]:  # type: ignore[index]
+            print("  Probabilities:")
+            for cls, prob in sorted(result["probabilities"].items(), key=lambda x: -x[1])[:5]:  # type: ignore[index]
                 print(f"    {cls}: {prob}")
         return 0
 
     if args.command == "contract-readiness":
         from c_uas.contract_readiness import ContractReadinessModel
 
-        model = ContractReadinessModel()
-        analysis = model.full_analysis()
-        burn = analysis["burn_rate"]
-        cac = analysis["cac_ltv"]
-        frc = analysis["fastest_route_to_contract"]
-        print(f"[C-UAS] Contract Readiness Analysis")
-        print(f"  Burn rate     : ${burn['monthly_burn_usd']:,.0f}/month, "
-              f"${burn['annual_burn_usd']:,.0f}/year")
-        print(f"  Runway        : {burn['runway_months']} months, "
-              f"${burn['total_runway_usd']:,.0f} total")
+        model = ContractReadinessModel()  # type: ignore[assignment]
+        analysis = model.full_analysis()  # type: ignore[assignment, attr-defined]
+        burn = analysis["burn_rate"]  # type: ignore[index]
+        cac = analysis["cac_ltv"]  # type: ignore[index]
+        frc = analysis["fastest_route_to_contract"]  # type: ignore[index]
+        print("[C-UAS] Contract Readiness Analysis")
+        print(
+            f"  Burn rate     : ${burn['monthly_burn_usd']:,.0f}/month, "
+            f"${burn['annual_burn_usd']:,.0f}/year"
+        )
+        print(
+            f"  Runway        : {burn['runway_months']} months, "
+            f"${burn['total_runway_usd']:,.0f} total"
+        )
         print(f"  CAC           : ${cac['cac_usd']:,.0f}")
         print(f"  LTV           : ${cac['ltv_usd']:,.0f}")
         print(f"  CAC:LTV       : {cac['cac_ltv_ratio']:.4f} (viable: {cac['viable']})")
@@ -1042,19 +1087,23 @@ def main(argv: Optional[list] = None) -> int:
             seed=42,
         )
         fed = build_demo_federation(num_sites=args.sites)
-        result = fed.run_round(config)
-        print(f"[C-UAS] Multi-Site Orchestration Round")
-        print(f"  Sites          : {result['sites']}")
+        result = fed.run_round(config)  # type: ignore[assignment]
+        print("[C-UAS] Multi-Site Orchestration Round")
+        print(f"  Sites          : {result['sites']}")  # type: ignore[index]
         print(f"  Drones         : {args.drones}")
-        print(f"  Detections     : {result['detections']}")
-        print(f"  Fusion         : {result['fusion']['total_tracks_ingested']} tracks ingested")
-        print(f"  Tracks/site    : {result['fusion']['tracks_per_site']}")
-        for sid, plan in result["engagement_plans"].items():
-            print(f"  {sid} engagement: kills={plan['expected_kills']:.2f}, "
-                  f"engaged={plan['engaged_targets']}, leaked={plan['leaked_targets']}, "
-                  f"leak_rate={plan['leak_rate']:.1%}")
-        print(f"  Deconfliction  : {result['deconfliction']['conflicts_detected']} conflicts, "
-              f"{result['deconfliction']['conflicts_resolved']} resolved")
+        print(f"  Detections     : {result['detections']}")  # type: ignore[index]
+        print(f"  Fusion         : {result['fusion']['total_tracks_ingested']} tracks ingested")  # type: ignore[index]
+        print(f"  Tracks/site    : {result['fusion']['tracks_per_site']}")  # type: ignore[index]
+        for sid, plan in result["engagement_plans"].items():  # type: ignore[index]
+            print(
+                f"  {sid} engagement: kills={plan['expected_kills']:.2f}, "  # type: ignore[index]
+                f"engaged={plan['engaged_targets']}, leaked={plan['leaked_targets']}, "  # type: ignore[index]
+                f"leak_rate={plan['leak_rate']:.1%}"  # type: ignore[index]
+            )
+        print(
+            f"  Deconfliction  : {result['deconfliction']['conflicts_detected']} conflicts, "  # type: ignore[index]
+            f"{result['deconfliction']['conflicts_resolved']} resolved"  # type: ignore[index]
+        )
         return 0
 
     if args.command == "agent-eval":
@@ -1062,17 +1111,20 @@ def main(argv: Optional[list] = None) -> int:
 
         harness = AgentEvalHarness()
         summary = harness.run_all(num_sites=args.sites, num_drones=args.drones)
-        print(f"[C-UAS] Agent Evaluation Harness")
+        print("[C-UAS] Agent Evaluation Harness")
         print(f"  Total          : {summary['total']}")
         print(f"  Passed         : {summary['passed']}")
         print(f"  Failed         : {summary['failed']}")
         print(f"  Pass rate      : {summary['pass_rate']:.1%}")
-        for r in summary["results"]:
+        for r in summary["results"]:  # type: ignore[attr-defined]
             status = "PASS" if r["passed"] else "FAIL"
-            print(f"  [{status}] {r['name']}: {r['value']} (threshold: {r['threshold']}) — {r['detail']}")
+            print(
+                f"  [{status}] {r['name']}: {r['value']} (threshold: {r['threshold']}) — {r['detail']}"
+            )
         return 0
 
     if args.command == "threat-intel":
+        from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
         from c_uas.threat_intel import (
             AlertEngine,
             ChannelConfig,
@@ -1087,7 +1139,6 @@ def main(argv: Optional[list] = None) -> int:
         )
         from c_uas.threat_intel.alert_engine import Channel
         from c_uas.threat_intel.store import ThreatIntelStore
-        from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
 
         if args.export:
             store = ThreatIntelStore()
@@ -1178,12 +1229,12 @@ def main(argv: Optional[list] = None) -> int:
                     is_fielded=False,
                 ),
             ]
-            for entry in comp_entries:
-                builder.add_competitive_intel(entry)
+            for entry in comp_entries:  # type: ignore[assignment]
+                builder.add_competitive_intel(entry)  # type: ignore[arg-type]
 
             bundle = builder.build()
             store.save_bundle(bundle)
-            print(f"[C-UAS] STIX 2.1 bundle exported")
+            print("[C-UAS] STIX 2.1 bundle exported")
             print(f"  Bundle ID : {bundle['id']}")
             print(f"  Objects   : {len(bundle['objects'])}")
             print(f"  SHA-256   : {bundle_hash(bundle)}")
@@ -1191,11 +1242,13 @@ def main(argv: Optional[list] = None) -> int:
             return 0
 
         if args.alert:
-            engine = AlertEngine(
+            engine = AlertEngine(  # type: ignore[assignment]
                 channels=[
                     Channel(config=ChannelConfig(kind="console"), send=ConsoleChannel().send),
-                    Channel(config=ChannelConfig(kind="email", email_to="soc@a2zsoc.com"),
-                            send=EmailStubChannel("soc@a2zsoc.com").send),
+                    Channel(
+                        config=ChannelConfig(kind="email", email_to="soc@a2zsoc.com"),
+                        send=EmailStubChannel("soc@a2zsoc.com").send,
+                    ),
                 ]
             )
             sample_events = [
@@ -1230,7 +1283,7 @@ def main(argv: Optional[list] = None) -> int:
             ]
             total = 0
             for event in sample_events:
-                total += len(engine.process_event(event))
+                total += len(engine.process_event(event))  # type: ignore[attr-defined]
             print(f"[C-UAS] Alert engine: {total} alert(s) dispatched")
             return 0
 
@@ -1239,14 +1292,16 @@ def main(argv: Optional[list] = None) -> int:
 
             # 1. Export produces a valid STIX 2.1 bundle.
             builder = STIXBundleBuilder()
-            builder.add_detection_event(DetectionEvent(
-                event_id="DET-TEST-01",
-                timestamp="2026-10-23T11:00:00Z",
-                source="rf_classifier",
-                target_id="UAV-TEST-01",
-                threat_level="HIGH",
-                protocol="DJI_OCUSYNC_4",
-            ))
+            builder.add_detection_event(
+                DetectionEvent(
+                    event_id="DET-TEST-01",
+                    timestamp="2026-10-23T11:00:00Z",
+                    source="rf_classifier",
+                    target_id="UAV-TEST-01",
+                    threat_level="HIGH",
+                    protocol="DJI_OCUSYNC_4",
+                )
+            )
             bundle = builder.build()
             assert bundle["type"] == "bundle"
             assert bundle["spec_version"] == "2.1"
@@ -1255,28 +1310,31 @@ def main(argv: Optional[list] = None) -> int:
             assert len(h) == 64
             # Determinism: same inputs -> same bundle id/hash.
             builder2 = STIXBundleBuilder()
-            builder2.add_detection_event(DetectionEvent(
-                event_id="DET-TEST-01",
-                timestamp="2026-10-23T11:00:00Z",
-                source="rf_classifier",
-                target_id="UAV-TEST-01",
-                threat_level="HIGH",
-                protocol="DJI_OCUSYNC_4",
-            ))
+            builder2.add_detection_event(
+                DetectionEvent(
+                    event_id="DET-TEST-01",
+                    timestamp="2026-10-23T11:00:00Z",
+                    source="rf_classifier",
+                    target_id="UAV-TEST-01",
+                    threat_level="HIGH",
+                    protocol="DJI_OCUSYNC_4",
+                )
+            )
             assert bundle_hash(builder2.build()) == h
 
             # 2. Alert engine dispatches on CRITICAL events.
-            engine = AlertEngine(
-                channels=[Channel(config=ChannelConfig(kind="console"),
-                                  send=ConsoleChannel().send)]
+            engine = AlertEngine(  # type: ignore[assignment]
+                channels=[Channel(config=ChannelConfig(kind="console"), send=ConsoleChannel().send)]
             )
-            alerts = engine.process_event(DetectionEvent(
-                event_id="DET-TEST-02",
-                timestamp="2026-10-23T11:01:00Z",
-                source="spoof_detector",
-                target_id="UAV-TEST-02",
-                threat_level="CRITICAL",
-            ))
+            alerts = engine.process_event(  # type: ignore[attr-defined]
+                DetectionEvent(
+                    event_id="DET-TEST-02",
+                    timestamp="2026-10-23T11:01:00Z",
+                    source="spoof_detector",
+                    target_id="UAV-TEST-02",
+                    threat_level="CRITICAL",
+                )
+            )
             assert len(alerts) == 1
             assert alerts[0].severity == "CRITICAL"
 
@@ -1315,7 +1373,7 @@ def main(argv: Optional[list] = None) -> int:
         )
 
         action = (args.action or "").lower()
-        mgr = BrokerTenantManager()
+        mgr = BrokerTenantManager()  # type: ignore[assignment]
         slots_mgr = AgentSlotManager()
         camp_mgr = CampaignManager()
         analytics = CampaignAnalyticsEngine()
@@ -1325,7 +1383,7 @@ def main(argv: Optional[list] = None) -> int:
                 if not args.name or not args.region or not args.contact_email:
                     print("[C-UAS] --name, --region and --contact-email required for register")
                     return 1
-                tenant = mgr.register(
+                tenant = mgr.register(  # type: ignore[attr-defined]
                     args.name,
                     args.region,
                     args.contact_email,
@@ -1339,7 +1397,9 @@ def main(argv: Optional[list] = None) -> int:
                 print(f"  Contact email  : {tenant.contact_email}")
                 print(f"  WhatsApp       : {tenant.whatsapp_number}")
                 print(f"  Facebook page  : {tenant.facebook_page_id}")
-                print(f"  Slots          : {tenant.agent_slots_allocated} / {tenant.max_agent_slots}")
+                print(
+                    f"  Slots          : {tenant.agent_slots_allocated} / {tenant.max_agent_slots}"
+                )
                 print(f"  Status         : {tenant.status}")
                 print(f"  Created at     : {tenant.created_at}")
                 return 0
@@ -1369,14 +1429,23 @@ def main(argv: Optional[list] = None) -> int:
                 return 0
 
             if action == "campaign":
-                if not args.broker_id or not args.channel or not args.target_region \
-                        or not args.message_template or args.recipient_count is None:
-                    print("[C-UAS] --broker-id, --channel, --target-region, --message-template, "
-                          "--recipient-count required for campaign")
+                if (
+                    not args.broker_id
+                    or not args.channel
+                    or not args.target_region
+                    or not args.message_template
+                    or args.recipient_count is None
+                ):
+                    print(
+                        "[C-UAS] --broker-id, --channel, --target-region, --message-template, "
+                        "--recipient-count required for campaign"
+                    )
                     return 1
                 if not DistributionChannel.has_value(args.channel):
-                    print(f"[C-UAS] Unknown channel: {args.channel} "
-                          f"(expected {', '.join(c.value for c in DistributionChannel)})")
+                    print(
+                        f"[C-UAS] Unknown channel: {args.channel} "
+                        f"(expected {', '.join(c.value for c in DistributionChannel)})"
+                    )
                     return 1
                 campaign = camp_mgr.create_campaign(
                     args.broker_id,
@@ -1402,21 +1471,23 @@ def main(argv: Optional[list] = None) -> int:
                 if not args.campaign_id:
                     print("[C-UAS] --campaign-id required for analytics")
                     return 1
-                report = analytics.analyze(args.campaign_id)
+                report = analytics.analyze(args.campaign_id)  # type: ignore[assignment]
                 print(f"[C-UAS] Campaign analytics: {report.campaign_id}")
-                print(f"  Delivery rate  : {report.delivery_rate:.1%}")
-                print(f"  Read rate      : {report.read_rate:.1%}")
-                print(f"  Conversion rate: {report.conversion_rate:.4%} (illustrative)")
-                print(f"  Cost per acq   : ${report.cost_per_acquisition_usd:.2f} (illustrative)")
-                print(f"  Basis          : {report.basis}")
+                print(f"  Delivery rate  : {report.delivery_rate:.1%}")  # type: ignore[attr-defined]
+                print(f"  Read rate      : {report.read_rate:.1%}")  # type: ignore[attr-defined]
+                print(f"  Conversion rate: {report.conversion_rate:.4%} (illustrative)")  # type: ignore[attr-defined]
+                print(f"  Cost per acq   : ${report.cost_per_acquisition_usd:.2f} (illustrative)")  # type: ignore[attr-defined]
+                print(f"  Basis          : {report.basis}")  # type: ignore[attr-defined]
                 return 0
 
             if action == "list-tenants":
                 tenants = mgr.list_all()
                 print(f"[C-UAS] Broker tenants ({len(tenants)}):")
                 for t in tenants:
-                    print(f"  {t.broker_id}  {t.name}  {t.region}  "
-                          f"{t.agent_slots_allocated}/{t.max_agent_slots} slots  {t.status}")
+                    print(
+                        f"  {t.broker_id}  {t.name}  {t.region}  "  # type: ignore[attr-defined]
+                        f"{t.agent_slots_allocated}/{t.max_agent_slots} slots  {t.status}"  # type: ignore[attr-defined]
+                    )
                 return 0
 
             print(f"[C-UAS] Unknown broker action: {action}")
@@ -1428,14 +1499,109 @@ def main(argv: Optional[list] = None) -> int:
             print(f"[C-UAS] {exc}")
             return 1
 
+    if args.command == "compliance":
+        from c_uas.compliance import (
+            AuditTrailGenerator,
+            ComplianceReporter,
+            EvidenceExport,
+            EvidencePackageManager,
+            EvidenceCollector,
+        )
+
+        if args.collect:
+            collector = EvidenceCollector()
+            records = collector.collect()
+            print(f"[C-UAS] Compliance evidence collected: {len(records)} record(s)")
+            by_source: Dict[str, int] = {}
+            for rec in records:
+                by_source[rec.source] = by_source.get(rec.source, 0) + 1
+            for source in sorted(by_source):
+                print(f"  {source}: {by_source[source]}")
+            return 0
+
+        if args.package:
+            collector = EvidenceCollector()
+            records = collector.collect()
+            manager = EvidencePackageManager()
+            package = manager.package(records)
+            trail = AuditTrailGenerator().build(records)
+            print(f"[C-UAS] Evidence package signed: {package.package_id}")
+            print(f"  Evidence records : {package.evidence_count}")
+            print(f"  Signature (Ed25519): {package.signature[:32]}...")
+            print(f"  Public key       : {package.public_key_pem.splitlines()[1][:32]}...")
+            print(f"  Audit trail steps: {len(trail)}")
+            print(f"  Chain valid      : {manager.verify_package(package)}")
+            return 0
+
+        if args.export:
+            manager = EvidencePackageManager()
+            packages = manager.list_packages()
+            if not packages:
+                print("[C-UAS] No evidence package found. Run --package first.")
+                return 1
+            package = packages[-1]
+            collector = EvidenceCollector()
+            records = collector.list_collected()
+            record_map = {r.evidence_id: r for r in records}
+            bundled = [record_map[eid] for eid in package.evidence_ids if eid in record_map]
+            exporter = EvidenceExport()
+            fmt = (args.format or "json").lower()
+            out = args.out
+            if fmt == "json":
+                path = exporter.to_json(package, out or "-")
+                if out:
+                    print(f"[C-UAS] Package exported (JSON): {path}")
+                else:
+                    print(_canonical(package.to_dict()))
+            elif fmt == "zip":
+                if not out:
+                    print("[C-UAS] --out required for zip export")
+                    return 1
+                path = exporter.to_zip(package, bundled, out)
+                print(f"[C-UAS] Package exported (ZIP): {path}")
+            else:
+                print(f"[C-UAS] Unknown export format: {args.format} (expected json or zip)")
+                return 1
+            return 0
+
+        if args.report:
+            collector = EvidenceCollector()
+            records = collector.collect()
+            reporter = ComplianceReporter()
+            report = reporter.generate(records)
+            print("[C-UAS] ISO 42001 Compliance Report")
+            print(f"  Total evidence   : {report.total_evidence}")
+            print(f"  Controls         : {report.satisfied_controls}/{report.total_controls}")
+            print(f"  Coverage         : {report.coverage_percentage}%")
+            print(f"  Overall status   : {report.overall_status}")
+            for ctrl in report.controls:
+                marker = "OK " if ctrl.satisfied else "GAP"
+                print(f"  [{marker}] {ctrl.control_id} {ctrl.title} ({ctrl.evidence_count} evidence)")
+            return 0
+
+        print("[C-UAS] compliance: specify --collect, --package, --export, or --report")
+        return 1
+
     if args.command == "hardware":
         from c_uas.hardware.cli import main as hardware_main
 
         source = argv if argv is not None else sys.argv[1:]
         return hardware_main([a for a in source if a != "hardware"])
 
+    if args.command == "hardware":
+        from c_uas.hardware.cli import main as hardware_main
+
+        source = argv if argv is not None else sys.argv[1:]
+        return hardware_main([a for a in source if a != "hardware"])
+
+    if args.command == "red-team":
+        from c_uas.red_team.cli import red_team_main
+
+        return red_team_main(args)
+
     parser.print_help()
     return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

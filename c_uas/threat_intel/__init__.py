@@ -38,18 +38,18 @@ from .alert_engine import (
     WebhookChannel,
 )
 from .models import (
+    STIX_NAMESPACE,
     CompetitiveIntelEntry,
     DetectionEvent,
     ForensicDossierRef,
-    STIX_NAMESPACE,
 )
-from .store import ThreatIntelStore
 from .stix_builder import (
     STIXBundleBuilder,
     bundle_hash,
     detection_event_from_dict,
     forensic_dossier_from_dict,
 )
+from .store import ThreatIntelStore
 from .taxii_server import app_factory
 
 __all__ = [

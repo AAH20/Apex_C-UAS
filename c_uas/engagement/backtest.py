@@ -20,13 +20,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import random
 import sys
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List
 
-from c_uas.engagement.constraints import ThermalBloomModel
 from c_uas.engagement.scheduler import DroneTrack, EngagementScheduler
 
 
@@ -59,8 +57,11 @@ class ControlResult:
 
 
 def _deterministic_tracks(
-    num_drones: int, time_limit_s: float, seed: int,
-    pk_min: float = 0.6, pk_max: float = 0.95,
+    num_drones: int,
+    time_limit_s: float,
+    seed: int,
+    pk_min: float = 0.6,
+    pk_max: float = 0.95,
 ) -> List[DroneTrack]:
     """Generate deterministic synthetic tracks (same seed = same tracks)."""
     rng = random.Random(seed)
@@ -81,7 +82,10 @@ def _deterministic_tracks(
 
 
 def _fitness(
-    expected_kills: float, leaked: int, time_used: float, time_limit: float,
+    expected_kills: float,
+    leaked: int,
+    time_used: float,
+    time_limit: float,
     leak_penalty: float = 1.0,
 ) -> float:
     """Fitness = expected_kills − leak_penalty·leaked + time efficiency bonus."""
@@ -96,11 +100,13 @@ def _fitness(
 # Controls — counterfactuals that the scheduler must beat to claim alpha
 # ---------------------------------------------------------------------------
 
+
 def control_random_entry(
-    tracks: List[DroneTrack], scheduler: EngagementScheduler,
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
 ) -> ControlResult:
     """Control: engage targets in a random order (no intelligence).
-    
+
     This isolates whether the scheduler's value comes from selection
     intelligence or just from firing at things.
     """
@@ -137,10 +143,11 @@ def control_random_entry(
 
 
 def control_shortest_hold_first(
-    tracks: List[DroneTrack], scheduler: EngagementScheduler,
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
 ) -> ControlResult:
     """Control: engage targets with the shortest dwell requirement first.
-    
+
     Tests whether Pk-per-second selection matters vs just firing fast.
     """
     ordered = sorted(tracks, key=lambda t: scheduler.dwell_s + scheduler.slew_s)
@@ -148,10 +155,11 @@ def control_shortest_hold_first(
 
 
 def control_greedy_pk_only(
-    tracks: List[DroneTrack], scheduler: EngagementScheduler,
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
 ) -> ControlResult:
     """Control: engage targets by raw Pk only (ignore time cost).
-    
+
     Tests whether time-awareness matters vs just picking highest Pk.
     """
     ordered = sorted(tracks, key=lambda t: -t.pk_base)
@@ -159,10 +167,11 @@ def control_greedy_pk_only(
 
 
 def control_deadline_first(
-    tracks: List[DroneTrack], scheduler: EngagementScheduler,
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
 ) -> ControlResult:
     """Control: engage targets by earliest arrival deadline first.
-    
+
     Tests whether Pk-per-second matters vs just meeting deadlines.
     """
     ordered = sorted(tracks, key=lambda t: t.arrival_time_s)
@@ -170,7 +179,9 @@ def control_deadline_first(
 
 
 def _greedy_sequence(
-    ordered: List[DroneTrack], scheduler: EngagementScheduler, name: str,
+    ordered: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    name: str,
 ) -> ControlResult:
     """Execute engagements in the given order, respecting deadlines and time."""
     time_used = 0.0
@@ -202,10 +213,11 @@ def _greedy_sequence(
 
 
 def control_direction_flip(
-    tracks: List[DroneTrack], scheduler: EngagementScheduler,
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
 ) -> ControlResult:
     """Control: invert Pk (high Pk becomes low, low becomes high).
-    
+
     If the scheduler's edge comes from Pk selection, flipping Pk should
     collapse performance. If it doesn't, the edge is from time management
     or deadline handling, not signal.
@@ -227,8 +239,10 @@ def control_direction_flip(
     )
     plan = sched.schedule(tracks=flipped)
     fitness = _fitness(
-        plan.expected_kills, plan.leaked_targets,
-        plan.total_time_s, scheduler.time_limit_s,
+        plan.expected_kills,
+        plan.leaked_targets,
+        plan.total_time_s,
+        scheduler.time_limit_s,
     )
     return ControlResult(
         control_name="direction_flip",
@@ -245,8 +259,10 @@ def run_scheduler(tracks: List[DroneTrack], scheduler: EngagementScheduler) -> C
     """Run the engagement scheduler against tracks."""
     plan = scheduler.schedule(tracks=tracks)
     fitness = _fitness(
-        plan.expected_kills, plan.leaked_targets,
-        plan.total_time_s, scheduler.time_limit_s,
+        plan.expected_kills,
+        plan.leaked_targets,
+        plan.total_time_s,
+        scheduler.time_limit_s,
     )
     return ControlResult(
         control_name="scheduler",
@@ -266,8 +282,11 @@ def run_backtest(scenario: Scenario) -> Dict[str, Any]:
     and the alpha determination (did scheduler beat every control?).
     """
     tracks = _deterministic_tracks(
-        scenario.num_drones, scenario.time_limit_s, scenario.seed,
-        scenario.pk_min, scenario.pk_max,
+        scenario.num_drones,
+        scenario.time_limit_s,
+        scenario.seed,
+        scenario.pk_min,
+        scenario.pk_max,
     )
     scheduler = EngagementScheduler(
         dwell_s=scenario.dwell_s,
@@ -287,9 +306,7 @@ def run_backtest(scenario: Scenario) -> Dict[str, Any]:
     ]
 
     # Alpha determination: scheduler must beat every control on fitness
-    scheduler_beats_all = all(
-        scheduler_result.fitness > c.fitness for c in controls
-    )
+    scheduler_beats_all = all(scheduler_result.fitness > c.fitness for c in controls)
     # Also require expected_kills >= every control (not just fitness)
     scheduler_beats_all_kills = all(
         scheduler_result.expected_kills >= c.expected_kills for c in controls
@@ -320,17 +337,14 @@ def run_sweep(scenarios: List[Scenario]) -> Dict[str, Any]:
     total = len(results)
     alpha_wins = sum(1 for r in results if r["alpha_determination"]["alpha_claimed"])
     fitness_wins = sum(
-        1 for r in results
-        if r["alpha_determination"]["scheduler_beats_every_control_on_fitness"]
+        1 for r in results if r["alpha_determination"]["scheduler_beats_every_control_on_fitness"]
     )
 
     # Aggregate margins
     fitness_margins = [
         r["alpha_determination"]["margin_over_best_control_fitness"] for r in results
     ]
-    kills_margins = [
-        r["alpha_determination"]["margin_over_best_control_kills"] for r in results
-    ]
+    kills_margins = [r["alpha_determination"]["margin_over_best_control_kills"] for r in results]
 
     return {
         "total_scenarios": total,
@@ -351,16 +365,20 @@ def main() -> int:
         description="Backtest the engagement scheduler against counterfactual controls.",
     )
     parser.add_argument(
-        "--scenario", choices=["swarm_4", "swarm_8", "swarm_16", "swarm_32"],
+        "--scenario",
+        choices=["swarm_4", "swarm_8", "swarm_16", "swarm_32"],
         default="swarm_8",
         help="Backtest scenario to run.",
     )
     parser.add_argument(
-        "--trials", type=int, default=1,
+        "--trials",
+        type=int,
+        default=1,
         help="Number of deterministic trials (different seeds).",
     )
     parser.add_argument(
-        "--report", action="store_true",
+        "--report",
+        action="store_true",
         help="Print full sweep report as JSON.",
     )
     args = parser.parse_args()
@@ -385,23 +403,32 @@ def main() -> int:
     results = []
     for trial in range(args.trials):
         s = Scenario(
-            name=scenario.name, num_drones=scenario.num_drones,
-            time_limit_s=scenario.time_limit_s, seed=scenario.seed + trial,
-            dwell_s=scenario.dwell_s, slew_s=scenario.slew_s,
+            name=scenario.name,
+            num_drones=scenario.num_drones,
+            time_limit_s=scenario.time_limit_s,
+            seed=scenario.seed + trial,
+            dwell_s=scenario.dwell_s,
+            slew_s=scenario.slew_s,
             thermal_bloom=scenario.thermal_bloom,
-            pk_min=scenario.pk_min, pk_max=scenario.pk_max,
+            pk_min=scenario.pk_min,
+            pk_max=scenario.pk_max,
         )
         results.append(run_backtest(s))
 
     # Aggregate
     alpha_wins = sum(1 for r in results if r["alpha_determination"]["alpha_claimed"])
-    print(json.dumps({
-        "scenario": scenario.name,
-        "trials": args.trials,
-        "alpha_claimed_count": alpha_wins,
-        "alpha_claim_rate": round(alpha_wins / args.trials, 4),
-        "results": results,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "scenario": scenario.name,
+                "trials": args.trials,
+                "alpha_claimed_count": alpha_wins,
+                "alpha_claim_rate": round(alpha_wins / args.trials, 4),
+                "results": results,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

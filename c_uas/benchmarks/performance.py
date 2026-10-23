@@ -19,12 +19,11 @@ Usage:
 
 from __future__ import annotations
 
-import time
 import random
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from c_uas.engagement.backtest import Scenario, run_backtest
 from c_uas.engagement.scheduler import (
     DroneTrack,
     EngagementScheduler,
@@ -101,9 +100,7 @@ class BenchmarkSuite:
 
         results: List[SchedulerBenchmarkResult] = []
         for n in drone_counts:
-            scheduler = EngagementScheduler(
-                dwell_s=4.0, slew_s=1.5, time_limit_s=time_limit_s
-            )
+            scheduler = EngagementScheduler(dwell_s=4.0, slew_s=1.5, time_limit_s=time_limit_s)
             tracks = [
                 DroneTrack(
                     track_id=i,
@@ -172,7 +169,11 @@ class BenchmarkSuite:
         true_z = true_z0 + true_vz * (current_time_s + horizon_s)
 
         # Position error
-        position_error_m = ((intercept[0] - true_x) ** 2 + (intercept[1] - true_y) ** 2 + (intercept[2] - true_z) ** 2) ** 0.5
+        position_error_m = (
+            (intercept[0] - true_x) ** 2
+            + (intercept[1] - true_y) ** 2
+            + (intercept[2] - true_z) ** 2
+        ) ** 0.5
 
         # Velocity error (EKF state velocity vs true velocity)
         vel_error = (
@@ -192,15 +193,16 @@ class BenchmarkSuite:
 
     def benchmark_end_to_end(self) -> EndToEndBenchmarkResult:
         """Measure end-to-end pipeline latency."""
-        from c_uas.detection.rf_classifier import RFSignalClassifier
-        from c_uas.detection.spoof_detector import GNSSSpoofDetector, GNSSMeasurement
-        from c_uas.decision import (
-            PerceptionModule,
-            DecisionModule,
-            ActionModule,
-        )
-        from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
         import asyncio
+
+        from c_uas.decision import (
+            ActionModule,
+            DecisionModule,
+            PerceptionModule,
+        )
+        from c_uas.detection.rf_classifier import RFSignalClassifier
+        from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
+        from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
 
         stages = 0
         total_start = time.perf_counter()
@@ -249,9 +251,7 @@ class BenchmarkSuite:
         stages += 1
 
         # Stage 6: Action execution (async)
-        action = ActionModule(
-            config={"jamming": {"authorized": False}}, simulation_mode=True
-        )
+        action = ActionModule(config={"jamming": {"authorized": False}}, simulation_mode=True)
         asyncio.run(self._execute_commands(action, commands))
         stages += 1
 

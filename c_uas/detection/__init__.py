@@ -1,20 +1,20 @@
 """RF detection and GNSS spoofing sub-package."""
 
-from .rf_classifier import RFSignalClassifier
-from .spoof_detector import GNSSSpoofDetector, GNSSMeasurement
-from .mavlink_vulns import (
-    MavlinkVulnerability,
-    MavlinkVulnerabilityDatabase,
-    MAVLINK_VULNERABILITIES,
-)
 from .controller_locator import (
-    SensorSite,
-    Detection,
     ControllerLocationEstimate,
     ControllerLocator,
-    haversine_km,
+    Detection,
+    SensorSite,
     bearing_deg,
+    haversine_km,
 )
+from .mavlink_vulns import (
+    MAVLINK_VULNERABILITIES,
+    MavlinkVulnerability,
+    MavlinkVulnerabilityDatabase,
+)
+from .rf_classifier import RFSignalClassifier
+from .spoof_detector import GNSSMeasurement, GNSSSpoofDetector
 
 __all__ = [
     "RFSignalClassifier",

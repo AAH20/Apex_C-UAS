@@ -104,17 +104,13 @@ class Track:
 def distance_m(a: Detection, b: Detection) -> float:
     """Euclidean distance between two detections in meters."""
 
-    return math.sqrt(
-        (a.x_m - b.x_m) ** 2 + (a.y_m - b.y_m) ** 2 + (a.z_m - b.z_m) ** 2
-    )
+    return math.sqrt((a.x_m - b.x_m) ** 2 + (a.y_m - b.y_m) ** 2 + (a.z_m - b.z_m) ** 2)
 
 
 def track_distance_m(a: Track, b: Track) -> float:
     """Euclidean distance between two tracks in meters."""
 
-    return math.sqrt(
-        (a.x_m - b.x_m) ** 2 + (a.y_m - b.y_m) ** 2 + (a.z_m - b.z_m) ** 2
-    )
+    return math.sqrt((a.x_m - b.x_m) ** 2 + (a.y_m - b.y_m) ** 2 + (a.z_m - b.z_m) ** 2)
 
 
 class SensorInterface(ABC):

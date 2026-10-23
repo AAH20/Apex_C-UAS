@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .models import Alert, ChannelConfig, DetectionEvent, ForensicDossierRef
+from .models import Alert, ChannelConfig
 
 _DATA_DIR = Path.home() / ".c-uas-platform" / "threat_intel"
 _BUNDLES_FILE = _DATA_DIR / "bundles.json"

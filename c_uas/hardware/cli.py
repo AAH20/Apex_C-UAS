@@ -18,8 +18,8 @@ from typing import List, Optional
 
 from .camera_adapter import CameraAdapter
 from .radar_adapter import RadarAdapter
-from .sensor_fusion import SensorFusion
 from .sdr_adapter import SDRAdapter
+from .sensor_fusion import SensorFusion
 from .state import save_detections, save_status, save_tracks
 
 
@@ -39,21 +39,11 @@ def main(argv: Optional[list] = None) -> int:
             "sensors with deterministic simulation mode and track fusion."
         ),
     )
-    parser.add_argument(
-        "--list", action="store_true", help="List sensors and capabilities"
-    )
-    parser.add_argument(
-        "--scan", action="store_true", help="Run detection on all sensors"
-    )
-    parser.add_argument(
-        "--fuse", action="store_true", help="Fuse detections into tracks"
-    )
-    parser.add_argument(
-        "--status", action="store_true", help="Health-check all sensors"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=42, help="Deterministic RNG seed"
-    )
+    parser.add_argument("--list", action="store_true", help="List sensors and capabilities")
+    parser.add_argument("--scan", action="store_true", help="Run detection on all sensors")
+    parser.add_argument("--fuse", action="store_true", help="Fuse detections into tracks")
+    parser.add_argument("--status", action="store_true", help="Health-check all sensors")
+    parser.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
     args = parser.parse_args(argv)
 
     sensors = _build_sensors(args.seed)
@@ -112,9 +102,7 @@ def main(argv: Optional[list] = None) -> int:
             detections.extend(s.detect())
         tracks = fusion.fuse(detections)
         save_tracks(tracks)
-        print(
-            f"[C-UAS] Fused {len(detections)} detections into {len(tracks)} tracks"
-        )
+        print(f"[C-UAS] Fused {len(detections)} detections into {len(tracks)} tracks")
         for t in tracks:
             print(
                 f"  {t.track_id}: ({t.x_m:.1f}, {t.y_m:.1f}, {t.z_m:.1f})m "

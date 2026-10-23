@@ -19,9 +19,9 @@ Methods:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 import math
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class Detection:
     frequency_mhz: float
     rssi_dbm: Optional[float] = None
     bearing_deg: Optional[float] = None  # bearing from sensor, if directional
-    doppler_hz: Optional[float] = None   # Doppler shift, if measurable
+    doppler_hz: Optional[float] = None  # Doppler shift, if measurable
     snr_db: Optional[float] = None
 
 
@@ -67,10 +67,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dphi / 2) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    )
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
@@ -166,13 +163,15 @@ class ControllerLocator:
                     d_lon = haversine_km(lat, lon + 0.001, slat, slon) - haversine_km(
                         lat, lon - 0.001, slat, slon
                     )
-                    d_ref_lat = (
-                        haversine_km(lat + 0.001, lon, ref_site.latitude_deg, ref_site.longitude_deg)
-                        - haversine_km(lat - 0.001, lon, ref_site.latitude_deg, ref_site.longitude_deg)
+                    d_ref_lat = haversine_km(
+                        lat + 0.001, lon, ref_site.latitude_deg, ref_site.longitude_deg
+                    ) - haversine_km(
+                        lat - 0.001, lon, ref_site.latitude_deg, ref_site.longitude_deg
                     )
-                    d_ref_lon = (
-                        haversine_km(lat, lon + 0.001, ref_site.latitude_deg, ref_site.longitude_deg)
-                        - haversine_km(lat, lon - 0.001, ref_site.latitude_deg, ref_site.longitude_deg)
+                    d_ref_lon = haversine_km(
+                        lat, lon + 0.001, ref_site.latitude_deg, ref_site.longitude_deg
+                    ) - haversine_km(
+                        lat, lon - 0.001, ref_site.latitude_deg, ref_site.longitude_deg
                     )
                     grad_lat += 2 * error * (d_lat - d_ref_lat) / 0.002
                     grad_lon += 2 * error * (d_lon - d_ref_lon) / 0.002
@@ -226,7 +225,11 @@ class ControllerLocator:
 
         def to_cartesian(site: SensorSite) -> Tuple[float, float]:
             # Equirectangular approximation
-            dx = math.radians(site.longitude_deg - ref.longitude_deg) * 6371.0 * math.cos(ref_lat_rad)
+            dx = (
+                math.radians(site.longitude_deg - ref.longitude_deg)
+                * 6371.0
+                * math.cos(ref_lat_rad)
+            )
             dy = math.radians(site.latitude_deg - ref.latitude_deg) * 6371.0
             return (dx, dy)
 
@@ -274,9 +277,7 @@ class ControllerLocator:
         lon = ref.longitude_deg + math.degrees(cx / (6371.0 * math.cos(ref_lat_rad)))
 
         # Residuals: distance from each intersection to centroid (km)
-        residuals = [
-            round(math.hypot(p[0] - cx, p[1] - cy), 2) for p in intersections
-        ]
+        residuals = [round(math.hypot(p[0] - cx, p[1] - cy), 2) for p in intersections]
 
         # Confidence: mean residual * scaling factor
         conf_km = (sum(residuals) / len(residuals)) if residuals else 50.0
@@ -290,12 +291,16 @@ class ControllerLocator:
             residuals_km=residuals,
         )
 
-    def _rssi_triangulate(self, path_loss_exponent: float = 2.2) -> Optional[ControllerLocationEstimate]:
+    def _rssi_triangulate(
+        self, path_loss_exponent: float = 2.2
+    ) -> Optional[ControllerLocationEstimate]:
         """
         RSSI-based distance estimation using log-distance path loss model,
         then trilateration.
         """
-        rssi_dets = [d for d in self.detections if d.rssi_dbm is not None and d.sensor_id in self.sites]
+        rssi_dets = [
+            d for d in self.detections if d.rssi_dbm is not None and d.sensor_id in self.sites
+        ]
         if len(rssi_dets) < 3:
             return None
 
@@ -312,7 +317,7 @@ class ControllerLocator:
             # rssi = ref_rssi - 10*n*log10(d/ref_dist)
             # d = ref_dist * 10^((ref_rssi - rssi) / (10*n))
             ratio = (ref_rssi - d.rssi_dbm) / (10.0 * path_loss_exponent)
-            dist_km = ref_dist_km * (10.0 ** ratio)
+            dist_km = ref_dist_km * (10.0**ratio)
             # Sanity cap
             dist_km = min(max(dist_km, 0.1), 500.0)
             sites_used.append((site.latitude_deg, site.longitude_deg))

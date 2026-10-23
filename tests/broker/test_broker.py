@@ -18,14 +18,12 @@ from dataclasses import asdict
 
 from c_uas.broker import (
     AgentSlotManager,
-    BrokerTenant,
     CampaignAnalytics,
     CampaignAnalyticsEngine,
     CampaignManager,
     DistributionChannel,
-    WaitlistEntry,
 )
-from c_uas.broker.broker import BrokerTenantManager, DEFAULT_MAX_AGENT_SLOTS
+from c_uas.broker.broker import DEFAULT_MAX_AGENT_SLOTS, BrokerTenantManager
 
 TEST_DIR = tempfile.mkdtemp(prefix="c-uas-broker-test-")
 os.environ["C_UAS_BROKER_DIR"] = TEST_DIR
@@ -71,21 +69,26 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_registration_is_content_addressed_and_idempotent(self):
         mgr = BrokerTenantManager()
-        t1 = mgr.register("Al Aman Security", "UAE", "ops@alaman.example",
-                          "+971500000001", "fb.com/alaman")
-        t2 = mgr.register("Al Aman Security", "UAE", "ops@alaman.example",
-                          "+971500000001", "fb.com/alaman")
+        t1 = mgr.register(
+            "Al Aman Security", "UAE", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+        )
+        t2 = mgr.register(
+            "Al Aman Security", "UAE", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+        )
         self.assertEqual(t1.broker_id, t2.broker_id)
         self.assertEqual(len(mgr.list_all()), 1)
 
     def test_different_inputs_yield_different_broker_ids(self):
         mgr = BrokerTenantManager()
-        t1 = mgr.register("Al Aman Security", "UAE", "ops@alaman.example",
-                          "+971500000001", "fb.com/alaman")
-        t2 = mgr.register("Al Aman Security", "KSA", "ops@alaman.example",
-                          "+971500000001", "fb.com/alaman")
-        t3 = mgr.register("Other Security", "UAE", "ops@alaman.example",
-                          "+971500000001", "fb.com/alaman")
+        t1 = mgr.register(
+            "Al Aman Security", "UAE", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+        )
+        t2 = mgr.register(
+            "Al Aman Security", "KSA", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+        )
+        t3 = mgr.register(
+            "Other Security", "UAE", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+        )
         ids = {t1.broker_id, t2.broker_id, t3.broker_id}
         self.assertEqual(len(ids), 3)
 
@@ -94,14 +97,20 @@ class TestBrokerChannelOS(unittest.TestCase):
         with self.assertRaises(ValueError):
             mgr.register("", "UAE", "ops@alaman.example", "+971500000001", "fb.com/alaman")
         with self.assertRaises(ValueError):
-            mgr.register("Al Aman Security", "", "ops@alaman.example", "+971500000001", "fb.com/alaman")
+            mgr.register(
+                "Al Aman Security", "", "ops@alaman.example", "+971500000001", "fb.com/alaman"
+            )
         with self.assertRaises(ValueError):
             mgr.register("Al Aman Security", "UAE", "", "+971500000001", "fb.com/alaman")
 
     def test_get_and_list_tenants(self):
         mgr = BrokerTenantManager()
-        t1 = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
-        t2 = mgr.register("Second Broker", "NIGERIA", "b@second.example", "+234800000001", "fb.com/second")
+        t1 = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
+        t2 = mgr.register(
+            "Second Broker", "NIGERIA", "b@second.example", "+234800000001", "fb.com/second"
+        )
         self.assertIsNotNone(mgr.get(t1.broker_id))
         self.assertEqual(mgr.get(t1.broker_id).name, "First Broker")
         self.assertIsNone(mgr.get("BR-000000000000"))
@@ -110,7 +119,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_set_status_suspends_and_rejects_invalid_status(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         suspended = mgr.set_status(tenant.broker_id, "suspended")
         self.assertEqual(suspended.status, "suspended")
         with self.assertRaises(ValueError):
@@ -122,7 +133,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_allocate_updates_utilization(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         slots = AgentSlotManager()
         util = slots.allocate(tenant.broker_id, 100)
         self.assertEqual(util.slots_used, 100)
@@ -133,7 +146,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_allocate_beyond_capacity_waitlists(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         slots = AgentSlotManager()
         slots.allocate(tenant.broker_id, 330)  # at capacity
         util = slots.allocate(tenant.broker_id, 50)  # waitlisted, no slots consumed
@@ -145,7 +160,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_revoke_frees_slots(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         slots = AgentSlotManager()
         slots.allocate(tenant.broker_id, 100)
         util = slots.revoke(tenant.broker_id, 40)
@@ -154,11 +171,13 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_revoke_promotes_waitlist_in_fifo_order(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         slots = AgentSlotManager()
         slots.allocate(tenant.broker_id, 330)  # full
-        slots.allocate(tenant.broker_id, 50)   # waitlist entry 1
-        slots.allocate(tenant.broker_id, 30)   # waitlist entry 2
+        slots.allocate(tenant.broker_id, 50)  # waitlist entry 1
+        slots.allocate(tenant.broker_id, 30)  # waitlist entry 2
         self.assertEqual(slots.utilization(tenant.broker_id).waitlisted, 80)
 
         # Free 100 slots: entry 1 (50) promotes, then entry 2 (30) promotes.
@@ -169,7 +188,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_suspended_broker_cannot_allocate_slots(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         mgr.set_status(tenant.broker_id, "suspended")
         slots = AgentSlotManager()
         with self.assertRaises(ValueError):
@@ -191,12 +212,24 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_create_campaign_is_deterministic(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         camps = CampaignManager()
-        c1 = camps.create_campaign(tenant.broker_id, DistributionChannel.WHATSAPP,
-                                   "EGYPT", "Protect your airspace demo C-UAS.", 10000)
-        c2 = camps.create_campaign(tenant.broker_id, DistributionChannel.WHATSAPP,
-                                   "EGYPT", "Protect your airspace demo C-UAS.", 10000)
+        c1 = camps.create_campaign(
+            tenant.broker_id,
+            DistributionChannel.WHATSAPP,
+            "EGYPT",
+            "Protect your airspace demo C-UAS.",
+            10000,
+        )
+        c2 = camps.create_campaign(
+            tenant.broker_id,
+            DistributionChannel.WHATSAPP,
+            "EGYPT",
+            "Protect your airspace demo C-UAS.",
+            10000,
+        )
         self.assertTrue(c1.campaign_id.startswith("CAMP-"))
         self.assertEqual(len(c1.campaign_id), 17)  # "CAMP-" + 12 hex chars
         self.assertEqual(c1.broker_id, tenant.broker_id)
@@ -207,7 +240,9 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_create_campaign_rejects_bad_inputs(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         camps = CampaignManager()
         with self.assertRaises(KeyError):
             camps.create_campaign("BR-000000000000", DistributionChannel.WHATSAPP, "EGYPT", "x", 10)
@@ -221,10 +256,17 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_dispatch_simulates_delivery_and_reads(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first"
+        )
         camps = CampaignManager()
-        campaign = camps.create_campaign(tenant.broker_id, DistributionChannel.WHATSAPP,
-                                         "UAE", "Protect your airspace demo C-UAS.", 10000)
+        campaign = camps.create_campaign(
+            tenant.broker_id,
+            DistributionChannel.WHATSAPP,
+            "UAE",
+            "Protect your airspace demo C-UAS.",
+            10000,
+        )
         dispatched = camps.dispatch_campaign(campaign.campaign_id)
         self.assertEqual(dispatched.status, "dispatched")
         self.assertEqual(dispatched.sent_count, 10000)
@@ -239,10 +281,13 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_dispatch_facebook_channel_rates(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "KSA", "a@first.example", "+966500000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "KSA", "a@first.example", "+966500000001", "fb.com/first"
+        )
         camps = CampaignManager()
-        campaign = camps.create_campaign(tenant.broker_id, DistributionChannel.FACEBOOK,
-                                         "KSA", "hello", 1000)
+        campaign = camps.create_campaign(
+            tenant.broker_id, DistributionChannel.FACEBOOK, "KSA", "hello", 1000
+        )
         dispatched = camps.dispatch_campaign(campaign.campaign_id)
         # Facebook 0.92 * KSA modifier 0.98 = 0.9016 -> round(901.6) = 902 delivered;
         # read 0.60 -> round(541.2) = 541 read
@@ -251,10 +296,17 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_analytics_rates_and_illustrative_labels(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first"
+        )
         camps = CampaignManager()
-        campaign = camps.create_campaign(tenant.broker_id, DistributionChannel.WHATSAPP,
-                                         "UAE", "Protect your airspace demo C-UAS.", 10000)
+        campaign = camps.create_campaign(
+            tenant.broker_id,
+            DistributionChannel.WHATSAPP,
+            "UAE",
+            "Protect your airspace demo C-UAS.",
+            10000,
+        )
         camps.dispatch_campaign(campaign.campaign_id)
         report = CampaignAnalyticsEngine().analyze(campaign.campaign_id)
         self.assertIsInstance(report, CampaignAnalytics)
@@ -267,10 +319,13 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_analytics_undispatched_campaign_has_zero_rates(self):
         mgr = BrokerTenantManager()
-        tenant = mgr.register("First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first")
+        tenant = mgr.register(
+            "First Broker", "UAE", "a@first.example", "+971500000001", "fb.com/first"
+        )
         camps = CampaignManager()
-        campaign = camps.create_campaign(tenant.broker_id, DistributionChannel.EMAIL,
-                                         "UAE", "hello", 1000)
+        campaign = camps.create_campaign(
+            tenant.broker_id, DistributionChannel.EMAIL, "UAE", "hello", 1000
+        )
         report = CampaignAnalyticsEngine().analyze(campaign.campaign_id)
         self.assertEqual(report.delivery_rate, 0.0)
         self.assertEqual(report.read_rate, 0.0)
@@ -283,7 +338,9 @@ class TestBrokerChannelOS(unittest.TestCase):
     def test_list_tenants_and_campaigns_across_manager_instances(self):
         # Persistence: a new manager instance reads the same durable state.
         mgr1 = BrokerTenantManager()
-        tenant = mgr1.register("First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first")
+        tenant = mgr1.register(
+            "First Broker", "EGYPT", "a@first.example", "+201000000001", "fb.com/first"
+        )
         mgr2 = BrokerTenantManager()
         self.assertEqual(mgr2.get(tenant.broker_id).broker_id, tenant.broker_id)
         camps1 = CampaignManager()
@@ -295,8 +352,14 @@ class TestBrokerChannelOS(unittest.TestCase):
 
     def test_same_sequence_produces_identical_state_across_fresh_dirs(self):
         sequence = [
-            ("register", ("Alpha Broker", "BRAZIL", "a@alpha.example", "+551100000001", "fb.com/alpha")),
-            ("register", ("Beta Broker", "INDIA", "b@beta.example", "+919000000002", "fb.com/beta")),
+            (
+                "register",
+                ("Alpha Broker", "BRAZIL", "a@alpha.example", "+551100000001", "fb.com/alpha"),
+            ),
+            (
+                "register",
+                ("Beta Broker", "INDIA", "b@beta.example", "+919000000002", "fb.com/beta"),
+            ),
         ]
 
         def run_sequence(state_dir: str) -> dict:
@@ -310,8 +373,9 @@ class TestBrokerChannelOS(unittest.TestCase):
             slots.allocate(t1.broker_id, 300)  # waitlist 300
             slots.revoke(t1.broker_id, 40)
             camps = CampaignManager()
-            c = camps.create_campaign(t2.broker_id, DistributionChannel.WHATSAPP, "INDIA",
-                                      "demo template", 5000)
+            c = camps.create_campaign(
+                t2.broker_id, DistributionChannel.WHATSAPP, "INDIA", "demo template", 5000
+            )
             camps.dispatch_campaign(c.campaign_id)
             report = CampaignAnalyticsEngine().analyze(c.campaign_id)
             return {
@@ -325,8 +389,9 @@ class TestBrokerChannelOS(unittest.TestCase):
         try:
             state_a = run_sequence(dir_a)
             state_b = run_sequence(dir_b)
-            self.assertEqual(json.dumps(state_a, sort_keys=True),
-                             json.dumps(state_b, sort_keys=True))
+            self.assertEqual(
+                json.dumps(state_a, sort_keys=True), json.dumps(state_b, sort_keys=True)
+            )
         finally:
             shutil.rmtree(dir_a, ignore_errors=True)
             shutil.rmtree(dir_b, ignore_errors=True)

@@ -21,10 +21,8 @@ from .sensor_interface import (
     Detection,
     HardwareCapability,
     RadarTrack,
-    SensorStatus,
     SensorInterface,
-    logger,
-    track_distance_m,
+    SensorStatus,
 )
 
 
@@ -124,7 +122,9 @@ class RadarAdapter(SensorInterface):
         return detections
 
     def correlate_tracks(
-        self, new_tracks: List[RadarTrack], previous_tracks: List[RadarTrack],
+        self,
+        new_tracks: List[RadarTrack],
+        previous_tracks: List[RadarTrack],
         max_distance_m: float = 150.0,
     ) -> List[Correlation]:
         """Correlate new radar tracks with previous tracks by proximity.
@@ -177,9 +177,7 @@ class RadarAdapter(SensorInterface):
             capability=self.capability,
             last_seen=self._last_seen or 0.0,
             message=(
-                "simulation mode: no hardware"
-                if not self._hardware_present
-                else "hardware present"
+                "simulation mode: no hardware" if not self._hardware_present else "hardware present"
             ),
         )
 

@@ -18,7 +18,7 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass(frozen=True)
@@ -81,7 +81,11 @@ class UnitEconomicsModel:
         total_cpe = capital_amortized + params.marginal_cost_usd
         annual_cost = capital_per_year + (params.marginal_cost_usd * params.annual_engagements)
         lifetime_cost = annual_cost * params.service_life_years
-        cer = total_cpe / self.attacker_drone_cost_usd if self.attacker_drone_cost_usd > 0 else float("inf")
+        cer = (
+            total_cpe / self.attacker_drone_cost_usd
+            if self.attacker_drone_cost_usd > 0
+            else float("inf")
+        )
 
         return EngagementEconomics(
             system_type=params.system_type,
@@ -206,12 +210,15 @@ class EconomiesOfScaleModel:
             total_capital = capital_per_site_usd * deployments
             total_annual_engagements = deployments * engagements_per_site_per_year
             total_annual_cost = (
-                (capital_per_site_usd / service_life_years) * deployments
-                + marginal_per_engagement_usd * total_annual_engagements
+                capital_per_site_usd / service_life_years
+            ) * deployments + marginal_per_engagement_usd * total_annual_engagements
+            amortized_per_site = (
+                capital_per_site_usd  # capital is per-site, doesn't amortize across sites
             )
-            amortized_per_site = capital_per_site_usd  # capital is per-site, doesn't amortize across sites
             marginal = marginal_per_engagement_usd
-            total_cpe = (capital_per_site_usd / (service_life_years * engagements_per_site_per_year)) + marginal
+            total_cpe = (
+                capital_per_site_usd / (service_life_years * engagements_per_site_per_year)
+            ) + marginal
             points.append(
                 ScalePoint(
                     deployments=deployments,

@@ -1,7 +1,8 @@
 """Tests for GNSS spoofing detector."""
 
 import unittest
-from c_uas.detection.spoof_detector import GNSSSpoofDetector, GNSSMeasurement
+
+from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
 
 
 class TestGNSSSpoofDetector(unittest.TestCase):

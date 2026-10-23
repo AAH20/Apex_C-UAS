@@ -22,7 +22,7 @@ Usage:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 
@@ -33,7 +33,9 @@ class CUASSystem:
     name: str
     origin: str  # Country / developer
     developer: str
-    system_type: str  # "directed_energy_laser", "kinetic_missile", "rf_jamming", "rf_detection", "hybrid"
+    system_type: (
+        str  # "directed_energy_laser", "kinetic_missile", "rf_jamming", "rf_detection", "hybrid"
+    )
     power_class: str  # e.g. "~50 kW", "Stinger missile", "N/A"
     effective_range_km: Optional[float]
     role: str  # "C-UAS / air defense", "ship defense", "fixed site", "tactical"
