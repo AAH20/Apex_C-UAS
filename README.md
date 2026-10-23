@@ -448,6 +448,47 @@ c-uas governance --action record-incident --description 'EKF intercept off by 3m
 
 Audit evidence is hash-linked (SHA-256) for tamper-evidence, and the authority key persists to `~/.c-uas-platform/governance/` so evidence verifies across sessions. Compliance percentage is computed from control implementation ratio, open risk count, and open incident count — all real values from code execution.
 
+## GRC_Clab Agentic Governance
+
+GRC_Clab is the autonomous ISO 42001 compliance engine for agentic C-UAS AI systems. It runs continuously without manual intervention: an AutonomousAgent scans registered AI systems for new risks, an EvidenceAutoLogger logs detection, tracking, engagement, and forensics events into the hash-linked audit chain, a ComplianceMonitor scores conformity and detects drift, and a RemediationPlanner maps open risks to unimplemented Annex A controls.
+
+All state persists to ~/.c-uas-platform/grc_clab/ (outside the repo). The engine imports and extends c_uas.governance; it does not duplicate the ISO 42001 chassis.
+
+### Agentic cycle
+
+```mermaid
+flowchart TD
+    ISO[ISO 42001 AI systems] -->|register| Agent[Autonomous Agent]
+    Agent -->|scan| Risks[Open risks]
+    Risks -->|propose| Plan[Remediation Planner]
+    Plan -->|implement| Controls[Annex A controls]
+    Logger[Evidence Auto Logger] -->|log| Chain[Audit Evidence Chain]
+    Monitor[Compliance Monitor] -->|score| Report[Compliance Report]
+    Controls -->|evidence| Chain
+    Risks -->|events| Logger
+```
+
+### CLI usage
+
+```
+c-uas grc-clab --action monitor
+c-uas grc-clab --action report
+c-uas grc-clab --action remediate
+c-uas grc-clab --action autolog --event-type detection --system-id <id>
+```
+
+`monitor` runs continuous compliance scoring with drift detection. `report` generates a scheduled compliance report and logs it to the evidence chain. `remediate` proposes control implementations for open risks. `autolog` writes a system event to the audit chain.
+
+| Function | CLI action | ISO 42001 reference |
+|---|---|---|
+| Autonomous risk scanning | `grc-clab --action monitor` | Clause 6.1 / Annex A.7.1 |
+| Evidence auto-logging | `grc-clab --action autolog` | Clause 9 |
+| Compliance scoring + drift | `grc-clab --action monitor` | Clause 9 |
+| Remediation planning | `grc-clab --action remediate` | Annex A (A.5.1-A.11.1) |
+| Scheduled reporting | `grc-clab --action report` | Clause 9 (management review) |
+
+Compliance percentage, drift deltas, and control-implementation ratios are computed from real code execution, not asserted. Audit evidence remains hash-linked (SHA-256) and verifies across sessions.
+
 ### Directed-Energy Beam Modeling (this platform)
 
 `c_uas/dew/` implements directed-energy physics modeling with atmospheric attenuation (ITU-R P.676 / P.835), multi-wavelength support, and adaptive optics compensation. Modeling only — no hardware control.
@@ -528,6 +569,52 @@ c-uas api --host 127.0.0.1 --port 8000
 | `/benchmarks` | GET | Real measured performance |
 
 All endpoints return real computed values — no mocks, no fabricated metrics.
+
+## SOC Dashboard
+
+The SOC dashboard is a pure frontend (HTML, JS, CSS, no build step) served from `c_uas/dashboard/` that connects to the REST API at http://127.0.0.1:8000 and visualizes platform outputs in real time via polling. It is defensive only: no weapons employment, no live SDR, no exploitation. No metric is fabricated; every number is read from a live API response, and panels show their last known state when the API is unreachable.
+
+```bash
+c-uas dashboard
+# Serves http://127.0.0.1:8080 and opens the browser
+c-uas dashboard --host 127.0.0.1 --port 9090 --no-open
+```
+
+Panels:
+
+- Drone tracks - scatter view of live swarm positions from /swarm/simulate (drone count, spread, speed, seed).
+- Engagement schedule - Gantt timeline of the engagement sequence from /engagement/schedule (engage start and end seconds, Pk per track).
+- Swarm saturation - leak rate vs drone count from /benchmarks swarm saturation curve.
+- Governance compliance - ISO 42001 compliance percentage and overall status from /compliance, with AI system, risk, and control tables from /systems, /risks, and /controls.
+- DEW beam - spot size vs range from /dew/model across range points, with dwell time and atmospheric transmission.
+
+Data flow:
+
+```mermaid
+flowchart LR
+    API[FastAPI API 127.0.0.1:8000] -->|HTTP polling| Dash[SOC Dashboard 127.0.0.1:8080]
+    Dash -->|/swarm/simulate| Tracks[Drone tracks]
+    Dash -->|/engagement/schedule| Schedule[Engagement timeline]
+    Dash -->|/benchmarks| Saturation[Swarm saturation]
+    Dash -->|/compliance| Compliance[ISO 42001 compliance]
+    Dash -->|/dew/model| Beam[DEW spot size vs range]
+```
+
+Endpoints consumed by the dashboard:
+
+| Endpoint | Method | Panel |
+|---|---|---|
+| / | GET | API status |
+| /swarm/simulate | POST | Drone tracks |
+| /engagement/schedule | POST | Engagement schedule |
+| /benchmarks | GET | Swarm saturation |
+| /compliance | GET | Governance compliance |
+| /systems | GET | Governance compliance |
+| /risks | GET | Governance compliance |
+| /controls | GET | Governance compliance |
+| /dew/model | POST | DEW beam |
+
+The dashboard is static content served on a separate port (8080 by default). It is not a FastAPI route and does not change the API route surface above.
 
 ### Multi-Site Orchestration (this platform)
 
@@ -716,7 +803,75 @@ c-uas locate-controller --method SKYWAVE
 
 ### Beyond-Line-of-Sight Operation
 
-For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3-30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of ±150 km.
+For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3-30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of +/- 150 km.
+
+---
+
+## Threat Intelligence (STIX/TAXII)
+
+Standards-based sharing of drone threat intelligence with broker channels,
+partners, and SOC operators, plus real-time alerting for critical events.
+Implements STIX 2.1 bundle export, a minimal TAXII 2.1 server, and an
+alert engine with console, webhook, and SMTP-free email-stub channels.
+
+```mermaid
+flowchart TD
+    A[Detection Events] -->|convert| B[STIXBundleBuilder]
+    B -->|STIX 2.1 bundle| C[TAXII 2.1 Server]
+    C -->|share| D[Brokers / Partners / SOC]
+    E[Forensic Dossier] -->|Ed25519 evidence| B
+    F[Critical Events] -->|alert| G[Alert Engine]
+    G -->|channels| H[Console / Webhook / Email]
+```
+
+All data persists to `~/.c-uas-platform/threat_intel/` outside the repo.
+Bundle IDs are content-addressed (uuid5) so the same inputs always produce
+byte-identical bundles. Forensic dossiers carry their Ed25519 signature,
+public key, and tamper-evident hash as STIX custom properties under TLP RED
+marking.
+
+### CLI Usage
+
+```bash
+# Export a STIX 2.1 bundle (printed as JSON, persisted to disk)
+c-uas threat-intel --export
+
+# Run the alert engine on sample critical events
+c-uas threat-intel --alert
+
+# Run a self-test of export, alerting, and TAXII routes
+c-uas threat-intel --test
+
+# Run the TAXII 2.1 server
+c-uas threat-intel --serve --host 127.0.0.1 --port 8001
+```
+
+### TAXII 2.1 Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/taxii2/` | GET | Discovery / API root |
+| `/taxii2/collections/` | GET | List collections |
+| `/taxii2/collections/{id}/` | GET | Collection detail |
+| `/taxii2/collections/{id}/objects/` | GET | Get STIX objects (filtered) |
+| `/taxii2/collections/{id}/objects/` | POST | Add STIX objects |
+
+Collection `cuas-detections` serves detection events, Ed25519-signed
+forensic dossiers, and competitive-landscape intel as STIX 2.1 objects.
+
+### Alert Engine
+
+Fires on CRITICAL threat levels, GNSS spoof detection, high-confidence
+tracks, incidents, and compliance drops. Channels:
+
+| Channel | Behavior |
+|---|---|
+| console | Prints alert to stdout |
+| webhook | HTTP POST JSON payload to a URL |
+| email | SMTP-free log-only stub |
+
+No weapons-employment effector, no live SDR integration. Defensive
+intelligence sharing only.
 
 ---
 

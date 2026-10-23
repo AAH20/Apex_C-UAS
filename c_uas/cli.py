@@ -187,6 +187,43 @@ def main(argv: Optional[list] = None) -> int:
         "--severity", type=str, default="medium", help="Incident severity: low/medium/high/critical"
     )
 
+    # grc-clab: agentic ISO 42001 governance engine
+    grc_p = subparsers.add_parser(
+        "grc-clab",
+        help="Agentic ISO 42001 governance engine "
+        "(AutonomousAgent, EvidenceAutoLogger, ComplianceMonitor, RemediationPlanner)",
+    )
+    grc_p.add_argument(
+        "--action",
+        type=str,
+        default="report",
+        help="GRC_Clab action: monitor, report, remediate, autolog",
+    )
+    grc_p.add_argument(
+        "--event-type",
+        type=str,
+        default="detection",
+        help="Event type for autolog: detection, tracking, engagement, forensics",
+    )
+    grc_p.add_argument(
+        "--system-id", type=str, default=None, help="AI system ID (for autolog/remediate context)"
+    )
+    grc_p.add_argument(
+        "--source", type=str, default="c_uas.grc_clab.cli", help="Event source (for autolog)"
+    )
+    grc_p.add_argument(
+        "--description",
+        type=str,
+        default=None,
+        help="Event description / payload note (for autolog)",
+    )
+    grc_p.add_argument(
+        "--interval-s",
+        type=float,
+        default=300,
+        help="Scan interval in seconds for the autonomous agent",
+    )
+
     # dew
     dew_p = subparsers.add_parser(
         "dew",
@@ -238,6 +275,23 @@ def main(argv: Optional[list] = None) -> int:
         "--port", type=int, default=8000, help="Bind port"
     )
 
+    # dashboard
+    db_p = subparsers.add_parser(
+        "dashboard",
+        help="Serve the SOC dashboard web interface",
+    )
+    db_p.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Bind host"
+    )
+    db_p.add_argument(
+        "--port", type=int, default=8080, help="Bind port"
+    )
+    db_p.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open the browser",
+    )
+
     # orchestrate
     orch_p = subparsers.add_parser(
         "orchestrate",
@@ -260,6 +314,32 @@ def main(argv: Optional[list] = None) -> int:
     )
     ae_p.add_argument(
         "--drones", type=int, default=16, help="Number of drones in swarm"
+    )
+
+    # threat-intel
+    ti_p = subparsers.add_parser(
+        "threat-intel",
+        help="STIX/TAXII threat intelligence export and alerting",
+    )
+    ti_p.add_argument(
+        "--export",
+        action="store_true",
+        help="Build a STIX 2.1 bundle and print it",
+    )
+    ti_p.add_argument(
+        "--serve",
+        action="store_true",
+        help="Run the TAXII 2.1 server",
+    )
+    ti_p.add_argument(
+        "--alert",
+        action="store_true",
+        help="Run the alert engine on sample critical events",
+    )
+    ti_p.add_argument(
+        "--test",
+        action="store_true",
+        help="Run a self-test of export, alerting, and TAXII routes",
     )
 
     args = parser.parse_args(argv)
@@ -648,6 +728,111 @@ def main(argv: Optional[list] = None) -> int:
             print(f"[C-UAS] Unknown governance action: {action}")
             return 1
 
+    if args.command == "grc-clab":
+        from c_uas.grc_clab import (
+            AutonomousAgent,
+            ComplianceMonitor,
+            EvidenceAutoLogger,
+            GRCClabEngine,
+            RemediationPlanner,
+        )
+        from c_uas.grc_clab import DEFAULT_SCAN_INTERVAL_S
+        from c_uas.governance import (
+            AISystemRegistry,
+            AuditEvidenceChain,
+            ComplianceReporter,
+            ControlImplementation,
+            IncidentManager,
+            RiskAssessment,
+        )
+
+        reg = AISystemRegistry()
+        assessor = RiskAssessment()
+        controller = ControlImplementation()
+        chain = AuditEvidenceChain()
+        mgr = IncidentManager()
+        reporter = ComplianceReporter(reg, assessor, controller, chain, mgr)
+
+        action = args.action or "report"
+        interval_s = args.interval_s or DEFAULT_SCAN_INTERVAL_S
+
+        if action == "monitor":
+            monitor = ComplianceMonitor(reporter)
+            report, drift_delta, alerts = monitor.score()
+            print("[C-UAS] GRC_Clab Compliance Monitor")
+            print(f"  Compliance % : {report.compliance_percentage}%")
+            print(f"  Status       : {report.overall_status}")
+            print(f"  Open risks   : {report.open_risks}")
+            print(f"  Open incidents: {report.open_incidents}")
+            print(f"  Controls     : {report.implemented_controls}/{report.total_controls} implemented")
+            print(f"  Drift delta  : {drift_delta:+.1f} points")
+            print(f"  Drift alerts : {len(alerts)}")
+            for alert in alerts:
+                print(f"    - {alert.severity.upper()}: {alert.description}")
+            return 0
+
+        if action == "report":
+            engine = GRCClabEngine()
+            engine.scheduled_report()
+            report = reporter.generate()
+            print("[C-UAS] GRC_Clab Scheduled Compliance Report")
+            print(f"  Generated       : {report.generated_at:.0f}")
+            print(f"  AI systems      : {report.total_ai_systems}")
+            print(f"  Total risks     : {report.total_risks}")
+            print(f"  Open risks      : {report.open_risks}")
+            print(f"  Total controls  : {report.total_controls}")
+            print(f"  Implemented     : {report.implemented_controls}")
+            print(f"  Total incidents : {report.total_incidents}")
+            print(f"  Open incidents  : {report.open_incidents}")
+            print(f"  Compliance %    : {report.compliance_percentage}%")
+            print(f"  Overall status  : {report.overall_status}")
+            return 0
+
+        if action == "remediate":
+            planner = RemediationPlanner(assessor, controller)
+            plans = planner.plan_for_open_risks()
+            print("[C-UAS] GRC_Clab Remediation Planner")
+            if not plans:
+                print("  No remediation plans proposed (all open risks covered or controls implemented).")
+            for plan in plans:
+                print(f"  Plan {plan.plan_id}:")
+                print(f"    Risk ID   : {plan.risk_id}")
+                print(f"    Control   : {plan.control_id}")
+                print(f"    Rationale : {plan.rationale}")
+                print(f"    Status    : {plan.status}")
+            return 0
+
+        if action == "autolog":
+            logger = EvidenceAutoLogger(chain)
+            event_type = args.event_type or "detection"
+            payload = {"note": args.description or "auto-logged via CLI"}
+            entry = logger.log_event(event_type, args.system_id, args.source or "c_uas.cli", payload)
+            print("[C-UAS] GRC_Clab Evidence Auto-Logger")
+            print(f"  Entry ID          : {entry.entry_id}")
+            print(f"  Event type        : {entry.event_type}")
+            print(f"  System ID         : {entry.system_id or '(none)'}")
+            print(f"  Source            : {entry.source}")
+            print(f"  Governance entry  : {entry.governance_entry_id}")
+            print(f"  Chain valid       : {logger.verify_chain()}")
+            return 0
+
+        if action == "cycle":
+            engine = GRCClabEngine()
+            summary = engine.run_cycle()
+            print("[C-UAS] GRC_Clab Agentic Cycle")
+            print(f"  Scan trigger     : {summary['scan']['trigger']}")
+            print(f"  Systems scanned  : {summary['scan']['systems_scanned']}")
+            print(f"  New risks        : {len(summary['scan']['new_risk_ids'])}")
+            print(f"  Compliance %     : {summary['compliance']['compliance_percentage']}%")
+            print(f"  Status           : {summary['compliance']['overall_status']}")
+            print(f"  Drift delta      : {summary['drift']['drift_delta']:+.1f} points")
+            print(f"  Drift alerts     : {len(summary['drift']['alerts'])}")
+            print(f"  Proposed plans   : {len(summary['remediation']['proposed_plans'])}")
+            return 0
+
+        print(f"[C-UAS] Unknown grc-clab action: {action}")
+        return 1
+
     if args.command == "dew":
         from c_uas.dew.atmospheric import (
             LASER_SPECS, AtmosphericConditions,
@@ -736,6 +921,12 @@ def main(argv: Optional[list] = None) -> int:
         uvicorn.run(app, host=args.host, port=args.port)
         return 0
 
+    if args.command == "dashboard":
+        from c_uas.dashboard.server import open_dashboard
+
+        open_dashboard(args.host, args.port)
+        return 0
+
     if args.command == "orchestrate":
         from c_uas.orchestration import build_demo_federation
         from c_uas.swarm import SwarmConfig
@@ -778,6 +969,239 @@ def main(argv: Optional[list] = None) -> int:
             status = "PASS" if r["passed"] else "FAIL"
             print(f"  [{status}] {r['name']}: {r['value']} (threshold: {r['threshold']}) — {r['detail']}")
         return 0
+
+    if args.command == "threat-intel":
+        from c_uas.threat_intel import (
+            AlertEngine,
+            ChannelConfig,
+            CompetitiveIntelEntry,
+            ConsoleChannel,
+            DetectionEvent,
+            EmailStubChannel,
+            ForensicDossierRef,
+            STIXBundleBuilder,
+            app_factory,
+            bundle_hash,
+        )
+        from c_uas.threat_intel.alert_engine import Channel
+        from c_uas.threat_intel.store import ThreatIntelStore
+        from c_uas.forensics.airspace_dossier import AirspaceIntrusionDossier
+
+        if args.export:
+            store = ThreatIntelStore()
+            builder = STIXBundleBuilder()
+
+            # Sample detection events covering RF + spoofing sources.
+            events = [
+                DetectionEvent(
+                    event_id="DET-001",
+                    timestamp="2026-10-23T10:15:00Z",
+                    source="rf_classifier",
+                    target_id="UAV-ROGUE-01",
+                    threat_level="CRITICAL",
+                    protocol="DJI_OCUSYNC_4",
+                    confidence=0.94,
+                    latitude=34.0522,
+                    longitude=-118.2437,
+                    anomalies=("SPOOFED_BROADCAST_ID",),
+                ),
+                DetectionEvent(
+                    event_id="DET-002",
+                    timestamp="2026-10-23T10:16:00Z",
+                    source="spoof_detector",
+                    target_id="UAV-ROGUE-02",
+                    threat_level="CRITICAL",
+                    protocol="GPS_L1_CA",
+                    confidence=0.99,
+                    latitude=34.0,
+                    longitude=-121.0,
+                    anomalies=("C_N0_ANOMALY", "CLOCK_DRIFT_STEP"),
+                ),
+                DetectionEvent(
+                    event_id="DET-003",
+                    timestamp="2026-10-23T10:17:00Z",
+                    source="controller_locator",
+                    target_id="UAV-ROGUE-01",
+                    threat_level="HIGH",
+                    protocol="EXPRESS_LRS_LONG_RANGE",
+                    confidence=0.72,
+                    latitude=34.0,
+                    longitude=-121.0,
+                ),
+            ]
+            for event in events:
+                builder.add_detection_event(event)
+
+            # Forensic dossier as Ed25519-signed evidence.
+            dossier = AirspaceIntrusionDossier.generate_signed_dossier(
+                target_id="UAV-ROGUE-01",
+                protocol="DJI_OCUSYNC_4",
+                threat_level="CRITICAL",
+                coordinates_path=[{"x": 100.0, "y": 200.0, "z": 50.0}],
+                rf_anomalies=["SPOOFED_BROADCAST_ID"],
+            )
+            dossier_ref = ForensicDossierRef(
+                dossier_id=dossier["dossier_id"],
+                target_id=dossier["target_id"],
+                threat_classification=dossier["threat_classification"],
+                signature=dossier["signature"],
+                public_key_pem=dossier["public_key_pem"],
+                tamper_evident_hash=dossier["tamper_evident_hash"],
+                timestamp_utc=dossier["timestamp_utc"],
+            )
+            builder.add_forensic_dossier(dossier_ref)
+
+            # Competitive intel entries.
+            comp_entries = [
+                CompetitiveIntelEntry(
+                    name="DragonFire",
+                    origin="United Kingdom",
+                    developer="Dstl / MBDA UK / Leonardo UK / QinetiQ",
+                    system_type="directed_energy_laser",
+                    power_class="~50 kW class",
+                    effective_range_km=5.0,
+                    role="C-UAS / air defense",
+                    public_status="Demonstrator",
+                    is_fielded=False,
+                ),
+                CompetitiveIntelEntry(
+                    name="Iron Beam",
+                    origin="Israel",
+                    developer="Rafael / IMOD",
+                    system_type="directed_energy_laser",
+                    power_class="~100 kW class",
+                    effective_range_km=10.0,
+                    role="C-UAS / C-RAM",
+                    public_status="In development",
+                    is_fielded=False,
+                ),
+            ]
+            for entry in comp_entries:
+                builder.add_competitive_intel(entry)
+
+            bundle = builder.build()
+            store.save_bundle(bundle)
+            print(f"[C-UAS] STIX 2.1 bundle exported")
+            print(f"  Bundle ID : {bundle['id']}")
+            print(f"  Objects   : {len(bundle['objects'])}")
+            print(f"  SHA-256   : {bundle_hash(bundle)}")
+            print(builder.to_json())
+            return 0
+
+        if args.alert:
+            engine = AlertEngine(
+                channels=[
+                    Channel(config=ChannelConfig(kind="console"), send=ConsoleChannel().send),
+                    Channel(config=ChannelConfig(kind="email", email_to="soc@a2zsoc.com"),
+                            send=EmailStubChannel("soc@a2zsoc.com").send),
+                ]
+            )
+            sample_events = [
+                DetectionEvent(
+                    event_id="DET-ALERT-01",
+                    timestamp="2026-10-23T10:20:00Z",
+                    source="spoof_detector",
+                    target_id="UAV-ROGUE-02",
+                    threat_level="CRITICAL",
+                    protocol="GPS_L1_CA",
+                    confidence=0.99,
+                    anomalies=("C_N0_ANOMALY", "CLOCK_DRIFT_STEP"),
+                ),
+                DetectionEvent(
+                    event_id="DET-ALERT-02",
+                    timestamp="2026-10-23T10:21:00Z",
+                    source="rf_classifier",
+                    target_id="UAV-ROGUE-03",
+                    threat_level="HIGH",
+                    protocol="DJI_OCUSYNC_4",
+                    confidence=0.91,
+                ),
+                DetectionEvent(
+                    event_id="DET-ALERT-03",
+                    timestamp="2026-10-23T10:22:00Z",
+                    source="rf_classifier",
+                    target_id="UAV-ROGUE-04",
+                    threat_level="MEDIUM",
+                    protocol="MAVLINK_TELEMETRY_SIK",
+                    confidence=0.6,
+                ),
+            ]
+            total = 0
+            for event in sample_events:
+                total += len(engine.process_event(event))
+            print(f"[C-UAS] Alert engine: {total} alert(s) dispatched")
+            return 0
+
+        if args.test:
+            from fastapi.testclient import TestClient  # type: ignore
+
+            # 1. Export produces a valid STIX 2.1 bundle.
+            builder = STIXBundleBuilder()
+            builder.add_detection_event(DetectionEvent(
+                event_id="DET-TEST-01",
+                timestamp="2026-10-23T11:00:00Z",
+                source="rf_classifier",
+                target_id="UAV-TEST-01",
+                threat_level="HIGH",
+                protocol="DJI_OCUSYNC_4",
+            ))
+            bundle = builder.build()
+            assert bundle["type"] == "bundle"
+            assert bundle["spec_version"] == "2.1"
+            assert len(bundle["objects"]) >= 4  # 3 markings + actor + pattern + observed
+            h = bundle_hash(bundle)
+            assert len(h) == 64
+            # Determinism: same inputs -> same bundle id/hash.
+            builder2 = STIXBundleBuilder()
+            builder2.add_detection_event(DetectionEvent(
+                event_id="DET-TEST-01",
+                timestamp="2026-10-23T11:00:00Z",
+                source="rf_classifier",
+                target_id="UAV-TEST-01",
+                threat_level="HIGH",
+                protocol="DJI_OCUSYNC_4",
+            ))
+            assert bundle_hash(builder2.build()) == h
+
+            # 2. Alert engine dispatches on CRITICAL events.
+            engine = AlertEngine(
+                channels=[Channel(config=ChannelConfig(kind="console"),
+                                  send=ConsoleChannel().send)]
+            )
+            alerts = engine.process_event(DetectionEvent(
+                event_id="DET-TEST-02",
+                timestamp="2026-10-23T11:01:00Z",
+                source="spoof_detector",
+                target_id="UAV-TEST-02",
+                threat_level="CRITICAL",
+            ))
+            assert len(alerts) == 1
+            assert alerts[0].severity == "CRITICAL"
+
+            # 3. TAXII routes mount and return bundles.
+            client = TestClient(app_factory())
+            disc = client.get("/taxii2/")
+            assert disc.status_code == 200
+            assert disc.json()["type"] == "discovery"
+            colls = client.get("/taxii2/collections/")
+            assert colls.status_code == 200
+            objs = client.get("/taxii2/collections/cuas-detections/objects/")
+            assert objs.status_code == 200
+            assert objs.json()["type"] == "bundle"
+
+            # 4. Persistence round-trip.
+            store = ThreatIntelStore()
+            store.save_bundle(bundle)
+            assert len(store.list_bundles()) >= 1
+
+            print("[C-UAS] threat-intel self-test: PASS")
+            print(f"  Bundle objects : {len(bundle['objects'])}")
+            print(f"  Bundle SHA-256 : {h}")
+            print(f"  Alerts fired   : {len(alerts)}")
+            return 0
+
+        print("[C-UAS] threat-intel: specify --export, --serve, --alert, or --test")
+        return 1
 
     parser.print_help()
     return 1
