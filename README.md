@@ -108,7 +108,8 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/dew` | Directed-energy beam modeling with atmospheric attenuation |
 | `c_uas/detection.opendew_classifier` | OpenDEW neural network signal classifier |
 | `c_uas/api` | REST API server (FastAPI) — all platform capabilities over HTTP |
-| `evals/` | Agent eval harness + DeepEval-style pytest suite |
+| `c_uas/orchestration` | Multi-site federation: track fusion, engagement deconfliction |
+| `evals/` | Agent eval harness: reliability evaluation for agentic components |
 
 ---
 
@@ -191,8 +192,17 @@ c-uas api --host 127.0.0.1 --port 8000
 # Docs: http://127.0.0.1:8000/docs
 # ReDoc: http://127.0.0.1:8000/redoc
 
+# Multi-site orchestration (federated C-UAS sites)
+c-uas orchestrate --sites 3 --drones 16
+# Federated track fusion, engagement deconfliction, leak-rate reporting
+
+# Agent reliability evaluation harness
+c-uas agent-eval --sites 3 --drones 16
+# 5 evaluations: detection coverage, fusion consistency, deconfliction,
+# orchestration latency, federation leak-rate improvement
+
 pytest tests/ -q
-# 227 passed
+# 241 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -518,6 +528,48 @@ c-uas api --host 127.0.0.1 --port 8000
 | `/benchmarks` | GET | Real measured performance |
 
 All endpoints return real computed values — no mocks, no fabricated metrics.
+
+### Multi-Site Orchestration (this platform)
+
+`c_uas/orchestration/` federates multiple C-UAS sites into a coordinated air
+defense network using graph-based mesh coordination:
+
+```bash
+c-uas orchestrate --sites 3 --drones 16
+```
+
+| Capability | Description |
+|---|---|
+| Site agents | Autonomous per-site detection, tracking, engagement scheduling |
+| Track fusion | Cross-site deduplication of drone tracks via mesh federation |
+| Engagement deconfliction | Prevents multiple sites engaging the same drone |
+| Graph topology | Sites as nodes, radio links as edges with latency modeling |
+| Demo builder | `build_demo_federation(num_sites=N)` — triangle placement around asset |
+
+Orchestration round flow:
+1. Each site detects and tracks drones from the swarm
+2. Federation fuses tracks across all sites (dedup by track_id)
+3. Each site runs the NP-hard engagement scheduler locally
+4. Federation deconflicts overlapping engagements (first site wins)
+
+### Agent Evaluation Harness (this platform)
+
+`evals/agent_eval_harness.py` provides systematic reliability evaluation for
+agentic C-UAS components:
+
+```bash
+c-uas agent-eval --sites 3 --drones 16
+```
+
+| Evaluation | Threshold | What it measures |
+|---|---|---|
+| Site detection coverage | ≥0.95 | Fraction of drones detected by a site |
+| Fusion track consistency | ≥0.9 | Track count consistency across sites after fusion |
+| Engagement deconfliction | 1.0 | All multi-site conflicts resolved |
+| Orchestration round latency | <500ms | End-to-end round time per site count |
+| Federation leak-rate improvement | ≥0.0 | Federated leak ≤ single-site leak |
+
+All metrics computed from real code execution — no fabricated numbers.
 
 ### Evolution parameters (this platform)
 

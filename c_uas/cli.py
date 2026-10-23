@@ -238,6 +238,30 @@ def main(argv: Optional[list] = None) -> int:
         "--port", type=int, default=8000, help="Bind port"
     )
 
+    # orchestrate
+    orch_p = subparsers.add_parser(
+        "orchestrate",
+        help="Run multi-site C-UAS orchestration round",
+    )
+    orch_p.add_argument(
+        "--sites", type=int, default=3, help="Number of federation sites"
+    )
+    orch_p.add_argument(
+        "--drones", type=int, default=16, help="Number of drones in swarm"
+    )
+
+    # agent-eval
+    ae_p = subparsers.add_parser(
+        "agent-eval",
+        help="Run agent reliability evaluation harness",
+    )
+    ae_p.add_argument(
+        "--sites", type=int, default=3, help="Number of federation sites"
+    )
+    ae_p.add_argument(
+        "--drones", type=int, default=16, help="Number of drones in swarm"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -710,6 +734,49 @@ def main(argv: Optional[list] = None) -> int:
         print(f"  Docs: http://{args.host}:{args.port}/docs")
         print(f"  ReDoc: http://{args.host}:{args.port}/redoc")
         uvicorn.run(app, host=args.host, port=args.port)
+        return 0
+
+    if args.command == "orchestrate":
+        from c_uas.orchestration import build_demo_federation
+        from c_uas.swarm import SwarmConfig
+
+        config = SwarmConfig(
+            num_drones=args.drones,
+            arrival_spread_s=10.0,
+            speed_mps=30.0,
+            start_distance_km=2.0,
+            evasion_probability=0.3,
+            seed=42,
+        )
+        fed = build_demo_federation(num_sites=args.sites)
+        result = fed.run_round(config)
+        print(f"[C-UAS] Multi-Site Orchestration Round")
+        print(f"  Sites          : {result['sites']}")
+        print(f"  Drones         : {args.drones}")
+        print(f"  Detections     : {result['detections']}")
+        print(f"  Fusion         : {result['fusion']['total_tracks_ingested']} tracks ingested")
+        print(f"  Tracks/site    : {result['fusion']['tracks_per_site']}")
+        for sid, plan in result["engagement_plans"].items():
+            print(f"  {sid} engagement: kills={plan['expected_kills']:.2f}, "
+                  f"engaged={plan['engaged_targets']}, leaked={plan['leaked_targets']}, "
+                  f"leak_rate={plan['leak_rate']:.1%}")
+        print(f"  Deconfliction  : {result['deconfliction']['conflicts_detected']} conflicts, "
+              f"{result['deconfliction']['conflicts_resolved']} resolved")
+        return 0
+
+    if args.command == "agent-eval":
+        from evals.agent_eval_harness import AgentEvalHarness
+
+        harness = AgentEvalHarness()
+        summary = harness.run_all(num_sites=args.sites, num_drones=args.drones)
+        print(f"[C-UAS] Agent Evaluation Harness")
+        print(f"  Total          : {summary['total']}")
+        print(f"  Passed         : {summary['passed']}")
+        print(f"  Failed         : {summary['failed']}")
+        print(f"  Pass rate      : {summary['pass_rate']:.1%}")
+        for r in summary["results"]:
+            status = "PASS" if r["passed"] else "FAIL"
+            print(f"  [{status}] {r['name']}: {r['value']} (threshold: {r['threshold']}) — {r['detail']}")
         return 0
 
     parser.print_help()
