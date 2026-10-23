@@ -275,6 +275,27 @@ def main(argv: Optional[list] = None) -> int:
         "--port", type=int, default=8000, help="Bind port"
     )
 
+    # deploy
+    dep_p = subparsers.add_parser(
+        "deploy",
+        help="Deploy the platform: Docker, Kubernetes, or config check",
+    )
+    dep_p.add_argument(
+        "--docker",
+        action="store_true",
+        help="Build and run the API via Docker Compose",
+    )
+    dep_p.add_argument(
+        "--k8s",
+        action="store_true",
+        help="Print Kubernetes deployment guidance",
+    )
+    dep_p.add_argument(
+        "--config-check",
+        action="store_true",
+        help="Validate deployment configuration without deploying",
+    )
+
     # dashboard
     db_p = subparsers.add_parser(
         "dashboard",
@@ -340,6 +361,56 @@ def main(argv: Optional[list] = None) -> int:
         "--test",
         action="store_true",
         help="Run a self-test of export, alerting, and TAXII routes",
+    )
+
+    # broker channel OS
+    bk_p = subparsers.add_parser(
+        "broker",
+        help="Broker Channel OS: multi-tenant broker management, agent slots, campaigns",
+    )
+    bk_p.add_argument(
+        "--action",
+        type=str,
+        required=True,
+        help="register|allocate|revoke|campaign|analytics|list-tenants",
+    )
+    bk_p.add_argument("--name", type=str, default=None, help="Broker name (for register)")
+    bk_p.add_argument(
+        "--region", type=str, default=None, help="Broker region, e.g. UAE/KSA/MENA (for register)"
+    )
+    bk_p.add_argument(
+        "--contact-email", type=str, default=None, help="Broker contact email (for register)"
+    )
+    bk_p.add_argument(
+        "--whatsapp-number", type=str, default=None, help="WhatsApp number (for register)"
+    )
+    bk_p.add_argument(
+        "--facebook-page-id",
+        type=str,
+        default=None,
+        help="Facebook page ID (for register)",
+    )
+    bk_p.add_argument(
+        "--max-agent-slots", type=int, default=330, help="Max agent slots per broker (for register)"
+    )
+    bk_p.add_argument(
+        "--broker-id", type=str, default=None, help="Broker ID (for allocate/revoke/campaign/analytics)"
+    )
+    bk_p.add_argument("--slots", type=int, default=1, help="Agent slots to allocate or revoke")
+    bk_p.add_argument(
+        "--channel", type=str, default=None, help="facebook|whatsapp|sms|email (for campaign)"
+    )
+    bk_p.add_argument(
+        "--target-region", type=str, default=None, help="Campaign target region"
+    )
+    bk_p.add_argument(
+        "--message-template", type=str, default=None, help="Campaign message template"
+    )
+    bk_p.add_argument(
+        "--recipient-count", type=int, default=None, help="Campaign recipient count"
+    )
+    bk_p.add_argument(
+        "--campaign-id", type=str, default=None, help="Campaign ID (for campaign dispatch/analytics)"
     )
 
     args = parser.parse_args(argv)
@@ -911,14 +982,15 @@ def main(argv: Optional[list] = None) -> int:
         return 0
 
     if args.command == "api":
-        import uvicorn  # type: ignore
+        from c_uas.deployment.server import create_app, run
 
-        from c_uas.api.server import app
-
+        create_app()
         print(f"[C-UAS] Starting API server on {args.host}:{args.port}")
         print(f"  Docs: http://{args.host}:{args.port}/docs")
         print(f"  ReDoc: http://{args.host}:{args.port}/redoc")
-        uvicorn.run(app, host=args.host, port=args.port)
+        print(f"  Health: http://{args.host}:{args.port}/healthz")
+        print(f"  Metrics: http://{args.host}:{args.port}/metrics")
+        run(host=args.host, port=args.port)
         return 0
 
     if args.command == "dashboard":
@@ -1202,6 +1274,156 @@ def main(argv: Optional[list] = None) -> int:
 
         print("[C-UAS] threat-intel: specify --export, --serve, --alert, or --test")
         return 1
+
+    # hardware
+    hw_p = subparsers.add_parser(
+        "hardware",
+        help="Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion",
+    )
+    hw_p.add_argument(
+        "--list", action="store_true", help="List sensors and capabilities"
+    )
+    hw_p.add_argument(
+        "--scan", action="store_true", help="Run detection on all sensors"
+    )
+    hw_p.add_argument(
+        "--fuse", action="store_true", help="Fuse detections into tracks"
+    )
+    hw_p.add_argument(
+        "--status", action="store_true", help="Health-check all sensors"
+    )
+    hw_p.add_argument(
+        "--seed", type=int, default=42, help="Deterministic RNG seed"
+    )
+
+    if args.command == "broker":
+        from c_uas.broker import (
+            AgentSlotManager,
+            BrokerTenantManager,
+            CampaignAnalyticsEngine,
+            CampaignManager,
+            DistributionChannel,
+        )
+
+        action = (args.action or "").lower()
+        mgr = BrokerTenantManager()
+        slots_mgr = AgentSlotManager()
+        camp_mgr = CampaignManager()
+        analytics = CampaignAnalyticsEngine()
+
+        try:
+            if action == "register":
+                if not args.name or not args.region or not args.contact_email:
+                    print("[C-UAS] --name, --region and --contact-email required for register")
+                    return 1
+                tenant = mgr.register(
+                    args.name,
+                    args.region,
+                    args.contact_email,
+                    args.whatsapp_number or "",
+                    args.facebook_page_id or "",
+                    args.max_agent_slots,
+                )
+                print(f"[C-UAS] Broker registered: {tenant.broker_id}")
+                print(f"  Name           : {tenant.name}")
+                print(f"  Region         : {tenant.region}")
+                print(f"  Contact email  : {tenant.contact_email}")
+                print(f"  WhatsApp       : {tenant.whatsapp_number}")
+                print(f"  Facebook page  : {tenant.facebook_page_id}")
+                print(f"  Slots          : {tenant.agent_slots_allocated} / {tenant.max_agent_slots}")
+                print(f"  Status         : {tenant.status}")
+                print(f"  Created at     : {tenant.created_at}")
+                return 0
+
+            if action == "allocate":
+                if not args.broker_id:
+                    print("[C-UAS] --broker-id required for allocate")
+                    return 1
+                util = slots_mgr.allocate(args.broker_id, args.slots)
+                print(f"[C-UAS] Slots allocated for broker {args.broker_id}")
+                print(f"  Slots used     : {util.slots_used} / {util.max_slots}")
+                print(f"  Slots free     : {util.slots_free}")
+                print(f"  Utilization    : {util.utilization_ratio:.1%}")
+                print(f"  Waitlisted     : {util.waitlisted}")
+                return 0
+
+            if action == "revoke":
+                if not args.broker_id:
+                    print("[C-UAS] --broker-id required for revoke")
+                    return 1
+                util = slots_mgr.revoke(args.broker_id, args.slots)
+                print(f"[C-UAS] Slots revoked for broker {args.broker_id}")
+                print(f"  Slots used     : {util.slots_used} / {util.max_slots}")
+                print(f"  Slots free     : {util.slots_free}")
+                print(f"  Utilization    : {util.utilization_ratio:.1%}")
+                print(f"  Waitlisted     : {util.waitlisted}")
+                return 0
+
+            if action == "campaign":
+                if not args.broker_id or not args.channel or not args.target_region \
+                        or not args.message_template or args.recipient_count is None:
+                    print("[C-UAS] --broker-id, --channel, --target-region, --message-template, "
+                          "--recipient-count required for campaign")
+                    return 1
+                if not DistributionChannel.has_value(args.channel):
+                    print(f"[C-UAS] Unknown channel: {args.channel} "
+                          f"(expected {', '.join(c.value for c in DistributionChannel)})")
+                    return 1
+                campaign = camp_mgr.create_campaign(
+                    args.broker_id,
+                    DistributionChannel(args.channel),
+                    args.target_region,
+                    args.message_template,
+                    args.recipient_count,
+                )
+                dispatched = camp_mgr.dispatch_campaign(campaign.campaign_id)
+                print(f"[C-UAS] Campaign created and dispatched: {dispatched.campaign_id}")
+                print(f"  Broker ID      : {dispatched.broker_id}")
+                print(f"  Channel        : {dispatched.channel.value}")
+                print(f"  Target region  : {dispatched.target_region}")
+                print(f"  Recipients     : {dispatched.recipient_count}")
+                print(f"  Status         : {dispatched.status}")
+                print(f"  Sent           : {dispatched.sent_count}")
+                print(f"  Delivered      : {dispatched.delivered_count}")
+                print(f"  Read           : {dispatched.read_count}")
+                print(f"  Created at     : {dispatched.created_at}")
+                return 0
+
+            if action == "analytics":
+                if not args.campaign_id:
+                    print("[C-UAS] --campaign-id required for analytics")
+                    return 1
+                report = analytics.analyze(args.campaign_id)
+                print(f"[C-UAS] Campaign analytics: {report.campaign_id}")
+                print(f"  Delivery rate  : {report.delivery_rate:.1%}")
+                print(f"  Read rate      : {report.read_rate:.1%}")
+                print(f"  Conversion rate: {report.conversion_rate:.4%} (illustrative)")
+                print(f"  Cost per acq   : ${report.cost_per_acquisition_usd:.2f} (illustrative)")
+                print(f"  Basis          : {report.basis}")
+                return 0
+
+            if action == "list-tenants":
+                tenants = mgr.list_all()
+                print(f"[C-UAS] Broker tenants ({len(tenants)}):")
+                for t in tenants:
+                    print(f"  {t.broker_id}  {t.name}  {t.region}  "
+                          f"{t.agent_slots_allocated}/{t.max_agent_slots} slots  {t.status}")
+                return 0
+
+            print(f"[C-UAS] Unknown broker action: {action}")
+            return 1
+        except KeyError as exc:
+            print(f"[C-UAS] {exc}")
+            return 1
+        except ValueError as exc:
+            print(f"[C-UAS] {exc}")
+            return 1
+
+    if args.command == "hardware":
+        from c_uas.hardware.cli import main as hardware_main
+
+        source = argv if argv is not None else sys.argv[1:]
+        return hardware_main([a for a in source if a != "hardware"])
 
     parser.print_help()
     return 1

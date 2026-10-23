@@ -105,10 +105,12 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/benchmarks` | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
 | `c_uas/governance` | ISO 42001 AI governance: risk, controls, audit evidence, incidents |
 | `c_uas/contract_readiness` | Burn rate, CAC:LTV, MVP scope for contract readiness |
+| `c_uas/broker` | Broker Channel OS: multi-tenant broker registration, 330-agent slot allocation, Facebook/WhatsApp campaign dispatch, delivery analytics |
 | `c_uas/dew` | Directed-energy beam modeling with atmospheric attenuation |
 | `c_uas/detection.opendew_classifier` | OpenDEW neural network signal classifier |
 | `c_uas/api` | REST API server (FastAPI) — all platform capabilities over HTTP |
 | `c_uas/orchestration` | Multi-site federation: track fusion, engagement deconfliction |
+| `c_uas/hardware` | SDR, radar, camera sensor abstraction with simulation mode and track fusion |
 | `evals/` | Agent eval harness: reliability evaluation for agentic components |
 
 ---
@@ -187,6 +189,35 @@ c-uas opendew --samples 100
 c-uas contract-readiness
 # Software-only CPE: $50.00 vs kinetic missile: $121,333.33 per engagement
 
+# Broker Channel OS: multi-tenant broker management and campaign distribution
+c-uas broker --action register --name 'Al Aman Security' --region UAE \
+  --contact-email ops@alaman.example --whatsapp-number +971500000001 \
+  --facebook-page-id fb.com/alaman
+# Broker registered: BR-...
+# Slots: 0 / 330
+
+c-uas broker --action allocate --broker-id BR-... --slots 120
+# Utilization: 36.4%
+
+c-uas broker --action allocate --broker-id BR-... --slots 250
+# Waitlisted: 250 (120 + 250 exceeds the 330-slot default max)
+
+c-uas broker --action revoke --broker-id BR-... --slots 50
+# Revoking frees capacity and promotes waitlisted slots FIFO
+
+c-uas broker --action campaign --broker-id BR-... --channel whatsapp \
+  --target-region UAE --message-template 'Protect your airspace demo C-UAS.' \
+  --recipient-count 10000
+# Status: dispatched
+# Sent: 10000  Delivered: 9702  Read: 8247
+
+c-uas broker --action analytics --campaign-id CAMP-...
+# Delivery rate: 97.0%  Read rate: 85.0%
+# Conversion rate: 3.3000% (illustrative)  Cost per acq: $2.50 (illustrative)
+
+c-uas broker --action list-tenants
+# BR-...  Al Aman Security  UAE  120/330 slots  active
+
 # REST API server
 c-uas api --host 127.0.0.1 --port 8000
 # Docs: http://127.0.0.1:8000/docs
@@ -216,6 +247,21 @@ python -m c_uas.engagement.backtest --scenario swarm_8 --trials 5
 # Full sweep report
 python -m c_uas.engagement.backtest --report
 ```
+
+### Broker Channel OS
+
+```mermaid
+flowchart TD
+    subgraph BOS[Broker Channel OS]
+    A[Register broker] -->|name region email| B[Allocate agent slots]
+    B -->|330 max per broker| C[Create campaign]
+    C -->|facebook whatsapp sms email| D[Dispatch campaign]
+    D -->|sent delivered read| E[Campaign analytics]
+    end
+    E -->|delivery read rate conversion CPA| F[MENA plus emerging markets GTM]
+```
+
+A registered broker allocates agent slots up to the 330-slot default max, waitlists when capacity is reached, and promotes waitlisted requests FIFO when slots are revoked. Campaigns dispatch over Facebook or WhatsApp with deterministic simulated delivery counts; analytics report delivery rate, read rate, and illustrative conversion economics labeled per grounding policy. All state persists under ~/.c-uas-platform/broker/ outside the repo.
 
 ---
 
@@ -804,6 +850,79 @@ c-uas locate-controller --method SKYWAVE
 ### Beyond-Line-of-Sight Operation
 
 For controllers operating beyond VHF line-of-sight (hundreds of kilometers), the SKYWAVE method uses HF (3-30 MHz) skywave propagation via ionospheric E-layer (~100 km) and F-layer (~300 km) reflection. Multi-site reception of the same HF emission constrains the controller to the intersection of sensor service circles, with typical uncertainty of +/- 150 km.
+
+---
+
+## Hardware Abstraction Layer (SDR / radar / camera)
+
+`c_uas/hardware/` is the defensive-only hardware abstraction layer for
+sensor input. It wraps RF (SDR), radar, and camera sensors behind a common
+interface, runs every adapter in deterministic simulation mode when no
+hardware is present, and fuses detections into unified drone tracks.
+
+No live SDR integration, no weapons-employment effector, no facial
+recognition, no weapon targeting. Hardware absence is logged, never raised.
+
+```mermaid
+flowchart TD
+    SDR[SDR Adapter: rf_scan] -->|detections| F[Sensor Fusion]
+    RAD[Radar Adapter: radar_track] -->|detections| F
+    CAM[Camera Adapter: visual_detection] -->|detections| F
+    F -->|weighted centroid| T[Unified Drone Tracks]
+    T -->|dedup by proximity and time| D[CLI: c-uas hardware --fuse]
+    S[State: ~/.c-uas-platform/hardware/] <-->|persist| F
+```
+
+### Sensors
+
+| Adapter | Capability | Output |
+|---|---|---|
+| `SDRAdapter` | rf_scan | Frequency scan, signal detection, RSSI (RTL-SDR / HackRF / USRP class) |
+| `RadarAdapter` | radar_track | Bearing, range, altitude, velocity tracks plus correlation |
+| `CameraAdapter` | visual_detection | Bounding boxes, confidence, object class stub |
+
+### CLI usage
+
+```bash
+# List sensors, capabilities, simulation status
+c-uas hardware --list
+
+# Scan every sensor and persist detections
+c-uas hardware --scan
+
+# Fuse detections into unified tracks
+c-uas hardware --fuse
+
+# Health-check all sensors
+c-uas hardware --status
+
+# Deterministic seed for reproducible runs
+c-uas hardware --scan --seed 42
+```
+
+Sample output:
+
+```
+[C-UAS] Hardware sensors:
+  sdr-0: rf_scan | simulation=True | online=True | simulation mode: no hardware
+  radar-0: radar_track | simulation=True | online=True | simulation mode: no hardware
+  camera-0: visual_detection | simulation=True | online=True | simulation mode: no hardware
+
+[C-UAS] Fused 6 detections into 2 tracks
+  track--3f2a...: (101.5, 1.0, 100.5)m conf=0.85 sensors=radar-0,camera-0 sources=radar,visual
+```
+
+All adapter output is deterministic: the same seed produces identical
+detections, track IDs, and cluster assignments. State (scans, tracks,
+health checks) persists under `~/.c-uas-platform/hardware/` outside the repo.
+
+### Defensive-only constraints
+
+- SDR reports frequency and RSSI only; no direction-finding hardware control.
+- Radar reports track kinematics only; no fire-control solution output.
+- The camera stub reports object class and bounding boxes only: no facial
+  recognition, no identity attributes, no targeting or aim-point fields.
+- Jamming or kinetic effector control is out of scope for this layer.
 
 ---
 
