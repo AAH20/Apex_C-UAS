@@ -103,6 +103,7 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/competitive_landscape` | Global C-UAS systems database (9 systems, unit economics inputs) |
 | `c_uas/unit_economics` | Cost-per-engagement, cost-exchange ratio, economies of scale models |
 | `c_uas/benchmarks` | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
+| `c_uas/governance` | ISO 42001 AI governance: risk, controls, audit evidence, incidents |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -160,8 +161,15 @@ c-uas unit-economics --type all
 c-uas benchmarks --max-drones 64
 # Real measured performance: scheduler speed, EKF accuracy, end-to-end latency
 
+# ISO 42001 AI governance
+c-uas governance --action compliance-report
+# ISO 42001 compliance status: AI systems, risks, controls, incidents
+c-uas governance --action register-system --name 'EKF Tracking' --module c_uas.tracking.ekf_interceptor --stage operation --risk-level medium
+c-uas governance --action assess-risk --system-id <system-id> --description 'EKF drift under noise' --likelihood medium --impact high
+c-uas governance --action implement-control --control-id A.8.2 --evidence 'Input validation added'
+
 pytest tests/ -q
-# 157 passed
+# 180 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -383,6 +391,29 @@ Measured with `c-uas benchmarks` — dwell 4s + slew 1.5s, 40s time limit:
 | 128 drones | 98.4% | 2 |
 
 Swarm saturation is the binding constraint — the scheduler correctly picks which targets to engage, but physics (dwell + slew time) limits how many can be engaged before impact.
+
+### ISO 42001 AI Governance (this platform)
+
+Agentic C-UAS components are managed as ISO/IEC 42001:2023 AI systems. Governance is implemented in `c_uas/governance/` and exposed via `c-uas governance`:
+
+```bash
+c-uas governance --action compliance-report
+c-uas governance --action register-system --name 'EKF Tracking' --module c_uas.tracking.ekf_interceptor --stage operation --risk-level medium
+c-uas governance --action assess-risk --system-id <id> --description 'EKF drift under sensor noise' --likelihood medium --impact high
+c-uas governance --action implement-control --control-id A.8.2 --evidence 'Input validation added'
+c-uas governance --action record-incident --description 'EKF intercept off by 3m' --severity medium
+```
+
+| Governance function | CLI action | ISO 42001 reference |
+|---|---|---|
+| AI system inventory | `register-system` | Clause 6.1 / Annex A.5.2 |
+| Risk assessment | `assess-risk` | Clause 6.1 / Annex A.7.1 |
+| Control implementation | `implement-control` | Annex A controls (A.5.1-A.11.1) |
+| Audit evidence chain | `log-evidence` | Clause 9 (performance evaluation) |
+| Incident management | `record-incident` | Clause 10 (improvement) |
+| Compliance reporting | `compliance-report` | Clause 9 (management review) |
+
+Audit evidence is hash-linked (SHA-256) for tamper-evidence, and the authority key persists to `~/.c-uas-platform/governance/` so evidence verifies across sessions. Compliance percentage is computed from control implementation ratio, open risk count, and open incident count — all real values from code execution.
 
 ### Evolution parameters (this platform)
 

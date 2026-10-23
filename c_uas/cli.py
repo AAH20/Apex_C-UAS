@@ -142,6 +142,51 @@ def main(argv: Optional[list] = None) -> int:
         "--max-drones", type=int, default=128, help="Max drone count for scheduler benchmark"
     )
 
+    # governance
+    gov_p = subparsers.add_parser(
+        "governance",
+        help="ISO 42001 AI governance for C-UAS systems",
+    )
+    gov_p.add_argument(
+        "--action",
+        type=str,
+        default="report",
+        help="Governance action: register-system, assess-risk, implement-control, log-evidence, record-incident, compliance-report",
+    )
+    gov_p.add_argument(
+        "--name", type=str, default=None, help="AI system name (for register-system)"
+    )
+    gov_p.add_argument(
+        "--module", type=str, default=None, help="Module path (for register-system)"
+    )
+    gov_p.add_argument(
+        "--stage", type=str, default="operation", help="Lifecycle stage (for register-system)"
+    )
+    gov_p.add_argument(
+        "--risk-level", type=str, default="medium", help="Risk level (for register-system)"
+    )
+    gov_p.add_argument(
+        "--system-id", type=str, default=None, help="AI system ID (for risk/incident/evidence)"
+    )
+    gov_p.add_argument(
+        "--description", type=str, default=None, help="Risk/incident description"
+    )
+    gov_p.add_argument(
+        "--likelihood", type=str, default="medium", help="Risk likelihood: low/medium/high"
+    )
+    gov_p.add_argument(
+        "--impact", type=str, default="medium", help="Risk impact: low/medium/high"
+    )
+    gov_p.add_argument(
+        "--control-id", type=str, default=None, help="Annex A control ID (for implement-control)"
+    )
+    gov_p.add_argument(
+        "--evidence", type=str, default=None, help="Evidence pointer (for implement-control/log-evidence)"
+    )
+    gov_p.add_argument(
+        "--severity", type=str, default="medium", help="Incident severity: low/medium/high/critical"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -409,6 +454,124 @@ def main(argv: Optional[list] = None) -> int:
         for count in sorted(result.swarm_saturation.keys()):
             print(f"  {count:4d} drones: {result.swarm_saturation[count]:.1%} leak rate")
         return 0
+
+    if args.command == "governance":
+        from c_uas.governance import (
+            AISystemRegistry,
+            AuditEvidenceChain,
+            ComplianceReporter,
+            ControlImplementation,
+            IncidentManager,
+            RiskAssessment,
+        )
+
+        reg = AISystemRegistry()
+        assessor = RiskAssessment()
+        controller = ControlImplementation()
+        chain = AuditEvidenceChain()
+        mgr = IncidentManager()
+
+        action = args.action or "report"
+
+        if action == "register-system":
+            if not args.name or not args.module:
+                print("[C-UAS] --name and --module required for register-system")
+                return 1
+            sid = reg.register(
+                args.name,
+                args.module,
+                args.stage,
+                args.risk_level,
+            )
+            print(f"[C-UAS] Registered AI system: {sid}")
+            print(f"  Name        : {args.name}")
+            print(f"  Module      : {args.module}")
+            print(f"  Stage       : {args.stage}")
+            print(f"  Risk level  : {args.risk_level}")
+            return 0
+
+        elif action == "assess-risk":
+            if not args.system_id or not args.description:
+                print("[C-UAS] --system-id and --description required for assess-risk")
+                return 1
+            risk = assessor.assess(
+                args.system_id,
+                args.description,
+                args.likelihood,
+                args.impact,
+            )
+            print(f"[C-UAS] Risk assessed: {risk.risk_id}")
+            print(f"  System ID  : {risk.system_id}")
+            print(f"  Description: {risk.description}")
+            print(f"  Likelihood : {risk.likelihood}")
+            print(f"  Impact     : {risk.impact}")
+            print(f"  Risk level : {risk.risk_level}")
+            print(f"  Status     : {risk.status}")
+            chain.log("risk_assessment", {"risk_id": risk.risk_id}, args.system_id)
+            return 0
+
+        elif action == "implement-control":
+            if not args.control_id or not args.evidence:
+                print("[C-UAS] --control-id and --evidence required for implement-control")
+                return 1
+            ctrl = controller.implement(args.control_id, args.evidence)
+            if ctrl is None:
+                print(f"[C-UAS] Unknown control: {args.control_id}")
+                return 1
+            print(f"[C-UAS] Control implemented: {ctrl.control_id}")
+            print(f"  Title     : {ctrl.title}")
+            print(f"  Evidence  : {ctrl.implementation_evidence}")
+            chain.log("control_implementation", {"control_id": ctrl.control_id}, None)
+            return 0
+
+        elif action == "log-evidence":
+            if not args.evidence:
+                print("[C-UAS] --evidence required for log-evidence")
+                return 1
+            entry = chain.log("manual_entry", {"note": args.evidence}, args.system_id)
+            print(f"[C-UAS] Evidence logged: {entry.entry_id}")
+            print(f"  Type       : manual_entry")
+            print(f"  System ID  : {args.system_id or '(none)'}")
+            print(f"  Entry hash : {entry.entry_hash[:16]}...")
+            print(f"  Chain valid: {chain.verify_chain()}")
+            return 0
+
+        elif action == "record-incident":
+            if not args.description:
+                print("[C-UAS] --description required for record-incident")
+                return 1
+            inc = mgr.record(
+                args.description,
+                args.description,
+                args.severity,
+                args.system_id,
+            )
+            print(f"[C-UAS] Incident recorded: {inc.incident_id}")
+            print(f"  Title     : {inc.title}")
+            print(f"  Severity  : {inc.severity}")
+            print(f"  Status    : {inc.status}")
+            chain.log("incident", {"incident_id": inc.incident_id}, args.system_id)
+            return 0
+
+        elif action == "compliance-report":
+            reporter = ComplianceReporter(reg, assessor, controller, chain, mgr)
+            report = reporter.generate()
+            print(f"[C-UAS] ISO 42001 Compliance Report")
+            print(f"  Generated       : {report.generated_at:.0f}")
+            print(f"  AI systems      : {report.total_ai_systems}")
+            print(f"  Total risks     : {report.total_risks}")
+            print(f"  Open risks      : {report.open_risks}")
+            print(f"  Total controls  : {report.total_controls}")
+            print(f"  Implemented     : {report.implemented_controls}")
+            print(f"  Total incidents : {report.total_incidents}")
+            print(f"  Open incidents  : {report.open_incidents}")
+            print(f"  Compliance %    : {report.compliance_percentage}%")
+            print(f"  Overall status  : {report.overall_status}")
+            return 0
+
+        else:
+            print(f"[C-UAS] Unknown governance action: {action}")
+            return 1
 
     parser.print_help()
     return 1
