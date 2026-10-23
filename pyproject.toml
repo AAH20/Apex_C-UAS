@@ -53,5 +53,8 @@ dependencies = [
 [project.scripts]
 c-uas = "c_uas.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["c_uas*"]
+
 [tool.pytest.options]
 testpaths = ["tests"]
