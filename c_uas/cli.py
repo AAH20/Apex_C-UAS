@@ -187,6 +187,45 @@ def main(argv: Optional[list] = None) -> int:
         "--severity", type=str, default="medium", help="Incident severity: low/medium/high/critical"
     )
 
+    # dew
+    dew_p = subparsers.add_parser(
+        "dew",
+        help="Directed-energy beam modeling with atmospheric attenuation",
+    )
+    dew_p.add_argument(
+        "--laser", type=str, default="fiber_50kw",
+        help="Laser spec: fiber_50kw, fiber_100kw, solid_state_150kw, chemical_100kw",
+    )
+    dew_p.add_argument(
+        "--range-m", type=float, default=3000.0, help="Range to target in meters"
+    )
+    dew_p.add_argument(
+        "--material", type=str, default="aluminum",
+        help="Target material: aluminum, carbon_fiber, plastic, composite",
+    )
+    dew_p.add_argument(
+        "--rain-mm-hr", type=float, default=0.0, help="Rain rate in mm/hr"
+    )
+    dew_p.add_argument(
+        "--visibility-km", type=float, default=20.0, help="Visibility in km"
+    )
+
+    # opendew
+    od_p = subparsers.add_parser(
+        "opendew",
+        help="OpenDEW neural network signal classifier",
+    )
+    od_p.add_argument(
+        "--samples", type=int, default=100,
+        help="Number of IQ samples to classify"
+    )
+
+    # contract-readiness
+    cr_p = subparsers.add_parser(
+        "contract-readiness",
+        help="Contract readiness: burn rate, CAC:LTV, MVP scope",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "scan-rf":
@@ -572,6 +611,83 @@ def main(argv: Optional[list] = None) -> int:
         else:
             print(f"[C-UAS] Unknown governance action: {action}")
             return 1
+
+    if args.command == "dew":
+        from c_uas.dew.atmospheric import (
+            LASER_SPECS, AtmosphericConditions,
+            time_to_kill_with_attenuation,
+        )
+
+        laser_name = args.laser
+        if laser_name not in LASER_SPECS:
+            print(f"[C-UAS] Unknown laser: {laser_name}")
+            print(f"  Available: {', '.join(LASER_SPECS.keys())}")
+            return 1
+
+        spec = LASER_SPECS[laser_name]
+        conditions = AtmosphericConditions(
+            rainfall_mm_hr=args.rain_mm_hr,
+            aerosol_visibility_km=args.visibility_km,
+        )
+        result = time_to_kill_with_attenuation(
+            spec, range_m=args.range_m, target_material=args.material,
+            conditions=conditions,
+        )
+        print(f"[C-UAS] DEW Time-to-Kill: {spec.name}")
+        print(f"  Range         : {result['range_m']} m")
+        print(f"  Material      : {result['material']}")
+        print(f"  Dwell time    : {result['dwell_s']} s")
+        print(f"  Fluence       : {result['fluence_j_cm2']} J/cm^2")
+        print(f"  Required      : {result['required_fluence_j_cm2']} J/cm^2")
+        print(f"  Transmission  : {result['transmission']}")
+        print(f"  Attenuation   : {result['attenuation_db_km']} dB/km")
+        print(f"  Spot size     : {result['spot_cm']} cm")
+        return 0
+
+    if args.command == "opendew":
+        from c_uas.detection.opendew_classifier import (
+            get_opendew_classifier,
+        )
+        import random
+
+        clf = get_opendew_classifier()
+        # Generate random IQ samples for testing
+        samples = [random.uniform(-1.0, 1.0) for _ in range(args.samples)]
+        result = clf.classify_iq(samples)
+        print(f"[C-UAS] OpenDEW Signal Classification")
+        print(f"  Available   : {result['available']}")
+        print(f"  Method      : {result['method']}")
+        print(f"  Predicted   : {result['predicted_class']}")
+        print(f"  Confidence  : {result['confidence']}")
+        if result["probabilities"]:
+            print(f"  Probabilities:")
+            for cls, prob in sorted(
+                result["probabilities"].items(),
+                key=lambda x: -x[1]
+            )[:5]:
+                print(f"    {cls}: {prob}")
+        return 0
+
+    if args.command == "contract-readiness":
+        from c_uas.contract_readiness import ContractReadinessModel
+
+        model = ContractReadinessModel()
+        analysis = model.full_analysis()
+        burn = analysis["burn_rate"]
+        cac = analysis["cac_ltv"]
+        frc = analysis["fastest_route_to_contract"]
+        print(f"[C-UAS] Contract Readiness Analysis")
+        print(f"  Burn rate     : ${burn['monthly_burn_usd']:,.0f}/month, "
+              f"${burn['annual_burn_usd']:,.0f}/year")
+        print(f"  Runway        : {burn['runway_months']} months, "
+              f"${burn['total_runway_usd']:,.0f} total")
+        print(f"  CAC           : ${cac['cac_usd']:,.0f}")
+        print(f"  LTV           : ${cac['ltv_usd']:,.0f}")
+        print(f"  CAC:LTV       : {cac['cac_ltv_ratio']:.4f} (viable: {cac['viable']})")
+        print(f"  Payback       : {cac['payback_months']} months")
+        print(f"  MVP build     : {analysis['mvp_scope']['total_weeks']} weeks")
+        print(f"  Earliest contract: month {frc['earliest_contract_month']}")
+        return 0
 
     parser.print_help()
     return 1

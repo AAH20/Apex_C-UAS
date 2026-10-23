@@ -104,6 +104,9 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/unit_economics` | Cost-per-engagement, cost-exchange ratio, economies of scale models |
 | `c_uas/benchmarks` | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
 | `c_uas/governance` | ISO 42001 AI governance: risk, controls, audit evidence, incidents |
+| `c_uas/contract_readiness` | Burn rate, CAC:LTV, MVP scope for contract readiness |
+| `c_uas/dew` | Directed-energy beam modeling with atmospheric attenuation |
+| `c_uas/detection.opendew_classifier` | OpenDEW neural network signal classifier |
 | `evals/` | Agent eval harness + DeepEval-style pytest suite |
 
 ---
@@ -168,8 +171,22 @@ c-uas governance --action register-system --name 'EKF Tracking' --module c_uas.t
 c-uas governance --action assess-risk --system-id <system-id> --description 'EKF drift under noise' --likelihood medium --impact high
 c-uas governance --action implement-control --control-id A.8.2 --evidence 'Input validation added'
 
+# DEW beam modeling with atmospheric attenuation
+c-uas dew --laser fiber_50kw --range-m 3000 --material aluminum
+# 50 kW fiber laser: 0.87s dwell, 6.4cm spot, 78% transmission at 3km
+c-uas dew --laser solid_state_150kw --range-m 5000 --rain-mm-hr 50
+# Heavy rain cuts transmission; dwell time increases accordingly
+
+# OpenDEW neural signal classifier
+c-uas opendew --samples 100
+# Falls back gracefully when PyTorch/OpenDEW model not installed
+
+# Contract readiness: burn rate, CAC:LTV, MVP scope
+c-uas contract-readiness
+# Software-only CPE: $50.00 vs kinetic missile: $121,333.33 per engagement
+
 pytest tests/ -q
-# 180 passed
+# 210 passed
 
 python evals/harness.py run
 # 15/15 PASS
@@ -414,6 +431,56 @@ c-uas governance --action record-incident --description 'EKF intercept off by 3m
 | Compliance reporting | `compliance-report` | Clause 9 (management review) |
 
 Audit evidence is hash-linked (SHA-256) for tamper-evidence, and the authority key persists to `~/.c-uas-platform/governance/` so evidence verifies across sessions. Compliance percentage is computed from control implementation ratio, open risk count, and open incident count — all real values from code execution.
+
+### Directed-Energy Beam Modeling (this platform)
+
+`c_uas/dew/` implements directed-energy physics modeling with atmospheric attenuation (ITU-R P.676 / P.835), multi-wavelength support, and adaptive optics compensation. Modeling only — no hardware control.
+
+```bash
+c-uas dew --laser fiber_50kw --range-m 3000 --material aluminum
+c-uas dew --laser solid_state_150kw --range-m 5000 --rain-mm-hr 50
+```
+
+| Laser | Wavelength | Power | Status | Role |
+|---|---|---|---|---|
+| DragonFire (UK) | ~1070 nm | ~50 kW | Demonstrator | C-UAS / air defense |
+| Iron Beam (Israel) | ~1070 nm | ~100 kW | In development | C-UAS / C-RAM |
+| HELIOS (US Navy) | ~1064 nm | 60+ kW | Integration trials | Ship defense / C-UAS |
+| LOCUST X3 (US) | n.d. | n.d. | Demonstrator | C-UAS |
+
+Atmospheric attenuation (rain, aerosols, oxygen, water vapor) directly reduces fluence-on-target and increases dwell time — a 50 kW laser in heavy rain needs ~5× longer dwell than in clear air at 3 km.
+
+### OpenDEW Neural Signal Classifier
+
+`c_uas/detection/opendew_classifier.py` integrates the trained PyTorch signal classifier from the OpenDEW project (`/Users/ahmedhassan/Downloads/OpenDEW-master/models/drone_classifier.pth`).
+
+```bash
+c-uas opendew --samples 100
+```
+
+Classifies IQ samples into 12 drone signal classes: DJI_DroneID, Analog_FPV, Fixed_Wing, DJI_Lightbridge, Swarm_Coord, DJI_OcuSync, noise, TBS_Crossfire, Military_Encrypted, Digital_FPV, ExpressLRS, MSP_Telemetry. Falls back gracefully when PyTorch or the trained model is not installed.
+
+### Contract Readiness — Fastest Route to Contract
+
+`c_uas/contract_readiness.py` models burn rate, CAC:LTV, and MVP scope for the fastest path to a signed contract. All figures are illustrative models, not actual data.
+
+```bash
+c-uas contract-readiness
+```
+
+| Metric | Value (illustrative) |
+|---|---|
+| Monthly burn | $15,500 (founder-led, free-tier infra only) |
+| Annual burn | $186,000 |
+| Runway | 12 months |
+| CAC | $2,500 |
+| LTV | $191,250 |
+| CAC:LTV | 0.013 (viable) |
+| Payback | 0.47 months |
+| MVP build | 14 weeks |
+| Earliest contract | Month 3 |
+
+MVP phases: (1) Detection + forensics (4 weeks), (2) Tracking + scheduling + controller location (6 weeks), (3) ISO 42001 governance + DEW modeling (4 weeks). Sellable after Phase 1.
 
 ### Evolution parameters (this platform)
 
