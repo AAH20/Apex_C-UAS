@@ -106,6 +106,9 @@ c-uas locate-controller --method BEARING
 c-uas competitive-landscape
 c-uas unit-economics --type all
 c-uas benchmarks --max-drones 64
+c-uas perf --benchmark --module default --seed 7
+c-uas perf --profile --module default --seed 7
+c-uas perf --sla --module default --seed 7
 c-uas dew --laser fiber_50kw --range-m 3000 --material aluminum
 c-uas opendew --samples 100
 c-uas contract-readiness
@@ -281,6 +284,7 @@ from actual code execution or are labeled illustrative.
 | c_uas/competitive_landscape | Global C-UAS systems database |
 | c_uas/contract_readiness | Burn rate, CAC:LTV, MVP scope for contract readiness |
 | c_uas/benchmarks | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
+| c_uas/performance | Production performance & scalability: A*/set-cover/local-search kernels, per-endpoint profiler, SLA tracker (p50/p95/p99, error budget, recovery), state under ~/.c-uas-platform/performance/ |
 | evals/ | Agent eval harness: reliability evaluation for agentic components |
 
 ## License
