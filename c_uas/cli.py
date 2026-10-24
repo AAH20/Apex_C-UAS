@@ -416,49 +416,9 @@ def main(argv: Optional[list] = None) -> int:
     hw_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
 
     # edge
-    edge_p = subparsers.add_parser(
-        "edge",
-        help="Deploy and operate C-UAS edge nodes: local detection/tracking and edge-to-cloud sync",
-    )
-    edge_p.add_argument(
-        "--deploy",
-        action="store_true",
-        help="Deploy edge node and run the first local detection cycle",
-    )
-    edge_p.add_argument(
-        "--status", action="store_true", help="Show edge node health and sync state"
-    )
-    edge_p.add_argument(
-        "--sync",
-        action="store_true",
-        help="Sync queued detections to the cloud endpoint",
-    )
-    edge_p.add_argument("--node-id", type=str, default=None, help="Edge node identifier")
-    edge_p.add_argument(
-        "--location",
-        type=str,
-        default=None,
-        help="Site location (required for --deploy)",
-    )
-    edge_p.add_argument(
-        "--sensors",
-        type=str,
-        default="sdr,radar,camera",
-        help="Comma-separated sensor list (sdr, radar, camera)",
-    )
-    edge_p.add_argument(
-        "--sync-interval",
-        type=float,
-        default=300.0,
-        help="Cloud sync interval in seconds",
-    )
-    edge_p.add_argument("--cloud-endpoint", type=str, default=None, help="Cloud API base URL")
-    edge_p.add_argument(
-        "--offline",
-        action="store_true",
-        help="Run in offline mode (no cloud sync attempts)",
-    )
-    edge_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
+    from c_uas.edge.cli import build_subparser
+
+    _ = build_subparser(subparsers)
 
     # red-team
     rt_p = subparsers.add_parser(
@@ -1835,7 +1795,7 @@ def main(argv: Optional[list] = None) -> int:
         return red_team_main(args)
 
     if args.command == "edge":
-        from c_uas.edge.cli import main as edge_main
+        from c_uas.edge.cli import edge_main
 
         source = argv if argv is not None else sys.argv[1:]  # type: ignore[assignment]
         return edge_main([a for a in source if a != "edge"])

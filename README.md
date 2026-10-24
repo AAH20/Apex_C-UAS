@@ -116,6 +116,13 @@ c-uas governance --action compliance-report
 c-uas grc-clab --action monitor
 c-uas hardware --list --scan --fuse --status
 c-uas edge --status
+c-uas edge --tenant --register-tenant --tenant-id T-1 --name "Site One" --region us-east-1 --tier standard
+c-uas edge --tenant --list-tenants
+c-uas edge --tenant --tenant-health --tenant-id T-1
+c-uas edge --fleet --register-node --node-id N-1 --tenant-id T-1 --location "Roof A"
+c-uas edge --fleet --heartbeat --node-id N-1
+c-uas edge --fleet --fleet-health
+c-uas edge --zero-trust --evaluate-policy --source node-A --dest node-B --port 443 --mtls --same-segment --authenticated
 c-uas gateway --status --route --backend detection
 c-uas chaos --report
 c-uas red-team --scenario
@@ -169,7 +176,7 @@ implemented in c_uas/cli.py.
 | threat-intel | STIX/TAXII threat intelligence export and alerting |
 | broker | Broker Channel OS: multi-tenant broker management, agent slots, campaigns |
 | hardware | Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion |
-| edge | Deploy and operate C-UAS edge nodes: local detection/tracking and edge-to-cloud sync |
+| edge | Deploy and operate C-UAS edge nodes: local detection/tracking, edge-to-cloud sync, multi-tenant isolation (tenants, RLS, quotas), fleet management (registration, heartbeat, offline detection, decommission), and zero-trust network policies (default-deny, mTLS, segmentation) |
 | red-team | Red team adversarial testing framework (GNSS spoofing, RF jamming, swarm saturation, coordinated attacks, controller hijacking) |
 | performance | Performance optimization engine: baselines, bottlenecks, capacity planning, optimization recommendations |
 | compliance | Automated compliance evidence collection for ISO 42001 audits |
@@ -252,8 +259,9 @@ are not yet implemented. No fabricated metrics.
 ## Test results
 
 pytest tests/ -q: 519 passed. CI runs ruff check, ruff format --check, mypy c_uas,
-and pytest tests/ -q; all green on main. All figures in this document are computed
-from actual code execution or are labeled illustrative.
+and pytest tests/ -q; all green on main. The edge module adds 45 deterministic
+tests under tests/edge/ (pytest tests/edge/ -q: 45 passed). All figures in this
+document are computed from actual code execution or are labeled illustrative.
 
 ## Module reference
 
@@ -272,7 +280,7 @@ from actual code execution or are labeled illustrative.
 | c_uas/gateway | API Gateway: multi-backend routing, health checks, circuit breakers |
 | c_uas/orchestration | Multi-site federation: track fusion, engagement deconfliction |
 | c_uas/hardware | SDR, radar, camera sensor abstraction with simulation mode and track fusion |
-| c_uas/edge | Edge node detection/tracking and edge-to-cloud sync |
+| c_uas/edge | Edge node detection/tracking and edge-to-cloud sync; sub-modules: tenancy (tenant isolation, RLS, quotas), fleet (registration, heartbeat, health scoring, offline detection, decommission), zero_trust (default-deny, mTLS, segmentation, policy evaluation) |
 | c_uas/chaos | Chaos / resilience testing: fault injection and resilience validation |
 | c_uas/red_team | Adversarial testing framework |
 | c_uas/security | Production hardening: security audits, penetration tests, ISO 42001 / SOC 2 compliance |
