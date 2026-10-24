@@ -15,7 +15,6 @@ import pytest
 
 from c_uas.chaos.faults import (
     ALL_FAULTS,
-    Fault,
     FaultInjector,
     api_timeout_fault,
     backend_crash_fault,

@@ -91,7 +91,7 @@ class BenchmarkSuite:
 
     def benchmark_scheduler(
         self,
-        drone_counts: List[int] = None,
+        drone_counts: Optional[List[int]] = None,
         time_limit_s: float = 30.0,
     ) -> List[SchedulerBenchmarkResult]:
         """Measure scheduler wall-clock time vs drone count."""
@@ -235,7 +235,7 @@ class BenchmarkSuite:
             DroneTrack(track_id=i, arrival_time_s=5.0 + i * 3.0, pk_base=0.8, priority=3)
             for i in range(4)
         ]
-        plan = scheduler.schedule(tracks=tracks)
+        _plan = scheduler.schedule(tracks=tracks)
         stages += 1
 
         # Stage 5: Decision loop
@@ -277,7 +277,7 @@ class BenchmarkSuite:
 
     def benchmark_swarm_saturation(
         self,
-        drone_counts: List[int] = None,
+        drone_counts: Optional[List[int]] = None,
         spread_s: float = 10.0,
     ) -> Dict[int, float]:
         """Measure leak rate vs swarm size — the swarm saturation curve."""
@@ -325,8 +325,8 @@ class BenchmarkSuite:
 
         return BenchmarkSuiteResult(
             scheduler_results=self.scheduler_results,
-            ekf_result=self.ekf_result,
-            end_to_end_result=self.end_to_end_result,
+            ekf_result=self.ekf_result,  # type: ignore[arg-type]
+            end_to_end_result=self.end_to_end_result,  # type: ignore[arg-type]
             swarm_saturation=self.swarm_saturation,
         )
 

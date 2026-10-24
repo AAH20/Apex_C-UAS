@@ -79,7 +79,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="high",
         cost_per_engagement_usd=None,  # per-shot laser cost not disclosed
         system_unit_cost_usd=None,  # £100M+ program cost, per-unit n.d.
-        notes="Tracker/engager trials reported. Laser per-shot cost near-zero after capital outlay; prime power/thermal dominate lifetime cost.",
+        notes=(
+            "Tracker/engager trials reported. Laser per-shot cost near-zero "
+            "after capital outlay; prime power/thermal dominate lifetime cost."
+        ),
     ),
     CUASSystem(
         name="Iron Beam",
@@ -95,7 +98,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="high",
         cost_per_engagement_usd=None,
         system_unit_cost_usd=None,
-        notes="Reported intercept trials. Laser per-shot cost low but capital/thermal infrastructure high.",
+        notes=(
+            "Reported intercept trials. Laser per-shot cost low but "
+            "capital/thermal infrastructure high."
+        ),
     ),
     CUASSystem(
         name="HELIOS",
@@ -111,7 +117,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="ship_plant",
         cost_per_engagement_usd=None,
         system_unit_cost_usd=None,
-        notes="Integration trials on USS Preble. Ship electrical plant provides prime power; 25-30% wall-plug efficiency, 70% waste heat.",
+        notes=(
+            "Integration trials on USS Preble. Ship electrical plant provides "
+            "prime power; 25-30% wall-plug efficiency, 70% waste heat."
+        ),
     ),
     CUASSystem(
         name="AN/TWQ-1 Avenger",
@@ -127,7 +136,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="n.a.",
         cost_per_engagement_usd=None,  # Stinger unit cost ~$100k-150k per missile
         system_unit_cost_usd=1_000_000,
-        notes="Fielded; Army inventory. High per-engagement cost (expendable missile). Magazine depth limits sustained engagement.",
+        notes=(
+            "Fielded; Army inventory. High per-engagement cost "
+            "(expendable missile). Magazine depth limits sustained engagement."
+        ),
     ),
     CUASSystem(
         name="Sky Safir",
@@ -159,7 +171,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="laptop_class",
         cost_per_engagement_usd=None,
         system_unit_cost_usd=None,
-        notes="34+ government agency deployments worldwide. NSN 5865-22-639-8184 (detect & defeat variant).",
+        notes=(
+            "34+ government agency deployments worldwide. NSN "
+            "5865-22-639-8184 (detect & defeat variant)."
+        ),
     ),
     CUASSystem(
         name="DedroneTracker.AI",
@@ -175,7 +190,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="laptop_class",
         cost_per_engagement_usd=None,
         system_unit_cost_usd=None,
-        notes="US Army / DoD / Air Force / law enforcement deployments. AI-driven autonomous C2 platform.",
+        notes=(
+            "US Army / DoD / Air Force / law enforcement deployments. "
+            "AI-driven autonomous C2 platform."
+        ),
     ),
     CUASSystem(
         name="DroneGun Mk4",
@@ -207,7 +225,10 @@ CUAS_SYSTEMS: List[CUASSystem] = [
         power_draw_class="high",
         cost_per_engagement_usd=5.0,
         system_unit_cost_usd=None,
-        notes="Third generation laser C-UAS, engagements claimed under $5 per shot, designed around field producibility.",
+        notes=(
+            "Third generation laser C-UAS, engagements claimed under "
+            "$5 per shot, designed around field producibility."
+        ),
     ),
 ]
 

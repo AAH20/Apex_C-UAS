@@ -11,11 +11,9 @@ from __future__ import annotations
 import argparse
 from typing import Any, Optional
 
-from .faults import ALL_FAULTS, FaultInjector
 from .report import (
     ResilienceReportStore,
     generate_report,
-    run_all_scenarios,
 )
 from .runner import ChaosRunner
 from .scenarios import ChaosScenarioStore
@@ -74,17 +72,12 @@ def _print_scenario(store: ChaosScenarioStore, scenario_name: Optional[str]) -> 
     scenarios = store.list_scenarios()
     print(f"[C-UAS] Chaos scenarios ({len(scenarios)}):")
     for s in scenarios:
-        print(
-            f"  {s.scenario_id:24s}  {s.name}  "
-            f"(seed={s.seed}, faults={','.join(s.faults)})"
-        )
+        print(f"  {s.scenario_id:24s}  {s.name}  (seed={s.seed}, faults={','.join(s.faults)})")
     print("  Use c-uas chaos --scenario --scenario-name <id> for details.")
     return 0
 
 
-def _run_scenario(
-    store: ChaosScenarioStore, scenario_name: Optional[str]
-) -> int:
+def _run_scenario(store: ChaosScenarioStore, scenario_name: Optional[str]) -> int:
     if not scenario_name:
         print("[C-UAS] --scenario-name required for --run")
         return 1
@@ -111,9 +104,7 @@ def _run_scenario(
     return 0
 
 
-def _report(
-    store: ChaosScenarioStore, scenario_name: Optional[str]
-) -> int:
+def _report(store: ChaosScenarioStore, scenario_name: Optional[str]) -> int:
     scenarios = list(store.list_scenarios())
     if scenario_name:
         try:

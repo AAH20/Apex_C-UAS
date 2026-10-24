@@ -57,9 +57,7 @@ class HealthChecker:
 
     def probe_backend(self, backend: Backend) -> ProbeResult:
         result = self._probe(backend)
-        st = self.states.setdefault(
-            backend.backend_id, BackendState(backend_id=backend.backend_id)
-        )
+        st = self.states.setdefault(backend.backend_id, BackendState(backend_id=backend.backend_id))
         st.healthy = result.healthy
         st.last_latency_ms = result.latency_ms
         st.last_probe_ts = result.probed_at

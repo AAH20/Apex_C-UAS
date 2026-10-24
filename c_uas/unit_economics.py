@@ -25,7 +25,7 @@ from typing import Dict, List
 class EngagementParams:
     """Parameters for a single engagement cost calculation."""
 
-    system_type: str  # "directed_energy_laser", "kinetic_missile", "rf_jamming", "rf_detection", "software_only"
+    system_type: str  # "directed_energy_laser", "kinetic_missile",
     capital_cost_usd: float  # system acquisition cost
     annual_engagements: int  # expected engagements per year
     service_life_years: int  # system service life

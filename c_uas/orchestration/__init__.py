@@ -17,7 +17,6 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 from c_uas.engagement.scheduler import (
     DroneTrack,

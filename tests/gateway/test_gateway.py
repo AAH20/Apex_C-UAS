@@ -5,14 +5,11 @@ and the Gateway facade. All scenarios use a fixed clock and an in-memory or
 temporary state directory so every test is reproducible.
 """
 
-import os
-import tempfile
-
-from c_uas.gateway.circuit import CircuitBreaker, CLOSED, HALF_OPEN, OPEN
+from c_uas.gateway.circuit import CLOSED, HALF_OPEN, OPEN, CircuitBreaker
 from c_uas.gateway.config import Backend, GatewayConfig
 from c_uas.gateway.gateway import Gateway
 from c_uas.gateway.health import HealthChecker, ProbeResult
-from c_uas.gateway.router import BackendRouter, BackendState, RoutingDecision
+from c_uas.gateway.router import BackendRouter, BackendState
 from c_uas.gateway.state import GatewayStateStore
 
 
@@ -28,15 +25,20 @@ def make_states(backends):
     return {b.backend_id: BackendState(backend_id=b.backend_id) for b in backends}
 
 
+def _clock() -> float:
+    return 0.0
+
+
 def make_breaker(threshold=3, recovery=30.0, clock=None):
     if clock is None:
-        clock = lambda: 0.0
+        clock = _clock
     return CircuitBreaker(failure_threshold=threshold, recovery_timeout_s=recovery, clock=clock)
 
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+
 
 def test_config_defaults():
     config = GatewayConfig()
@@ -90,14 +92,13 @@ def test_config_persist_roundtrip(tmp_path):
     assert loaded is not None
     assert loaded.strategy == "least_latency"
     assert loaded.seed == 9
-    assert tuple(b.backend_id for b in loaded.backends) == tuple(
-        b.backend_id for b in backends
-    )
+    assert tuple(b.backend_id for b in loaded.backends) == tuple(b.backend_id for b in backends)
 
 
 # ---------------------------------------------------------------------------
 # Circuit breaker
 # ---------------------------------------------------------------------------
+
 
 def test_circuit_closed_allows_requests():
     t = [0.0]
@@ -159,6 +160,7 @@ def test_circuit_half_open_failure_reopens():
 # ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
+
 
 def test_router_round_robin_distributes():
     backends = make_backends()
@@ -265,6 +267,7 @@ def test_router_record_success_and_failure():
 # Health checker
 # ---------------------------------------------------------------------------
 
+
 def test_health_checker_marks_healthy_and_unhealthy():
     backends = make_backends()
     states = make_states(backends)
@@ -305,10 +308,11 @@ def test_health_checker_is_due():
 # Gateway facade
 # ---------------------------------------------------------------------------
 
+
 def test_gateway_status_shape(tmp_path):
     backends = make_backends()
     config = GatewayConfig(backends=backends, state_dir=str(tmp_path), seed=5)
-    gw = Gateway(config=config, clock=lambda: 0.0)
+    gw = Gateway(config=config, clock=_clock)
     status = gw.status()
     assert status["strategy"] == "round_robin"
     assert status["seed"] == 5
@@ -323,7 +327,7 @@ def test_gateway_status_shape(tmp_path):
 def test_gateway_route_forces_and_records(tmp_path):
     backends = make_backends()
     config = GatewayConfig(backends=backends, state_dir=str(tmp_path), seed=5)
-    gw = Gateway(config=config, clock=lambda: 0.0)
+    gw = Gateway(config=config, clock=_clock)
     decision = gw.route(role="detection")
     assert decision.backend.backend_id == "b-det"
     assert decision.candidates == 1
@@ -335,8 +339,13 @@ def test_gateway_route_forces_and_records(tmp_path):
 
 def test_gateway_persist_and_reload_round_robin(tmp_path):
     backends = make_backends()
-    config = GatewayConfig(backends=backends, state_dir=str(tmp_path), seed=5, strategy="round_robin")
-    gw = Gateway(config=config, clock=lambda: 0.0)
+    config = GatewayConfig(
+        backends=backends,
+        state_dir=str(tmp_path),
+        seed=5,
+        strategy="round_robin",
+    )
+    gw = Gateway(config=config, clock=_clock)
     d1 = gw.route(role=None)  # rr index 0 -> b-det, persists rr_index=1
     d2 = gw.route(role=None)  # rr index 1 -> b-trk, persists rr_index=2
     gw.save()

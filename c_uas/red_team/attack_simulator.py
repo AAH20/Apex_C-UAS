@@ -348,7 +348,7 @@ class AttackSimulator:
 
         db = MavlinkVulnerabilityDatabase()
         all_vulns = db.list_all()
-        vuln_by_id = {v.cve or f"MAV-{idx}": v for idx, v in enumerate(all_vulns)}
+        _vuln_by_id = {v.cve or f"MAV-{idx}": v for idx, v in enumerate(all_vulns)}
         # Signing-bypass weaknesses are the detectable hijack signatures.
         signing_vulns = [
             v

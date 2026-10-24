@@ -256,7 +256,7 @@ class TestSensorFusion(unittest.TestCase):
             Detection("d1", "radar-1", 100.0, "radar", 100.0, 0.0, 100.0, 0.8, {}),
             Detection("d2", "camera-1", 100.1, "visual", 103.0, 2.0, 101.0, 0.9, {}),
         ]
-        t1 = fusion_tracks = SensorFusion(seed=5).fuse(dets)
+        t1 = SensorFusion(seed=5).fuse(dets)
         t2 = SensorFusion(seed=5).fuse(dets)
         self.assertEqual([t.track_id for t in t1], [t.track_id for t in t2])
         self.assertEqual([(t.x_m, t.y_m, t.z_m) for t in t1], [(t.x_m, t.y_m, t.z_m) for t in t2])

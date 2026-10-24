@@ -309,7 +309,7 @@ class AutonomousAgent:
         if existing:
             return None
         domain = _domain_for_module(system.module_path)
-        level = _event_risk_level(domain, system.risk_level)
+        _level = _event_risk_level(domain, system.risk_level)
         descriptions = {
             "detection": f"RF classification drift risk in {system.name} ({system.module_path})",
             "tracking": f"EKF state-divergence risk in {system.name} under sensor noise",
@@ -547,9 +547,10 @@ class ComplianceMonitor:
                     direction=direction,
                     severity="high" if report.open_incidents > previous.open_incidents else "low",
                     description=(
-                        f"Open incidents changed {previous.open_incidents} -> {report.open_incidents}."
+                        "Open incidents changed "
+                        f"{previous.open_incidents} -> {report.open_incidents}."
                     ),
-                )
+                ),
             )
         return alerts
 

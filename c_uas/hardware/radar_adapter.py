@@ -94,7 +94,7 @@ class RadarAdapter(SensorInterface):
 
         detections: List[Detection] = []
         tracks = self._last_tracks or self.scan_tracks()
-        now = time.time()
+        _now = time.time()
         for track in tracks:
             x_m, y_m, z_m = self._bearing_to_position(
                 track.bearing_deg, track.range_m, track.altitude_m

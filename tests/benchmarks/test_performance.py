@@ -47,7 +47,7 @@ class TestBenchmarkSuite(unittest.TestCase):
     def test_swarm_saturation(self):
         saturation = self.suite.benchmark_swarm_saturation(drone_counts=[8, 16, 32])
         self.assertEqual(len(saturation), 3)
-        for count, leak_rate in saturation.items():
+        for _count, leak_rate in saturation.items():
             self.assertGreaterEqual(leak_rate, 0.0)
             self.assertLessEqual(leak_rate, 1.0)
 

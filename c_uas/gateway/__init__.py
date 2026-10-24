@@ -6,8 +6,8 @@ for detection / tracking / engagement backends. Deterministic with a fixed seed;
 all state persisted under ~/.c-uas-platform/gateway/ (outside the repo).
 """
 
-from .circuit import CircuitBreaker, CircuitState, CLOSED, HALF_OPEN, OPEN
-from .config import Backend, GatewayConfig, DEFAULT_STATE_DIR, ROLES, STRATEGIES
+from .circuit import CLOSED, HALF_OPEN, OPEN, CircuitBreaker, CircuitState
+from .config import DEFAULT_STATE_DIR, ROLES, STRATEGIES, Backend, GatewayConfig
 from .gateway import Gateway
 from .health import HealthChecker, ProbeResult
 from .router import BackendRouter, BackendState, RoutingDecision

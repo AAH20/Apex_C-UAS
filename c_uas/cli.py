@@ -83,7 +83,10 @@ def main(argv: Optional[list] = None) -> int:
         "--type",
         type=str,
         default=None,
-        help="Filter by system type (directed_energy_laser, kinetic_missile, rf_jamming, rf_detection)",
+        help=(
+            "Filter by system type "
+            "(directed_energy_laser, kinetic_missile, rf_jamming, rf_detection)"
+        ),
     )
 
     # unit-economics
@@ -154,7 +157,11 @@ def main(argv: Optional[list] = None) -> int:
         "--action",
         type=str,
         default="report",
-        help="Governance action: register-system, assess-risk, implement-control, log-evidence, record-incident, compliance-report",
+        help=(
+            "Governance action: register-system, assess-risk, "
+            "implement-control, log-evidence, record-incident, "
+            "compliance-report"
+        ),
     )
     gov_p.add_argument(
         "--name", type=str, default=None, help="AI system name (for register-system)"
@@ -253,7 +260,7 @@ def main(argv: Optional[list] = None) -> int:
     od_p.add_argument("--samples", type=int, default=100, help="Number of IQ samples to classify")
 
     # contract-readiness
-    cr_p = subparsers.add_parser(
+    _cr_p = subparsers.add_parser(
         "contract-readiness",
         help="Contract readiness: burn rate, CAC:LTV, MVP scope",
     )
@@ -397,7 +404,10 @@ def main(argv: Optional[list] = None) -> int:
     # hardware
     hw_p = subparsers.add_parser(
         "hardware",
-        help="Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion",
+        help=(
+            "Hardware abstraction layer: SDR, radar, camera sensors "
+            "with simulation mode and track fusion"
+        ),
     )
     hw_p.add_argument("--list", action="store_true", help="List sensors and capabilities")
     hw_p.add_argument("--scan", action="store_true", help="Run detection on all sensors")
@@ -529,6 +539,39 @@ def main(argv: Optional[list] = None) -> int:
         help="Number of brokers for capacity planning",
     )
 
+    # perf
+    perf_p = subparsers.add_parser(
+        "perf",
+        help="Production performance & scalability: benchmark, profile, SLA tracking",
+    )
+    perf_p.add_argument(
+        "--benchmark",
+        action="store_true",
+        help="Run deterministic optimization kernels (A*, set cover, local search)",
+    )
+    perf_p.add_argument(
+        "--profile",
+        action="store_true",
+        help="Profile per-endpoint latency/throughput and detect bottlenecks",
+    )
+    perf_p.add_argument(
+        "--sla",
+        action="store_true",
+        help="Assess SLA compliance (p50/p95/p99 latency, error budget, recovery)",
+    )
+    perf_p.add_argument(
+        "--module",
+        type=str,
+        default="default",
+        help="Target module id for benchmark/profile/SLA (default: default)",
+    )
+    perf_p.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Deterministic RNG seed",
+    )
+
     # compliance
     cp_p = subparsers.add_parser(
         "compliance",
@@ -647,7 +690,8 @@ def main(argv: Optional[list] = None) -> int:
             ekf.update_measurement(10.0 + i * 2.0, 50.0 + i * 1.5, 120.0 - i * 0.5)
         pred = ekf.predict_intercept(args.horizon)
         print(
-            f"[C-UAS] EKF Drone State: Pos=({ekf.state.x:.1f}, {ekf.state.y:.1f}, {ekf.state.z:.1f})"
+            "[C-UAS] EKF Drone State: "
+            f"Pos=({ekf.state.x:.1f}, {ekf.state.y:.1f}, {ekf.state.z:.1f})"
         )
         print(f"[C-UAS] Predicted Intercept at T+{args.horizon}s: {pred}")
         return 0
@@ -746,7 +790,8 @@ def main(argv: Optional[list] = None) -> int:
             systems = db.list_by_type(args.type)  # type: ignore[attr-defined]
         summary = db.summary()  # type: ignore[attr-defined]
         print(
-            f"[C-UAS] Global Counter-UAS Systems ({summary['total']} total, {summary['fielded']} fielded):"  # type: ignore[index]
+            "[C-UAS] Global Counter-UAS Systems "
+            f"({summary['total']} total, {summary['fielded']} fielded):"
         )
         for s in systems:  # type: ignore[attr-defined]
             fielded_marker = " [FIELDED]" if s.is_fielded else " [demo]"  # type: ignore[attr-defined]
@@ -754,10 +799,14 @@ def main(argv: Optional[list] = None) -> int:
             print(f"    Origin/Developer: {s.origin} — {s.developer}")  # type: ignore[attr-defined]
             print(f"    Type: {s.system_type} | Power: {s.power_class}")  # type: ignore[attr-defined]
             print(
-                f"    Range: {s.effective_range_km if s.effective_range_km else 'n.d.'} km | Role: {s.role}"  # type: ignore[attr-defined]
+                "    Range: "
+                f"{s.effective_range_km if s.effective_range_km else 'n.d.'} km "  # type: ignore[attr-defined]
+                f"| Role: {s.role}"  # type: ignore[attr-defined]
             )
             print(
-                f"    Status: {s.public_status} | Crew: {s.operator_crew} | Power: {s.power_draw_class}"  # type: ignore[attr-defined]
+                "    Status: "
+                f"{s.public_status} | Crew: {s.operator_crew} | "  # type: ignore[attr-defined]
+                f"Power: {s.power_draw_class}"  # type: ignore[attr-defined]
             )
             print()
         return 0
@@ -769,7 +818,8 @@ def main(argv: Optional[list] = None) -> int:
         if args.type == "all":
             results = model.compare_all()
             print(
-                f"[C-UAS] Unit Economics Comparison (attacker drone cost: ${model.attacker_drone_cost_usd:,}):"
+                f"[C-UAS] Unit Economics Comparison "
+                f"(attacker drone cost: ${model.attacker_drone_cost_usd:,}):"
             )
             for sys_type, econ in results.items():
                 print(f"  {sys_type}:")
@@ -1025,7 +1075,7 @@ def main(argv: Optional[list] = None) -> int:
         reporter = ComplianceReporter(reg, assessor, controller, chain, mgr)
 
         action = args.action or "report"
-        interval_s = args.interval_s or DEFAULT_SCAN_INTERVAL_S
+        _interval_s = args.interval_s or DEFAULT_SCAN_INTERVAL_S
 
         if action == "monitor":
             monitor = ComplianceMonitor(reporter)
@@ -1036,7 +1086,8 @@ def main(argv: Optional[list] = None) -> int:
             print(f"  Open risks   : {report.open_risks}")
             print(f"  Open incidents: {report.open_incidents}")
             print(
-                f"  Controls     : {report.implemented_controls}/{report.total_controls} implemented"
+                "  Controls     : "
+                f"{report.implemented_controls}/{report.total_controls} implemented"
             )
             print(f"  Drift delta  : {drift_delta:+.1f} points")
             print(f"  Drift alerts : {len(alerts)}")
@@ -1067,7 +1118,8 @@ def main(argv: Optional[list] = None) -> int:
             print("[C-UAS] GRC_Clab Remediation Planner")
             if not plans:
                 print(
-                    "  No remediation plans proposed (all open risks covered or controls implemented)."
+                    "  No remediation plans proposed "
+                    "(all open risks covered or controls implemented)."
                 )
             for plan in plans:  # type: ignore[assignment]
                 print(f"  Plan {plan.plan_id}:")  # type: ignore[attr-defined]
@@ -1264,7 +1316,8 @@ def main(argv: Optional[list] = None) -> int:
         for r in summary["results"]:  # type: ignore[attr-defined]
             status = "PASS" if r["passed"] else "FAIL"
             print(
-                f"  [{status}] {r['name']}: {r['value']} (threshold: {r['threshold']}) — {r['detail']}"
+                f"  [{status}] {r['name']}: {r['value']} "
+                f"(threshold: {r['threshold']}) — {r['detail']}"
             )
         return 0
 
@@ -1844,6 +1897,11 @@ def main(argv: Optional[list] = None) -> int:
         print("  c-uas performance --capacity --sites 4 --drones-per-site 16 --brokers 2")
         print("  c-uas performance --optimize")
         return 1
+
+    if args.command == "perf":
+        from c_uas.performance.cli import perf_main
+
+        return perf_main(args)
 
     if args.command == "chaos":
         from c_uas.chaos.cli import chaos_main

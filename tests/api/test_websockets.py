@@ -7,7 +7,9 @@ WebSocketManager, TrackEventStream, and the /ws FastAPI route.
 import asyncio
 
 from fastapi.testclient import TestClient
+from fastapi.websockets import WebSocketState
 
+import c_uas.api.websockets as ws_mod
 from c_uas.api.server import app
 from c_uas.api.websockets import (
     DEFAULT_TIMESTAMP,
@@ -20,11 +22,8 @@ from c_uas.api.websockets import (
     make_engagement_scheduled,
     make_health_status,
     make_track_update,
-    manager,
     websocket_route,
 )
-import c_uas.api.websockets as ws_mod
-from fastapi.websockets import WebSocketState
 
 
 class _FakeWebSocket:
@@ -113,7 +112,15 @@ def test_detection_event_envelope():
 
 
 def test_detection_event_optional_fields_omitted():
-    env = make_detection_event("D2", "spoof", "UAV-2", "HIGH", "GPS_L1_CA", 0.5, timestamp=DEFAULT_TIMESTAMP)
+    env = make_detection_event(
+        "D2",
+        "spoof",
+        "UAV-2",
+        "HIGH",
+        "GPS_L1_CA",
+        0.5,
+        timestamp=DEFAULT_TIMESTAMP,
+    )
     assert "latitude" not in env.payload
     assert "longitude" not in env.payload
     assert "anomalies" not in env.payload
@@ -128,7 +135,14 @@ def test_engagement_scheduled_envelope():
 
 
 def test_alert_envelope_with_and_without_target():
-    env = make_alert("A1", "CRITICAL", "rogue drone", "rf", target_id="UAV-1", timestamp=DEFAULT_TIMESTAMP)
+    env = make_alert(
+        "A1",
+        "CRITICAL",
+        "rogue drone",
+        "rf",
+        target_id="UAV-1",
+        timestamp=DEFAULT_TIMESTAMP,
+    )
     assert env.type == "alert"
     assert env.payload["severity"] == "CRITICAL"
     assert env.payload["target_id"] == "UAV-1"
@@ -231,6 +245,7 @@ def test_broadcast_delivers_to_subscribed_clients_only(tmp_path, monkeypatch):
         await m.registry.subscribe("c3", "detections")
 
         from c_uas.api.websockets import make_track_update
+
         env = make_track_update("T1", 1.0, 2.0, 3.0, 10.0, 45.0, 0.9)
 
         results = await m.broadcast_engine.broadcast(env, topic="tracks")
@@ -255,9 +270,15 @@ def test_broadcast_backpressure_queue_full(tmp_path, monkeypatch):
         await m.registry.subscribe("c1", "tracks")
         # fill the queue (maxsize 1000)
         for _ in range(1000):
-            assert await m.broadcast_engine.enqueue("c1", make_track_update("T", 0, 0, 0, 0, 0, 0)) is True
+            assert (
+                await m.broadcast_engine.enqueue("c1", make_track_update("T", 0, 0, 0, 0, 0, 0))
+                is True
+            )
         # now full
-        assert await m.broadcast_engine.enqueue("c1", make_track_update("T", 0, 0, 0, 0, 0, 0)) is False
+        assert (
+            await m.broadcast_engine.enqueue("c1", make_track_update("T", 0, 0, 0, 0, 0, 0))
+            is False
+        )
 
     asyncio.run(_run())
 
@@ -324,7 +345,12 @@ def test_track_event_stream_emit_methods(tmp_path, monkeypatch):
     assert ae.type == "alert"
 
     history = stream.history()
-    assert [e.type for e in history] == ["track_update", "detection_event", "engagement_scheduled", "alert"]
+    assert [e.type for e in history] == [
+        "track_update",
+        "detection_event",
+        "engagement_scheduled",
+        "alert",
+    ]
 
 
 # --------------------------------------------------------------------------- #

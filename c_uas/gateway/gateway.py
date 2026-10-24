@@ -76,7 +76,9 @@ class Gateway:
         }
 
     # ---- routing --------------------------------------------------------
-    def route(self, role: Optional[str] = None, backend_id: Optional[str] = None) -> RoutingDecision:
+    def route(
+        self, role: Optional[str] = None, backend_id: Optional[str] = None
+    ) -> RoutingDecision:
         if backend_id is not None:
             # Force a specific backend if it is configured and eligible.
             target = next((b for b in self.config.backends if b.backend_id == backend_id), None)
@@ -102,7 +104,10 @@ class Gateway:
                     decision = RoutingDecision(
                         backend=None,
                         strategy=self.config.strategy,
-                        reason="backend %s circuit %s" % (backend_id, self.breaker.state_for(backend_id).state),
+                        reason=(
+                            "backend %s circuit %s"
+                            % (backend_id, self.breaker.state_for(backend_id).state)
+                        ),
                         candidates=len(self.config.backends),
                         seed=self.config.seed,
                     )
@@ -136,9 +141,7 @@ class Gateway:
         self.router.record_failure(backend_id)
 
     # ---- health ---------------------------------------------------------
-    def probe(
-        self, backend_id: Optional[str] = None
-    ) -> Union[ProbeResult, List[ProbeResult]]:
+    def probe(self, backend_id: Optional[str] = None) -> Union[ProbeResult, List[ProbeResult]]:
         if backend_id is not None:
             target = next((b for b in self.config.backends if b.backend_id == backend_id), None)
             if target is None:

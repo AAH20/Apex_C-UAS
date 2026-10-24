@@ -113,7 +113,7 @@ class ControllerLocator:
 
         best: Optional[ControllerLocationEstimate] = None
 
-        for freq, dets in freq_groups.items():
+        for _freq, dets in freq_groups.items():
             # Need at least 3 sensors with timestamps
             sensors_with_time = [d for d in dets if d.timestamp_s is not None]
             if len(sensors_with_time) < 3:
@@ -131,7 +131,7 @@ class ControllerLocator:
                 if site is None:
                     continue
                 # Time difference in seconds -> distance difference (light speed)
-                dt = d.timestamp_s - ref.timestamp_s
+                dt = d.timestamp_s - ref.timestamp_s  # type: ignore[operator]
                 dist_diff = dt * 299792.458  # km/s
                 site_locs.append((site.latitude_deg, site.longitude_deg))
                 tdoas.append(dist_diff)
@@ -379,8 +379,8 @@ class ControllerLocator:
             return None
 
         # Assume F-layer reflection at 300 km altitude for long-range HF
-        layer_height_km = 300.0
-        earth_radius_km = 6371.0
+        _layer_height_km = 300.0
+        _earth_radius_km = 6371.0
 
         sites_used = []
         for d in hf_dets:

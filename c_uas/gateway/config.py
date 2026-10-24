@@ -63,7 +63,9 @@ class GatewayConfig:
 
     def __post_init__(self) -> None:
         if self.strategy not in STRATEGIES:
-            raise ValueError("unknown strategy %r (expected one of %s)" % (self.strategy, STRATEGIES))
+            raise ValueError(
+                "unknown strategy %r (expected one of %s)" % (self.strategy, STRATEGIES)
+            )
         if self.failure_threshold < 1:
             raise ValueError("failure_threshold must be >= 1")
         if self.recovery_timeout_s <= 0:

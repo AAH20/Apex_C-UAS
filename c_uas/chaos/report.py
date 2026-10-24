@@ -20,9 +20,7 @@ from typing import Any, Dict, List, Tuple
 from .runner import ChaosRunner, ChaosRunResult
 from .scenarios import ALL_SCENARIOS, ChaosScenario
 
-REPORT_DIR = os.path.join(
-    os.path.expanduser("~"), ".c-uas-platform", "chaos", "reports"
-)
+REPORT_DIR = os.path.join(os.path.expanduser("~"), ".c-uas-platform", "chaos", "reports")
 LATEST_PATH = os.path.join(
     os.path.expanduser("~"), ".c-uas-platform", "chaos", "latest_report.json"
 )
@@ -138,8 +136,7 @@ def generate_report(
     """Build a ResilienceReport from scenario results (pure computation)."""
     result_by_id = {r.scenario_id: r for r in results}
     passed_flags = [
-        compute_passed(result_by_id[sid], sid_lookup(sid, scenarios))
-        for sid in result_by_id
+        compute_passed(result_by_id[sid], sid_lookup(sid, scenarios)) for sid in result_by_id
     ]
     overall_pass = bool(passed_flags) and all(passed_flags)
 
@@ -154,9 +151,7 @@ def generate_report(
         "avg_success_rate": round(sum(success_rates) / len(success_rates), 4)
         if success_rates
         else 0.0,
-        "max_recovery_time_s": round(max(recovery_times), 4)
-        if recovery_times
-        else 0.0,
+        "max_recovery_time_s": round(max(recovery_times), 4) if recovery_times else 0.0,
         "all_recovered": all(result_by_id[sid].recovered for sid in result_by_id)
         if result_by_id
         else False,

@@ -312,7 +312,7 @@ class BrokerTenantManager:
         if status not in ("active", "suspended"):
             raise ValueError("status must be 'active' or 'suspended'")
         tenants = self._load_tenants()
-        for i, t in enumerate(tenants):
+        for _i, t in enumerate(tenants):
             if t["broker_id"] == broker_id:
                 t["status"] = status
                 _save_json(self._tenants_path(), tenants)

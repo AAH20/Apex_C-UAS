@@ -118,7 +118,8 @@ def _report(store: ScenarioStore, scenario_name: Optional[str]) -> int:
     print(f"[C-UAS] Red Team Report: {report.report_id}")
     print(f"  Overall           : {'PASS' if report.overall_pass else 'FAIL'}")
     print(
-        f"  Scenarios         : {report.summary['scenarios_passed']}/{report.summary['scenarios_run']} passed"
+        "  Scenarios         : "
+        f"{report.summary['scenarios_passed']}/{report.summary['scenarios_run']} passed"
     )
     print(f"  Avg detection     : {report.summary['avg_detection_rate']:.1%}")
     print(f"  Max leak rate     : {report.summary['max_leak_rate']:.1%}")

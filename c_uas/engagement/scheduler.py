@@ -104,7 +104,7 @@ class EngagementScheduler:
 
         # Build a max-heap by Pk-per-second ratio
         # Python heapq is min-heap, so negate the ratio
-        candidates = []
+        candidates: list = []
         for track in tracks_sorted:
             time_cost = self.dwell_s + self.slew_s
             # Effective Pk considering thermal bloom from prior engagements

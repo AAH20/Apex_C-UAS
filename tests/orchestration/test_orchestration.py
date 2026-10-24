@@ -183,7 +183,7 @@ class TestFederation(unittest.TestCase):
 
     def test_deconflict_engagements(self):
         fed = build_demo_federation(num_sites=2)
-        sim_config = SwarmConfig(
+        _sim_config = SwarmConfig(
             num_drones=4,
             arrival_spread_s=5.0,
             speed_mps=30.0,

@@ -208,16 +208,12 @@ class FaultInjector:
 
         if kind == "loss":
             if rng.random() < severity:
-                raise RuntimeError(
-                    f"Fault {fault.fault_id}: packet loss on {target}"
-                )
+                raise RuntimeError(f"Fault {fault.fault_id}: packet loss on {target}")
             return call()
 
         if kind == "crash":
             if rng.random() < severity:
-                raise RuntimeError(
-                    f"Fault {fault.fault_id}: backend crash on {target}"
-                )
+                raise RuntimeError(f"Fault {fault.fault_id}: backend crash on {target}")
             return call()
 
         if kind == "timeout":

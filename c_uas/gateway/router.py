@@ -80,6 +80,7 @@ class BackendRouter:
             self.rr_index = idx + 1
             reason = "round_robin index %d of %d" % (idx, len(eligible))
         elif strategy == "least_latency":
+
             def sort_key(b: Backend):
                 st = self.states.get(b.backend_id)
                 lat = st.last_latency_ms if st and st.last_latency_ms is not None else float("inf")

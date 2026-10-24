@@ -22,7 +22,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from .models import (
-    STIX_NAMESPACE,
+    STIX_NAMESPACE,  # noqa: F401  # re-exported for test import
     CompetitiveIntelEntry,
     DetectionEvent,
     ForensicDossierRef,

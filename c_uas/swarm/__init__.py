@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 
@@ -168,8 +168,6 @@ def saturate_scheduler(scheduler, num_drones: int, arrival_spread_s: float, seed
     Helper for benchmarking how many drones the scheduler can engage before
     swarm impact under varying density.
     """
-    from c_uas.engagement.scheduler import EngagementScheduler
-
     config = SwarmConfig(
         num_drones=num_drones,
         arrival_spread_s=arrival_spread_s,

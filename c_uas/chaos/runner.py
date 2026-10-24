@@ -14,7 +14,7 @@ no hardware, no effector control.
 from __future__ import annotations
 
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 from .faults import Fault, FaultInjector
@@ -69,9 +69,7 @@ class ChaosRunner:
         fault_objs: List[Fault] = []
         for fid in scenario.faults:
             if fid not in faults:
-                raise ValueError(
-                    f"Scenario {scenario.scenario_id} references unknown fault {fid}"
-                )
+                raise ValueError(f"Scenario {scenario.scenario_id} references unknown fault {fid}")
             fault_objs.append(faults[fid])
 
         # Activate faults for the scenario duration.
@@ -113,9 +111,7 @@ class ChaosRunner:
                     failure_modes.append(mode)
             time.sleep(self.probe_interval_s)
 
-        success_rate = (
-            probes_succeeded / probes_total if probes_total else 0.0
-        )
+        success_rate = probes_succeeded / probes_total if probes_total else 0.0
 
         # Phase 2: deactivate faults and measure recovery time.
         self.injector.deactivate_all()

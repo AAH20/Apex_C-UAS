@@ -97,7 +97,7 @@ class TestLaserSpecs(unittest.TestCase):
         self.assertEqual(spec.wavelength_nm, 1070.0)
 
     def test_all_specs_have_positive_power(self):
-        for name, spec in LASER_SPECS.items():
+        for _name, spec in LASER_SPECS.items():
             if spec.power_kw is not None:
                 self.assertGreater(spec.power_kw, 0.0)
 

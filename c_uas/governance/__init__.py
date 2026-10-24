@@ -45,10 +45,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -206,9 +205,9 @@ class ComplianceReport:
 def _compute_risk_level(likelihood: str, impact: str) -> str:
     """Compute ISO 42001 risk level from likelihood and impact."""
     scores = {"low": 1, "medium": 2, "high": 3}
-    l = scores.get(likelihood, 1)
-    i = scores.get(impact, 1)
-    product = l * i
+    likelihood_score = scores.get(likelihood, 1)
+    impact_score = scores.get(impact, 1)
+    product = likelihood_score * impact_score
     if product >= 9:
         return "critical"
     if product >= 6:
@@ -619,7 +618,7 @@ class ComplianceReporter:
         incidents = self.mgr.list_all()
         open_incidents = self.mgr.list_open()
 
-        total_controls = len(controls)
+        _total_controls = len(controls)
         impl_controls = len(implemented)
         applicable_controls = [c for c in controls if c.applicable]
         if applicable_controls:

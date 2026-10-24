@@ -34,10 +34,10 @@ from typing import Any, Optional
 from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
+from c_uas.api.websockets import websocket_route
 from c_uas.detection.opendew_classifier import get_opendew_classifier
 from c_uas.detection.rf_classifier import RFSignalClassifier
 from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
-from c_uas.api.websockets import websocket_route
 from c_uas.dew.atmospheric import (
     LASER_SPECS,
     AtmosphericConditions,
@@ -211,7 +211,7 @@ def register_system(req: RegisterSystemRequest) -> dict[str, Any]:
             req.description,
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from None
     sys = _registry.get(sid)
     assert sys is not None
     return {"system_id": sid, "system": sys.to_dict()}
@@ -238,7 +238,7 @@ def assess_risk(req: AssessRiskRequest) -> dict[str, Any]:
             req.treatment_plan,
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from None
     _chain.log("risk_assessment", {"risk_id": risk.risk_id}, req.system_id)
     return {"risk_id": risk.risk_id, "risk": risk.to_dict()}
 
