@@ -11,18 +11,16 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Optional
+from typing import Optional, cast
 
-from .config import ROLES, STRATEGIES, GatewayConfig
-from .gateway import Gateway
+from .config import STRATEGIES, GatewayConfig
+from .gateway import Gateway, ProbeResult
 
 
 def _build_config(strategy: Optional[str], seed: Optional[int]) -> GatewayConfig:
     config = GatewayConfig()  # loads persisted defaults
     if strategy is not None and strategy not in STRATEGIES:
-        print(
-            "[C-UAS] Unknown strategy %r (expected one of %s)" % (strategy, STRATEGIES)
-        )
+        print("[C-UAS] Unknown strategy %r (expected one of %s)" % (strategy, STRATEGIES))
         sys.exit(1)
     return GatewayConfig(
         backends=config.backends,
@@ -70,9 +68,15 @@ def main(args) -> int:
             print("[C-UAS] %s" % exc)
             return 1
         gateway.save()
+        probe_result = cast(ProbeResult, result)  # type: ignore[union-attr]  # backend_id given -> single ProbeResult
         print(
             "[C-UAS] Health probe %s: healthy=%s latency_ms=%s error=%s"
-            % (result.backend_id, result.healthy, result.latency_ms, result.error)
+            % (
+                probe_result.backend_id,
+                probe_result.healthy,
+                probe_result.latency_ms,
+                probe_result.error,
+            )
         )
         return 0
 
