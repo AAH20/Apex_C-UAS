@@ -272,8 +272,9 @@ class ConnectionRegistry:
     def __init__(self) -> None:
         self._connections: Dict[str, ClientSubscription] = {}
         self._websockets: Dict[str, WebSocket] = {}
-        self._lock = asyncio.Lock()
-        # Persisted connection history (outside the repo).
+        # Lock created lazily on first async use so it binds to the running
+        # event loop (Python 3.9 binds asyncio.Lock() to the loop at creation).
+        self._lock: Optional[asyncio.Lock] = None
         self._history: List[ConnectionRecord] = []
         for row in _load_json(CONNECTIONS_FILE):
             if isinstance(row, dict):
@@ -292,11 +293,14 @@ class ConnectionRegistry:
                     )
                 )
 
-    async def register(
-        self, client_id: str, websocket: WebSocket
-    ) -> ClientSubscription:
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def register(self, client_id: str, websocket: WebSocket) -> ClientSubscription:
         """Register a new connection. Returns the subscription record."""
-        async with self._lock:
+        async with self._get_lock():
             if len(self._connections) >= MAX_CONNECTIONS:
                 raise RuntimeError("maximum connection limit reached")
             if client_id in self._connections:
@@ -317,9 +321,9 @@ class ConnectionRegistry:
 
     async def unregister(self, client_id: str) -> Optional[ClientSubscription]:
         """Remove a connection and record it in history."""
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.pop(client_id, None)
-            websocket = self._websockets.pop(client_id, None)
+            self._websockets.pop(client_id, None)
             if subscription is None:
                 return None
             record = ConnectionRecord(
@@ -339,7 +343,7 @@ class ConnectionRegistry:
 
     async def subscribe(self, client_id: str, topic: str) -> bool:
         """Add a topic subscription for a client."""
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return False
@@ -356,7 +360,7 @@ class ConnectionRegistry:
 
     async def unsubscribe(self, client_id: str, topic: str) -> bool:
         """Remove a topic subscription for a client."""
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return False
@@ -373,7 +377,7 @@ class ConnectionRegistry:
 
     async def heartbeat(self, client_id: str) -> bool:
         """Refresh the last_heartbeat for a client. Returns False if unknown."""
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return False
@@ -387,7 +391,7 @@ class ConnectionRegistry:
             return True
 
     async def increment_messages_sent(self, client_id: str) -> None:
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return
@@ -400,26 +404,26 @@ class ConnectionRegistry:
             )
 
     async def get_subscriptions(self, client_id: str) -> Set[str]:
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return set()
             return set(subscription.subscriptions)
 
     async def get_websocket(self, client_id: str) -> Optional[WebSocket]:
-        async with self._lock:
+        async with self._get_lock():
             return self._websockets.get(client_id)
 
     async def list_connections(self) -> List[ClientSubscription]:
-        async with self._lock:
+        async with self._get_lock():
             return list(self._connections.values())
 
     async def connection_count(self) -> int:
-        async with self._lock:
+        async with self._get_lock():
             return len(self._connections)
 
     async def is_stale(self, client_id: str, interval: float) -> bool:
-        async with self._lock:
+        async with self._get_lock():
             subscription = self._connections.get(client_id)
             if subscription is None:
                 return True
@@ -435,11 +439,18 @@ class BroadcastEngine:
     def __init__(self, registry: ConnectionRegistry) -> None:
         self._registry = registry
         self._queues: Dict[str, asyncio.Queue[Optional[MessageEnvelope]]] = {}
-        self._lock = asyncio.Lock()
+        # Lock created lazily on first async use so it binds to the running
+        # event loop (Python 3.9 binds asyncio.Lock() to the loop at creation).
+        self._lock: Optional[asyncio.Lock] = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     # ---- internal queue management ----
     async def _ensure_queue(self, client_id: str) -> asyncio.Queue[Optional[MessageEnvelope]]:
-        async with self._lock:
+        async with self._get_lock():
             queue = self._queues.get(client_id)
             if queue is None:
                 queue = asyncio.Queue(maxsize=1000)
@@ -447,7 +458,7 @@ class BroadcastEngine:
             return queue
 
     async def _remove_queue(self, client_id: str) -> None:
-        async with self._lock:
+        async with self._get_lock():
             self._queues.pop(client_id, None)
 
     async def enqueue(self, client_id: str, envelope: MessageEnvelope) -> bool:
@@ -539,9 +550,7 @@ class WebSocketManager:
     def get_event_history(self) -> List[MessageEnvelope]:
         return list(self._event_history)
 
-    def _schedule_broadcast(
-        self, envelope: MessageEnvelope, topic: Optional[str]
-    ) -> None:
+    def _schedule_broadcast(self, envelope: MessageEnvelope, topic: Optional[str]) -> None:
         """Schedule a broadcast if an event loop is running; otherwise skip.
 
         The event is always persisted deterministically. Broadcast only happens
@@ -567,7 +576,13 @@ class WebSocketManager:
         client_id: Optional[str] = None,
     ) -> MessageEnvelope:
         envelope = make_track_update(
-            track_id, x, y, z, speed_mps, heading_deg, confidence,
+            track_id,
+            x,
+            y,
+            z,
+            speed_mps,
+            heading_deg,
+            confidence,
             client_id=client_id,
         )
         self._persist_event(envelope)
@@ -588,8 +603,15 @@ class WebSocketManager:
         client_id: Optional[str] = None,
     ) -> MessageEnvelope:
         envelope = make_detection_event(
-            event_id, source, target_id, threat_level, protocol, confidence,
-            latitude=latitude, longitude=longitude, anomalies=anomalies,
+            event_id,
+            source,
+            target_id,
+            threat_level,
+            protocol,
+            confidence,
+            latitude=latitude,
+            longitude=longitude,
+            anomalies=anomalies,
             client_id=client_id,
         )
         self._persist_event(envelope)
@@ -606,7 +628,11 @@ class WebSocketManager:
         client_id: Optional[str] = None,
     ) -> MessageEnvelope:
         envelope = make_engagement_scheduled(
-            track_id, engage_start_s, engage_end_s, pk_base, priority,
+            track_id,
+            engage_start_s,
+            engage_end_s,
+            pk_base,
+            priority,
             client_id=client_id,
         )
         self._persist_event(envelope)
@@ -623,8 +649,12 @@ class WebSocketManager:
         client_id: Optional[str] = None,
     ) -> MessageEnvelope:
         envelope = make_alert(
-            alert_id, severity, message, source,
-            target_id=target_id, client_id=client_id,
+            alert_id,
+            severity,
+            message,
+            source,
+            target_id=target_id,
+            client_id=client_id,
         )
         self._persist_event(envelope)
         self._schedule_broadcast(envelope, topic=SUBSCRIPTION_ALERTS)
@@ -850,8 +880,15 @@ class TrackEventStream:
         anomalies: Optional[List[str]] = None,
     ) -> MessageEnvelope:
         return self._manager.publish_detection_event(
-            event_id, source, target_id, threat_level, protocol, confidence,
-            latitude=latitude, longitude=longitude, anomalies=anomalies,
+            event_id,
+            source,
+            target_id,
+            threat_level,
+            protocol,
+            confidence,
+            latitude=latitude,
+            longitude=longitude,
+            anomalies=anomalies,
         )
 
     def emit_engagement(
@@ -874,9 +911,7 @@ class TrackEventStream:
         source: str,
         target_id: Optional[str] = None,
     ) -> MessageEnvelope:
-        return self._manager.publish_alert(
-            alert_id, severity, message, source, target_id=target_id
-        )
+        return self._manager.publish_alert(alert_id, severity, message, source, target_id=target_id)
 
     def history(self) -> List[MessageEnvelope]:
         return self._manager.get_event_history()
