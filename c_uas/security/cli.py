@@ -257,7 +257,15 @@ def write_report(path: str, state_dir: str = DEFAULT_STATE_DIR) -> None:
         json.dump(payload, handle, indent=2, sort_keys=True)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: Optional[list] = None) -> int:
+    if argv is None:
+        import sys
+
+        argv = sys.argv[1:]
+    return security_main_from_argv(argv)
+
+
+def security_main_from_argv(argv: list) -> int:
     parser = argparse.ArgumentParser(
         prog="c-uas security",
         description="Production hardening and security for the C-UAS platform",
@@ -284,9 +292,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Write a JSON report to this path (state is always persisted)",
     )
     args = parser.parse_args(argv)
+    return security_main(args)
 
+
+def security_main(args: argparse.Namespace) -> int:
     if not any([args.audit, args.penetrate, args.compliance]):
-        parser.print_help(sys.stdout)
+        print("[C-UAS] security: specify --audit, --penetrate, or --compliance")
+        print("  c-uas security --audit")
+        print("  c-uas security --penetrate")
+        print("  c-uas security --compliance --report PATH")
         return 1
 
     output = ""

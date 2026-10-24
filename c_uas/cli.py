@@ -572,6 +572,33 @@ def main(argv: Optional[list] = None) -> int:
         help="Deterministic RNG seed",
     )
 
+    # security
+    security_p = subparsers.add_parser(
+        "security",
+        help="Production hardening & security: audit, penetration, compliance matrix",
+    )
+    security_p.add_argument(
+        "--audit",
+        action="store_true",
+        help="Run the hardening audit (deterministic security scoring)",
+    )
+    security_p.add_argument(
+        "--penetrate",
+        action="store_true",
+        help="Run penetration test scenarios with pass/fail per scenario",
+    )
+    security_p.add_argument(
+        "--compliance",
+        action="store_true",
+        help="Show the ISO 42001 / SOC 2 control matrix with gap analysis",
+    )
+    security_p.add_argument(
+        "--report",
+        type=str,
+        default=None,
+        help="Write a JSON report to this path (state is always persisted)",
+    )
+
     # compliance
     cp_p = subparsers.add_parser(
         "compliance",
@@ -1907,6 +1934,11 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.chaos.cli import chaos_main
 
         return chaos_main(args)
+
+    if args.command == "security":
+        from c_uas.security.cli import security_main
+
+        return security_main(args)
 
     parser.print_help()
     return 1
