@@ -31,12 +31,13 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
 from c_uas.detection.opendew_classifier import get_opendew_classifier
 from c_uas.detection.rf_classifier import RFSignalClassifier
 from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
+from c_uas.api.websockets import websocket_route
 from c_uas.dew.atmospheric import (
     LASER_SPECS,
     AtmosphericConditions,
@@ -64,6 +65,19 @@ app = FastAPI(
     "and airspace forensics — ISO 42001 governance ready.",
     version="0.1.0",
 )
+
+
+@app.websocket("/ws")
+async def ws_endpoint(websocket: WebSocket, client_id: Optional[str] = None) -> None:
+    """WebSocket endpoint for real-time track/event streaming.
+
+    Clients subscribe to topics (tracks, detections, engagements, alerts,
+    health) by sending JSON messages:
+      {"action": "subscribe", "topics": ["tracks", "detections"]}
+    The server pushes MessageEnvelope frames for matching events.
+    """
+    await websocket_route(websocket, client_id)
+
 
 # ---------------------------------------------------------------------------
 # Governance state (singleton per process)

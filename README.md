@@ -659,6 +659,7 @@ c-uas api --host 127.0.0.1 --port 8000
 | `/competitive-landscape` | GET | 9 deployed C-UAS systems |
 | `/unit-economics` | POST | Cost-per-engagement model |
 | `/benchmarks` | GET | Real measured performance |
+| `/ws` | WebSocket | Real-time track/event streaming (track_update, detection_event, engagement_scheduled, alert, health_status) |
 
 All endpoints return real computed values — no mocks, no fabricated metrics.
 
@@ -707,6 +708,61 @@ Endpoints consumed by the dashboard:
 | /dew/model | POST | DEW beam |
 
 The dashboard is static content served on a separate port (8080 by default). It is not a FastAPI route and does not change the API route surface above.
+
+### WebSocket Real-Time Streaming
+
+The platform exposes a WebSocket endpoint at `/ws` for real-time streaming of
+detection events, tracking updates, engagement schedules, alerts, and health
+status to the SOC dashboard and any subscribed client. Each client opens one
+WebSocket connection, subscribes to topics of interest, and receives typed
+MessageEnvelope frames as events occur.
+
+```bash
+c-uas ws --status
+# [C-UAS] WebSocket connections: 0
+
+c-uas ws --broadcast --event alert
+# [C-UAS] Broadcast alert: msg-e8231821b8d00ef9 (type=alert)
+
+c-uas ws --connections
+# [C-UAS] Active connections: 1
+#   client-abc123  topics=['detections', 'tracks']  sent=5
+```
+
+```mermaid
+flowchart LR
+    subgraph WS[WebSocket /ws]
+    A[Client connect] -->|subscribe topics| B[ConnectionRegistry]
+    B -->|topic match| C[BroadcastEngine]
+    C -->|fan-out| D[Client send pump]
+    end
+    E[TrackEventStream] -->|publish| C
+    F[State: ~/.c-uas-platform/websockets/] <-->|persist| B
+```
+
+Message types published over the stream:
+
+| Message type | Trigger | Payload fields |
+|---|---|---|
+| `track_update` | EKF track position update | track_id, x, y, z, speed_mps, heading_deg, confidence |
+| `detection_event` | RF/GNSS detection | event_id, source, target_id, threat_level, protocol, confidence |
+| `engagement_scheduled` | Engagement scheduler output | track_id, engage_start_s, engage_end_s, pk_base, priority |
+| `alert` | Alert engine / threshold | alert_id, severity, message, source, target_id |
+| `health_status` | Heartbeat / status request | status, checks |
+
+Clients drive the connection with JSON messages:
+
+| Client action | Behavior |
+|---|---|
+| `{"action": "subscribe", "topics": [...]}` | Subscribe to one or more topics; returns subscription_ack |
+| `{"action": "unsubscribe", "topics": [...]}` | Remove topics; returns subscription_ack |
+| `{"action": "heartbeat"}` | Refresh heartbeat; returns health_status ok |
+| `{"action": "status"}` | Return connection status and topics |
+
+All connection history and event history persist to `~/.c-uas-platform/websockets/`
+outside the repo. Message IDs are deterministic (sha256 of type, canonical
+payload, and timestamp) so the same input always produces the same frame id and
+broadcast ordering is reproducible.
 
 ### Multi-Site Orchestration (this platform)
 
