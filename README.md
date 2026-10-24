@@ -1096,6 +1096,71 @@ intelligence sharing only.
 
 ---
 
+## Chaos / Resilience Testing
+
+Chaos testing validates that the platform degrades gracefully and recovers
+under injected faults. The `c_uas.chaos` module defines faults
+(network latency, packet loss, backend crash, API timeout, memory pressure),
+deterministic chaos scenarios (backend_failure, network_partition,
+api_timeout, cascade_failure, partial_outage), and a runner that probes real
+platform components through each fault window, measures success rate and
+recovery time, and emits a resilience report with pass/fail per scenario and
+remediation recommendations.
+
+All runs use a fixed seed so fault patterns are reproducible. State persists
+under ~/.c-uas-platform/chaos/ (outside the repo).
+
+```mermaid
+flowchart TD
+    A[FaultInjector] --> B[activate fault]
+    B --> C[probe real component]
+    C --> D{fault applied?}
+    D -->|yes| E[record failure mode]
+    D -->|no| F[record success]
+    E --> G[deactivate fault]
+    F --> G
+    G --> H[recovery probe]
+    H --> I[ResilienceReport]
+    style A fill:none,stroke:#333
+    style I fill:none,stroke:#333
+```
+
+### CLI usage
+
+```bash
+# List all chaos scenarios
+c-uas chaos --scenario
+
+# Show one scenario in detail
+c-uas chaos --scenario --scenario-name backend_failure
+
+# Run one scenario against the platform
+c-uas chaos --run --scenario-name backend_failure
+
+# Generate a full resilience report (all scenarios)
+c-uas chaos --report
+```
+
+### Scenarios
+
+| Scenario | Faults | Target | Min success rate | Max recovery |
+|---|---|---|---|---|
+| backend_failure | backend_crash | c_uas.api.server | 0% | 5s |
+| network_partition | network_latency, packet_loss | c_uas.api.server | 40% | 5s |
+| api_timeout | api_timeout | c_uas.api.server | 0% | 5s |
+| cascade_failure | backend_crash, memory_pressure | c_uas.api.server | 0% | 5s |
+| partial_outage | packet_loss | c_uas.api.server | 60% | 5s |
+
+A scenario passes when its observed success rate meets the minimum, the
+component recovers after the fault clears, and recovery time is within the
+budget. Reports carry a content-hash ID so re-running the same scenarios
+yields the same report ID.
+
+No weapons-employment effector, no live SDR integration. Defensive
+intelligence sharing only.
+
+---
+
 ## API Gateway
 
 Multi-backend routing with health checks, circuit breakers, and load balancing
