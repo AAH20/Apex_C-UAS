@@ -5,7 +5,7 @@ and forensic evidence generation.
 
 import argparse
 import sys
-from typing import Optional
+from typing import Dict, Optional
 
 
 def main(argv: Optional[list] = None) -> int:
@@ -422,6 +422,85 @@ def main(argv: Optional[list] = None) -> int:
         help="Run in offline mode (no cloud sync attempts)",
     )
     edge_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
+
+    # red-team
+    rt_p = subparsers.add_parser(
+        "red-team",
+        help="Red team adversarial testing framework (GNSS spoofing, RF jamming, "
+        "swarm saturation, coordinated attacks, controller hijacking)",
+    )
+    rt_p.add_argument(
+        "--scenario",
+        action="store_true",
+        help="List adversarial scenarios (or show one with --scenario-name)",
+    )
+    rt_p.add_argument(
+        "--run",
+        action="store_true",
+        help="Run an adversarial scenario against the platform",
+    )
+    rt_p.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate an adversarial test report with pass/fail and remediation",
+    )
+    rt_p.add_argument(
+        "--scenario-name",
+        type=str,
+        default=None,
+        help="Scenario ID to run/report/show (default: all scenarios)",
+    )
+
+    # performance
+    perf_p = subparsers.add_parser(
+        "performance",
+        help="Performance optimization engine: baselines, bottlenecks, capacity "
+        "planning, optimization recommendations",
+    )
+    perf_p.add_argument(
+        "--baseline",
+        action="store_true",
+        help="Establish baseline performance metrics from real measured data",
+    )
+    perf_p.add_argument(
+        "--bottlenecks",
+        action="store_true",
+        help="Detect performance bottlenecks and recommend optimizations",
+    )
+    perf_p.add_argument(
+        "--capacity",
+        action="store_true",
+        help="Model scaling scenarios and predict resource requirements",
+    )
+    perf_p.add_argument(
+        "--optimize",
+        action="store_true",
+        help="Generate actionable optimization recommendations",
+    )
+    perf_p.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Deterministic RNG seed",
+    )
+    perf_p.add_argument(
+        "--sites",
+        type=int,
+        default=4,
+        help="Number of sites for capacity planning",
+    )
+    perf_p.add_argument(
+        "--drones-per-site",
+        type=int,
+        default=16,
+        help="Drones per site for capacity planning",
+    )
+    perf_p.add_argument(
+        "--brokers",
+        type=int,
+        default=2,
+        help="Number of brokers for capacity planning",
+    )
 
     # compliance
     cp_p = subparsers.add_parser(
@@ -1472,7 +1551,7 @@ def main(argv: Optional[list] = None) -> int:
                     print("[C-UAS] --campaign-id required for analytics")
                     return 1
                 report = analytics.analyze(args.campaign_id)  # type: ignore[assignment]
-                print(f"[C-UAS] Campaign analytics: {report.campaign_id}")
+                print(f"[C-UAS] Campaign analytics: {report.campaign_id}")  # type: ignore[attr-defined]
                 print(f"  Delivery rate  : {report.delivery_rate:.1%}")  # type: ignore[attr-defined]
                 print(f"  Read rate      : {report.read_rate:.1%}")  # type: ignore[attr-defined]
                 print(f"  Conversion rate: {report.conversion_rate:.4%} (illustrative)")  # type: ignore[attr-defined]
@@ -1502,10 +1581,13 @@ def main(argv: Optional[list] = None) -> int:
     if args.command == "compliance":
         from c_uas.compliance import (
             AuditTrailGenerator,
-            ComplianceReporter,
+            EvidenceCollector,
             EvidenceExport,
             EvidencePackageManager,
-            EvidenceCollector,
+            _canonical,
+        )
+        from c_uas.compliance import (
+            ComplianceReporter as CComplianceReporter,
         )
 
         if args.collect:
@@ -1567,16 +1649,18 @@ def main(argv: Optional[list] = None) -> int:
         if args.report:
             collector = EvidenceCollector()
             records = collector.collect()
-            reporter = ComplianceReporter()
-            report = reporter.generate(records)
+            reporter = CComplianceReporter()  # type: ignore[assignment]
+            report = reporter.generate(records)  # type: ignore[call-arg]
             print("[C-UAS] ISO 42001 Compliance Report")
-            print(f"  Total evidence   : {report.total_evidence}")
-            print(f"  Controls         : {report.satisfied_controls}/{report.total_controls}")
-            print(f"  Coverage         : {report.coverage_percentage}%")
+            print(f"  Total evidence   : {report.total_evidence}")  # type: ignore[attr-defined]
+            print(f"  Controls         : {report.satisfied_controls}/{report.total_controls}")  # type: ignore[attr-defined]
+            print(f"  Coverage         : {report.coverage_percentage}%")  # type: ignore[attr-defined]
             print(f"  Overall status   : {report.overall_status}")
-            for ctrl in report.controls:
+            for ctrl in report.controls:  # type: ignore[attr-defined]
                 marker = "OK " if ctrl.satisfied else "GAP"
-                print(f"  [{marker}] {ctrl.control_id} {ctrl.title} ({ctrl.evidence_count} evidence)")
+                print(
+                    f"  [{marker}] {ctrl.control_id} {ctrl.title} ({ctrl.evidence_count} evidence)"
+                )
             return 0
 
         print("[C-UAS] compliance: specify --collect, --package, --export, or --report")
@@ -1585,19 +1669,110 @@ def main(argv: Optional[list] = None) -> int:
     if args.command == "hardware":
         from c_uas.hardware.cli import main as hardware_main
 
-        source = argv if argv is not None else sys.argv[1:]
+        source = argv if argv is not None else sys.argv[1:]  # type: ignore[assignment]
         return hardware_main([a for a in source if a != "hardware"])
 
     if args.command == "hardware":
         from c_uas.hardware.cli import main as hardware_main
 
-        source = argv if argv is not None else sys.argv[1:]
+        source = argv if argv is not None else sys.argv[1:]  # type: ignore[assignment]
         return hardware_main([a for a in source if a != "hardware"])
 
     if args.command == "red-team":
         from c_uas.red_team.cli import red_team_main
 
         return red_team_main(args)
+
+    if args.command == "edge":
+        from c_uas.edge.cli import main as edge_main
+
+        source = argv if argv is not None else sys.argv[1:]  # type: ignore[assignment]
+        return edge_main([a for a in source if a != "edge"])
+
+    if args.command == "performance":
+        from c_uas.performance.engine import (
+            BottleneckDetector,
+            CapacityPlanner,
+            OptimizationRecommendations,
+            PerformanceBaseline,
+        )
+
+        if args.baseline:
+            baseline = PerformanceBaseline(seed=args.seed).establish()
+            m = baseline.metrics
+            print("[C-UAS] Performance Baseline")
+            print(f"  Detection latency   : {m['detection_latency_ms'].value:.1f} ms")
+            print(f"  Tracking accuracy   : {m['tracking_accuracy_m'].value:.2f} m")
+            print(f"  Engagement success  : {m['engagement_success_rate'].value:.1%}")
+            print(f"  API response time   : {m['api_response_time_ms'].value:.1f} ms")
+            print(f"  Scheduler /100 drones: {m['scheduler_ms_per_100_drones'].value:.1f} ms")
+            print(f"  Swarm leak @16      : {m['swarm_leak_rate_at_16'].value:.1%}")
+            return 0
+
+        if args.bottlenecks:
+            baseline = PerformanceBaseline(seed=args.seed).establish()  # type: ignore[assignment]
+            detector = BottleneckDetector(baseline=baseline)  # type: ignore[assignment]
+            report = detector.detect()  # type: ignore[attr-defined]
+            print("[C-UAS] Bottleneck Detection")
+            print(f"  Bottlenecks found   : {len(report.bottlenecks)}")
+            for b in report.bottlenecks:
+                print(f"  - {b.component}: {b.category} ({b.severity})")
+                print(f"    {b.recommendation}")
+            return 0
+
+        if args.capacity:
+            baseline = PerformanceBaseline(seed=args.seed).establish()  # type: ignore[assignment]
+            planner = CapacityPlanner(baseline=baseline)  # type: ignore[assignment]
+            plan = planner.plan(  # type: ignore[attr-defined]
+                sites=args.sites,
+                drones_per_site=args.drones_per_site,
+                brokers=args.brokers,
+            )
+            p = plan.predicted
+            print("[C-UAS] Capacity Planning")
+            print(f"  Sites               : {plan.scenario['sites']}")
+            print(f"  Drones per site     : {plan.scenario['drones_per_site']}")
+            print(f"  Total drones        : {plan.scenario['total_drones']}")
+            print(f"  Brokers             : {plan.scenario['brokers']}")
+            print(f"  Brokers needed      : {p['brokers_needed']}")
+            print(f"  Agent slots required: {p['agent_slots_required']}")
+            print(f"  CPU cores required  : {p['required_cores']}")
+            print(f"  Memory required MB  : {p['memory_mb']}")
+            print(f"  Scheduler seconds   : {p['scheduler_seconds']:.2f}")
+            print(f"  Leak rate           : {p['leak_rate']:.1%}")
+            print(f"  Under-provisioned   : {p['under_provisioned']}")
+            print(f"  Provisioning        : {plan.provisioning}")
+            return 0
+
+        if args.optimize:
+            baseline = PerformanceBaseline(seed=args.seed).establish()  # type: ignore[assignment]
+            detector = BottleneckDetector(baseline=baseline)  # type: ignore[assignment]
+            bottleneck_report = detector.detect()  # type: ignore[attr-defined]
+            planner = CapacityPlanner(baseline=baseline)  # type: ignore[assignment]
+            capacity_plan = planner.plan(  # type: ignore[attr-defined]
+                sites=args.sites,
+                drones_per_site=args.drones_per_site,
+                brokers=args.brokers,
+            )
+            optimizer = OptimizationRecommendations(
+                baseline=baseline,
+                bottlenecks=bottleneck_report,
+                capacity=capacity_plan,
+            )
+            report = optimizer.generate()  # type: ignore[assignment]
+            print("[C-UAS] Optimization Recommendations")
+            for r in report.recommendations:  # type: ignore[attr-defined]
+                print(f"  [{r.priority.upper()}] {r.title}")
+                print(f"    {r.action}")
+                print(f"    Impact: {r.expected_impact}")
+            return 0
+
+        print("[C-UAS] performance: specify --baseline, --bottlenecks, --capacity, or --optimize")
+        print("  c-uas performance --baseline")
+        print("  c-uas performance --bottlenecks")
+        print("  c-uas performance --capacity --sites 4 --drones-per-site 16 --brokers 2")
+        print("  c-uas performance --optimize")
+        return 1
 
     parser.print_help()
     return 1

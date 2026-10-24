@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 def _sanitize(name: str) -> str:
@@ -54,9 +54,7 @@ class Counter(Metric):
         super().__init__(name, documentation, labelnames)
         self._values: Dict[Tuple[Tuple[str, str], ...], float] = {}
 
-    def inc(
-        self, value: float = 1.0, labels: Optional[Dict[str, str]] = None
-    ) -> None:
+    def inc(self, value: float = 1.0, labels: Optional[Dict[str, str]] = None) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
@@ -80,17 +78,13 @@ class Gauge(Metric):
         super().__init__(name, documentation, labelnames)
         self._values: Dict[Tuple[Tuple[str, str], ...], float] = {}
 
-    def set(
-        self, value: float, labels: Optional[Dict[str, str]] = None
-    ) -> None:
+    def set(self, value: float, labels: Optional[Dict[str, str]] = None) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
             self._values[key] = float(value)
 
-    def inc(
-        self, value: float = 1.0, labels: Optional[Dict[str, str]] = None
-    ) -> None:
+    def inc(self, value: float = 1.0, labels: Optional[Dict[str, str]] = None) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:
@@ -118,9 +112,7 @@ class Histogram(Metric):
         self._sums: Dict[Tuple[Tuple[str, str], ...], float] = {}
         self._bucket_counts: Dict[Tuple[Tuple[Tuple[str, str], ...], float], int] = {}
 
-    def observe(
-        self, value: float, labels: Optional[Dict[str, str]] = None
-    ) -> None:
+    def observe(self, value: float, labels: Optional[Dict[str, str]] = None) -> None:
         labels = labels or {}
         key = tuple((k, labels.get(k, "")) for k in self.labelnames)
         with self._lock:

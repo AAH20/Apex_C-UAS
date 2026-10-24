@@ -63,7 +63,7 @@ import time
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -94,8 +94,8 @@ ISO_42001_ANNEX_A_CONTROLS: List[str] = [
     "A.8.2",  # Input validation
     "A.8.3",  # Output verification
     "A.9.1",  # Monitoring and measurement
-    "A.10.1", # Incident management
-    "A.11.1", # Third-party AI
+    "A.10.1",  # Incident management
+    "A.11.1",  # Third-party AI
 ]
 
 # Evidence sources the collector ingests, keyed by component domain.
@@ -159,9 +159,7 @@ def _load_signing_key() -> tuple:
     _ensure_dir()
     if _KEY_FILE.exists():
         try:
-            private_key = serialization.load_pem_private_key(
-                _KEY_FILE.read_bytes(), password=None
-            )
+            private_key = serialization.load_pem_private_key(_KEY_FILE.read_bytes(), password=None)
             public_pem = private_key.public_key().public_bytes(
                 Encoding.PEM, PublicFormat.SubjectPublicKeyInfo
             )
@@ -191,13 +189,14 @@ def _load_signing_key() -> tuple:
 class EvidenceRecord:
     """One collected evidence record, content-addressed by its payload."""
 
-    evidence_id: str          # content-addressed: ev-<sha256>
-    source: str               # detection | tracking | engagement | forensics | governance | threat_intel | broker | edge
-    component: str            # owning platform component, e.g. c_uas.api
-    event_type: str           # e.g. rf_classification, control_implementation
-    timestamp: float          # deterministic collection timestamp
-    collected_at: float       # wall-clock when the record was collected
-    payload: Dict[str, Any]   # the actual evidence
+    evidence_id: str  # content-addressed: ev-<sha256>
+    source: str  # detection | tracking | engagement | forensics | governance
+    # | threat_intel | broker | edge
+    component: str  # owning platform component, e.g. c_uas.api
+    event_type: str  # e.g. rf_classification, control_implementation
+    timestamp: float  # deterministic collection timestamp
+    collected_at: float  # wall-clock when the record was collected
+    payload: Dict[str, Any]  # the actual evidence
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -207,12 +206,12 @@ class EvidenceRecord:
 class EvidencePackage:
     """Signed, timestamped package bundling collected evidence."""
 
-    package_id: str           # content-addressed: pkg-<sha256>
-    timestamp: float          # fixed package timestamp (deterministic)
-    evidence_ids: List[str]   # ids of records bundled in this package
+    package_id: str  # content-addressed: pkg-<sha256>
+    timestamp: float  # fixed package timestamp (deterministic)
+    evidence_ids: List[str]  # ids of records bundled in this package
     evidence_count: int
-    signature: str            # Ed25519 signature over package canonical bytes
-    public_key_pem: str       # signer public key (PEM)
+    signature: str  # Ed25519 signature over package canonical bytes
+    public_key_pem: str  # signer public key (PEM)
     prev_package_id: Optional[str]  # hash-link to previous package
     manifest: Dict[str, Any]  # per-source evidence breakdown
 
@@ -226,10 +225,10 @@ class AuditTrailEntry:
 
     step_id: str
     timestamp: float
-    actor: str                # component or CLI user that produced the evidence
-    action: str               # e.g. collected, packaged, exported, reported
-    target: str               # component or record id acted upon
-    evidence_ids: List[str]   # evidence referenced by this step
+    actor: str  # component or CLI user that produced the evidence
+    action: str  # e.g. collected, packaged, exported, reported
+    target: str  # component or record id acted upon
+    evidence_ids: List[str]  # evidence referenced by this step
     details: Dict[str, Any]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -240,13 +239,13 @@ class AuditTrailEntry:
 class ComplianceMapping:
     """Mapping of one Annex A control to the evidence that supports it."""
 
-    control_id: str           # A.5.1 ... A.11.1
+    control_id: str  # A.5.1 ... A.11.1
     title: str
     applicable: bool
     evidence_ids: List[str]
     evidence_count: int
-    satisfied: bool           # at least one supporting evidence record exists
-    gap_note: Optional[str]   # why a control is not yet satisfied
+    satisfied: bool  # at least one supporting evidence record exists
+    gap_note: Optional[str]  # why a control is not yet satisfied
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -263,7 +262,7 @@ class ComplianceReport:
     satisfied_controls: int
     total_controls: int
     coverage_percentage: float
-    overall_status: str       # compliant | partial | non_compliant
+    overall_status: str  # compliant | partial | non_compliant
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -389,9 +388,7 @@ class EvidenceCollector:
         records: List[EvidenceRecord] = []
         for name in ("tenants", "slots", "campaigns"):
             records.extend(
-                self._collect_dir_json(
-                    "broker", "c_uas.broker", name, _BRK_DIR / f"{name}.json"
-                )
+                self._collect_dir_json("broker", "c_uas.broker", name, _BRK_DIR / f"{name}.json")
             )
         return records
 
@@ -444,15 +441,11 @@ class EvidenceCollector:
 
         existing = _load_json(_EVIDENCE_FILE)
         existing_ids: Set[str] = {
-            row.get("evidence_id")
+            cast(str, row.get("evidence_id"))
             for row in existing
             if isinstance(row, dict) and row.get("evidence_id") is not None
         }
-        to_append = [
-            rec.to_dict()
-            for rec in self._records
-            if rec.evidence_id not in existing_ids
-        ]
+        to_append = [rec.to_dict() for rec in self._records if rec.evidence_id not in existing_ids]
         _save_json(_EVIDENCE_FILE, existing + to_append)
         return list(self._records)
 
@@ -514,13 +507,9 @@ class EvidencePackageManager:
         by_source: Dict[str, List[str]] = {}
         for rec in records:
             by_source.setdefault(rec.source, []).append(rec.evidence_id)
-        manifest = {
-            source: sorted(ids) for source, ids in sorted(by_source.items())
-        }
+        manifest = {source: sorted(ids) for source, ids in sorted(by_source.items())}
 
-        canonical = self._package_canonical(
-            timestamp, evidence_ids, prev_package_id, manifest
-        )
+        canonical = self._package_canonical(timestamp, evidence_ids, prev_package_id, manifest)
         package_id = _content_id("pkg", {"canonical": canonical, "timestamp": timestamp})
         signature = self._private_key.sign(canonical.encode("utf-8"))
 
@@ -544,9 +533,7 @@ class EvidencePackageManager:
     def verify_package(self, package: EvidencePackage) -> bool:
         """Verify the Ed25519 signature of a package."""
         try:
-            public_key = serialization.load_pem_public_key(
-                package.public_key_pem.encode("utf-8")
-            )
+            public_key = serialization.load_pem_public_key(package.public_key_pem.encode("utf-8"))
         except (ValueError, OSError):
             return False
         from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -562,9 +549,7 @@ class EvidencePackageManager:
             package.manifest,
         )
         try:
-            public_key.verify(
-                bytes.fromhex(package.signature), canonical.encode("utf-8")
-            )
+            public_key.verify(bytes.fromhex(package.signature), canonical.encode("utf-8"))
             return True
         except Exception:  # noqa: BLE001 — signature invalid
             return False
@@ -633,7 +618,7 @@ class AuditTrailGenerator:
 
         existing = _load_json(_TRAILS_FILE)
         existing_ids: Set[str] = {
-            row.get("step_id")
+            cast(str, row.get("step_id"))
             for row in existing
             if isinstance(row, dict) and row.get("step_id") is not None
         }
@@ -666,9 +651,7 @@ class ComplianceReporter:
         "edge": ["A.9.1"],
     }
 
-    def generate(
-        self, records: Optional[List[EvidenceRecord]] = None
-    ) -> ComplianceReport:
+    def generate(self, records: Optional[List[EvidenceRecord]] = None) -> ComplianceReport:
         """Generate a compliance report mapping evidence to Annex A controls.
 
         If records is None, uses all previously collected evidence from storage.
@@ -707,9 +690,9 @@ class ComplianceReporter:
                 )
             )
 
-        satisfied = sum(1 for m in mappings if m.satisfied)
+        satisfied_count = sum(1 for m in mappings if m.satisfied)
         total = len(mappings)
-        coverage = round((satisfied / total) * 100.0, 2) if total else 0.0
+        coverage = round((satisfied_count / total) * 100.0, 2) if total else 0.0
         if coverage >= 90:
             status = "compliant"
         elif coverage >= 60:
@@ -722,7 +705,7 @@ class ComplianceReporter:
             package_id=None,
             total_evidence=len(records),
             controls=mappings,
-            satisfied_controls=satisfied,
+            satisfied_controls=satisfied_count,
             total_controls=total,
             coverage_percentage=coverage,
             overall_status=status,

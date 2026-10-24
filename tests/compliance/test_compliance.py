@@ -20,7 +20,6 @@ All state is isolated to a per-test temp dir under ~/.c-uas-platform/compliance
 """
 
 import json
-import os
 import zipfile
 from pathlib import Path
 
@@ -28,6 +27,7 @@ import pytest
 
 import c_uas.compliance as comp
 from c_uas.compliance import (
+    _DEFAULT_TIMESTAMP,
     AuditTrailEntry,
     AuditTrailGenerator,
     ComplianceReporter,
@@ -36,7 +36,6 @@ from c_uas.compliance import (
     EvidencePackage,
     EvidencePackageManager,
     EvidenceRecord,
-    _DEFAULT_TIMESTAMP,
     _content_id,
 )
 
@@ -177,7 +176,18 @@ def test_collect_deduplicates_by_evidence_id(isolated):
 
 def test_collect_persists_and_list_collected_round_trip(isolated):
     gov = comp._GOV_DIR
-    _write_json(gov / "ai_systems.json", [{"name": "Persist Sys", "module_path": "m", "lifecycle_stage": "operation", "risk_level": "low", "registered_at": 1000.0}])
+    _write_json(
+        gov / "ai_systems.json",
+        [
+            {
+                "name": "Persist Sys",
+                "module_path": "m",
+                "lifecycle_stage": "operation",
+                "risk_level": "low",
+                "registered_at": 1000.0,
+            }
+        ],
+    )
     for name in ("risks", "controls", "evidence", "incidents"):
         _write_json(gov / f"{name}.json", [])
 
@@ -319,8 +329,16 @@ def test_compliance_report_maps_all_annex_a_controls(isolated):
 
     assert report.total_controls == 10
     assert {c.control_id for c in report.controls} == {
-        "A.5.1", "A.5.2", "A.6.1", "A.7.1", "A.8.1",
-        "A.8.2", "A.8.3", "A.9.1", "A.10.1", "A.11.1",
+        "A.5.1",
+        "A.5.2",
+        "A.6.1",
+        "A.7.1",
+        "A.8.1",
+        "A.8.2",
+        "A.8.3",
+        "A.9.1",
+        "A.10.1",
+        "A.11.1",
     }
     # governance evidence satisfies A.5.1, A.5.2, A.6.1, A.7.1, A.10.1, A.11.1
     satisfied = {c.control_id for c in report.controls if c.satisfied}

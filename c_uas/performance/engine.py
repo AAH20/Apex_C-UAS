@@ -190,9 +190,7 @@ class PerformanceBaseline:
         start = time.perf_counter()
         for _ in range(iterations):
             RFSignalClassifier.classify_frequency(2450.0, 20.0)
-        detection_latency_ms = _round(
-            (time.perf_counter() - start) * 1000.0 / iterations
-        )
+        detection_latency_ms = _round((time.perf_counter() - start) * 1000.0 / iterations)
 
         # Scheduler at the reference scale (16 drones).
         ref = suite.benchmark_scheduler(drone_counts=[16])[0]
@@ -202,9 +200,7 @@ class PerformanceBaseline:
 
         # Scheduler latency per 100 drones at the largest measured count.
         largest = result.scheduler_results[-1]
-        ms_per_100 = _round(
-            largest.scheduler_seconds * 1000.0 / largest.num_drones * 100.0
-        )
+        ms_per_100 = _round(largest.scheduler_seconds * 1000.0 / largest.num_drones * 100.0)
 
         metrics: Dict[str, BaselineMetric] = {
             "detection_latency_ms": BaselineMetric(
@@ -281,9 +277,7 @@ class PerformanceBaseline:
             return None
         data = self._read_json("baseline")
         metrics = {k: BaselineMetric(**v) for k, v in data["metrics"].items()}
-        saturation = {
-            int(k): v for k, v in data.get("swarm_saturation", {}).items()
-        }
+        saturation = {int(k): v for k, v in data.get("swarm_saturation", {}).items()}
         return PerformanceBaselineResult(
             schema_version=data["schema_version"],
             seed=data["seed"],
@@ -318,6 +312,10 @@ class BottleneckDetector:
             json.dump(payload, fh, indent=2)
         return path
 
+    def _read_json(self, name: str) -> object:
+        with open(self.state_dir / f"{name}.json", "r", encoding="utf-8") as fh:
+            return json.load(fh)
+
     def detect(self) -> BottleneckReport:
         """Detect bottlenecks from the baseline metrics."""
         m = self.baseline.metrics
@@ -330,11 +328,7 @@ class BottleneckDetector:
             dps = largest["drones_per_second"]
             num_drones = largest["num_drones"]
             if secs > SCHEDULER_MAX_SECONDS:
-                severity = (
-                    "critical"
-                    if secs > 2.0 * SCHEDULER_MAX_SECONDS
-                    else "high"
-                )
+                severity = "critical" if secs > 2.0 * SCHEDULER_MAX_SECONDS else "high"
                 bottlenecks.append(
                     Bottleneck(
                         component="scheduler",
@@ -399,7 +393,8 @@ class BottleneckDetector:
                         "Increase EKF measurement update rate, tighten process "
                         "noise tuning, or fuse radar tracks to reduce position error"
                     ),
-                )
+                ),
+            )
         if compute_ms > EKF_MAX_COMPUTE_MS:
             bottlenecks.append(
                 Bottleneck(
@@ -440,7 +435,8 @@ class BottleneckDetector:
                         "Parallelize independent pipeline stages, cache detection "
                         "results, or add a response batch size tuned to stage latency"
                     ),
-                )
+                ),
+            )
         total_ms = e2e.get("total_seconds", 0.0) * 1000.0
         if total_ms > API_MAX_TOTAL_MS:
             bottlenecks.append(
@@ -460,7 +456,7 @@ class BottleneckDetector:
                         "and co-locate dashboard polling with the API host"
                     ),
                 )
-        )
+            )
 
         leak = m.get("swarm_leak_rate_at_16")
         if leak is not None and leak.value > LEAK_RATE_CRITICAL:
@@ -555,6 +551,10 @@ class CapacityPlanner:
             json.dump(payload, fh, indent=2)
         return path
 
+    def _read_json(self, name: str) -> object:
+        with open(self.state_dir / f"{name}.json", "r", encoding="utf-8") as fh:
+            return json.load(fh)
+
     def _throughput_dps(self) -> float:
         sr = self.baseline.scheduler_results
         if not sr:
@@ -598,13 +598,9 @@ class CapacityPlanner:
         required_cores = max(1, math.ceil(scheduler_seconds / time_limit_s))
 
         raw_fusion_tracks = total_drones * sites
-        memory_mb = _round(
-            raw_fusion_tracks * TRACK_SIZE_BYTES / 1_000_000.0 + 64.0
-        )
+        memory_mb = _round(raw_fusion_tracks * TRACK_SIZE_BYTES / 1_000_000.0 + 64.0)
 
-        saturation = {
-            int(k): v for k, v in self.baseline.swarm_saturation.items()
-        }
+        saturation = {int(k): v for k, v in self.baseline.swarm_saturation.items()}
         leak_rate = self._extrapolate_leak(saturation, total_drones)
 
         slots_required = total_drones * AGENTS_PER_DRONE
@@ -690,6 +686,10 @@ class OptimizationRecommendations:
         with open(path, "w", encoding="utf-8") as fh:
             json.dump(payload, fh, indent=2)
         return path
+
+    def _read_json(self, name: str) -> object:
+        with open(self.state_dir / f"{name}.json", "r", encoding="utf-8") as fh:
+            return json.load(fh)
 
     def generate(self) -> RecommendationReport:
         """Generate the ordered recommendation list."""
@@ -786,9 +786,7 @@ class OptimizationRecommendations:
             )
 
         # 5. Provisioning: act on the capacity plan.
-        if self.capacity is not None and self.capacity.predicted.get(
-            "under_provisioned", False
-        ):
+        if self.capacity is not None and self.capacity.predicted.get("under_provisioned", False):
             pred = self.capacity.predicted
             recs.append(
                 Recommendation(
