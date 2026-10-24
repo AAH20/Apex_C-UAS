@@ -108,7 +108,8 @@ The NP-hard engagement scheduler uses a greedy (1−1/e) approximation for budge
 | `c_uas/broker` | Broker Channel OS: multi-tenant broker registration, 330-agent slot allocation, Facebook/WhatsApp campaign dispatch, delivery analytics |
 | `c_uas/dew` | Directed-energy beam modeling with atmospheric attenuation |
 | `c_uas/detection.opendew_classifier` | OpenDEW neural network signal classifier |
-| `c_uas/api` | REST API server (FastAPI) — all platform capabilities over HTTP |
+| `c_uas/api` | REST API server (FastAPI): all platform capabilities over HTTP |
+| `c_uas/gateway` | API Gateway: multi-backend routing, health checks, circuit breakers |
 | `c_uas/orchestration` | Multi-site federation: track fusion, engagement deconfliction |
 | `c_uas/hardware` | SDR, radar, camera sensor abstraction with simulation mode and track fusion |
 | `evals/` | Agent eval harness: reliability evaluation for agentic components |
@@ -1036,6 +1037,75 @@ tracks, incidents, and compliance drops. Channels:
 
 No weapons-employment effector, no live SDR integration. Defensive
 intelligence sharing only.
+
+---
+
+## API Gateway
+
+Multi-backend routing with health checks, circuit breakers, and load balancing
+for the detection, tracking, and engagement backends. The router supports
+round_robin, least_latency, and failover strategies. Each backend runs a
+per-backend circuit breaker (closed / open / half_open) with a configurable
+failure threshold and recovery timeout. A periodic health checker probes each
+backend and marks it healthy or unhealthy.
+
+Routing is deterministic: a fixed seed produces reproducible routing decisions,
+and all state (config, backend states, circuit states, round-robin index,
+routing log) persists to `~/.c-uas-platform/gateway/` outside the repo.
+
+```mermaid
+flowchart TD
+    subgraph Gateway [API Gateway]
+    A[Client Request] --> B[BackendRouter]
+    B --> C[round_robin / least_latency / failover]
+    B --> D[Selected Backend]
+    E[HealthChecker] -->|probes| F[Backend States]
+    G[CircuitBreaker] -->|state| B
+    D -->|forward| H[detection / tracking / engagement]
+    end
+```
+
+All routing decisions are logged to `routing_log.jsonl` in the state directory
+so the same config, state, and seed always reproduce the same backend choice.
+
+### CLI Usage
+
+```bash
+# Show gateway and backend status
+c-uas gateway --status
+# Resolve a routing decision for the detection role
+c-uas gateway --route --backend detection
+# Probe a backend's health
+c-uas gateway --health --backend detection-1
+# Least-latency routing with a fixed seed
+c-uas gateway --route --strategy least_latency --seed 7
+```
+
+Sample output:
+
+```
+[C-UAS] API Gateway status
+  Strategy      : round_robin
+  Seed          : 42
+  State dir     : /Users/ahmedhassan/.c-uas-platform/gateway
+  Backends (3):
+  - detection-1    http://127.0.0.1:8000  detection    healthy=True circuit=closed latency=None fails=0
+  - tracking-1     http://127.0.0.1:8000  tracking     healthy=True circuit=closed latency=None fails=0
+  - engagement-1   http://127.0.0.1:8000  engagement   healthy=True circuit=closed latency=None fails=0
+
+[C-UAS] Route round_robin -> detection-1 (detection) reason=round_robin index 0 of 1 candidates=1 seed=42
+```
+
+### API Gateway Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/gateway/status` | GET | Gateway and backend status |
+| `/gateway/route` | POST | Resolve a routing decision |
+| `/gateway/health` | GET | Probe backend health |
+
+The gateway is a routing and observability layer over the platform backends:
+no live SDR integration, no weapons-employment capability.
 
 ---
 

@@ -118,6 +118,33 @@ def main(argv: Optional[list] = None) -> int:
         "--max-drones", type=int, default=128, help="Max drone count for scheduler benchmark"
     )
 
+    # chaos
+    chaos_p = subparsers.add_parser(
+        "chaos",
+        help="Chaos / resilience testing: fault injection and resilience validation",
+    )
+    chaos_p.add_argument(
+        "--scenario",
+        action="store_true",
+        help="List chaos scenarios (or show one with --scenario-name)",
+    )
+    chaos_p.add_argument(
+        "--run",
+        action="store_true",
+        help="Run a chaos scenario against the platform",
+    )
+    chaos_p.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate a resilience report with pass/fail and remediation",
+    )
+    chaos_p.add_argument(
+        "--scenario-name",
+        type=str,
+        default=None,
+        help="Scenario ID to run/report/show (default: all scenarios)",
+    )
+
     # governance
     gov_p = subparsers.add_parser(
         "governance",
@@ -538,6 +565,45 @@ def main(argv: Optional[list] = None) -> int:
         type=str,
         default=None,
         help="Output path for exported package (default: stdout for json)",
+    )
+
+    # gateway
+    gw_p = subparsers.add_parser(
+        "gateway",
+        help="API Gateway: multi-backend routing with health checks and circuit breakers",
+    )
+    gw_p.add_argument(
+        "--status",
+        action="store_true",
+        help="Show gateway and backend status",
+    )
+    gw_p.add_argument(
+        "--route",
+        action="store_true",
+        help="Resolve a routing decision",
+    )
+    gw_p.add_argument(
+        "--health",
+        action="store_true",
+        help="Probe backend health",
+    )
+    gw_p.add_argument(
+        "--backend",
+        type=str,
+        default=None,
+        help="Backend ID or role (detection/tracking/engagement)",
+    )
+    gw_p.add_argument(
+        "--strategy",
+        type=str,
+        default=None,
+        help="round_robin | least_latency | failover",
+    )
+    gw_p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Deterministic seed",
     )
 
     args = parser.parse_args(argv)
@@ -1666,6 +1732,11 @@ def main(argv: Optional[list] = None) -> int:
         print("[C-UAS] compliance: specify --collect, --package, --export, or --report")
         return 1
 
+    if args.command == "gateway":
+        from c_uas.gateway.cli import main as gateway_main
+
+        return gateway_main(args)
+
     if args.command == "hardware":
         from c_uas.hardware.cli import main as hardware_main
 
@@ -1773,6 +1844,11 @@ def main(argv: Optional[list] = None) -> int:
         print("  c-uas performance --capacity --sites 4 --drones-per-site 16 --brokers 2")
         print("  c-uas performance --optimize")
         return 1
+
+    if args.command == "chaos":
+        from c_uas.chaos.cli import chaos_main
+
+        return chaos_main(args)
 
     parser.print_help()
     return 1
