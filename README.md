@@ -125,6 +125,9 @@ c-uas edge --fleet --fleet-health
 c-uas edge --zero-trust --evaluate-policy --source node-A --dest node-B --port 443 --mtls --same-segment --authenticated
 c-uas gateway --status --route --backend detection
 c-uas chaos --report
+c-uas dc --capacity
+c-uas dc --lifecycle
+c-uas dc --efficiency
 c-uas red-team --scenario
 c-uas threat-intel --export --alert --test
 c-uas broker --action list-tenants
@@ -163,6 +166,7 @@ implemented in c_uas/cli.py.
 | swarm | Simulate a drone swarm and test scheduler saturation |
 | benchmarks | Run performance benchmarks (scheduler, EKF, end-to-end, swarm saturation) |
 | chaos | Chaos / resilience testing: fault injection and resilience validation |
+| dc | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency (DCC concepts) |
 | governance | ISO 42001 AI governance for C-UAS systems |
 | grc-clab | Agentic ISO 42001 governance engine (AutonomousAgent, EvidenceAutoLogger, ComplianceMonitor, RemediationPlanner) |
 | dew | Directed-energy beam modeling with atmospheric attenuation |
@@ -251,6 +255,7 @@ are not yet implemented. No fabricated metrics.
 | Red team adversarial testing | Delivered | c_uas/red_team/, tested |
 | Performance optimization engine | Delivered | c_uas/performance/, tested |
 | Compliance evidence collection | Delivered | c_uas/compliance/, tested |
+| Data Center Lifecycle Decision Support | Delivered | c_uas/datacenter/ (capacity, lifecycle, efficiency), state under ~/.c-uas-platform/datacenter/, tested |
 | Live SDR integration | Roadmap | Not in scope; explicitly defensive-only |
 | Weapons-employment effector | Roadmap | Out of scope; defensive-only project |
 | Production Kubernetes manifests | Roadmap | Dockerfile present; K8s manifests not yet authored |
@@ -258,10 +263,12 @@ are not yet implemented. No fabricated metrics.
 
 ## Test results
 
-pytest tests/ -q: 519 passed. CI runs ruff check, ruff format --check, mypy c_uas,
-and pytest tests/ -q; all green on main. The edge module adds 45 deterministic
-tests under tests/edge/ (pytest tests/edge/ -q: 45 passed). All figures in this
-document are computed from actual code execution or are labeled illustrative.
+pytest tests/ -q: 588 passed. CI runs ruff check, ruff format --check, mypy c_uas,
+and pytest tests/ -q; all green on main. The datacenter module adds 39 deterministic
+tests under tests/datacenter/ (pytest tests/datacenter/ -q: 39 passed). The edge
+module adds 45 deterministic tests under tests/edge/ (pytest tests/edge/ -q: 45 passed).
+All figures in this document are computed from actual code execution or are labeled
+illustrative.
 
 ## Module reference
 
@@ -282,6 +289,7 @@ document are computed from actual code execution or are labeled illustrative.
 | c_uas/hardware | SDR, radar, camera sensor abstraction with simulation mode and track fusion |
 | c_uas/edge | Edge node detection/tracking and edge-to-cloud sync; sub-modules: tenancy (tenant isolation, RLS, quotas), fleet (registration, heartbeat, health scoring, offline detection, decommission), zero_trust (default-deny, mTLS, segmentation, policy evaluation) |
 | c_uas/chaos | Chaos / resilience testing: fault injection and resilience validation |
+| c_uas/datacenter | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency; state under ~/.c-uas-platform/datacenter/ |
 | c_uas/red_team | Adversarial testing framework |
 | c_uas/security | Production hardening: security audits, penetration tests, ISO 42001 / SOC 2 compliance |
 | c_uas/performance | Performance optimization: baselines, bottlenecks, capacity, recommendations |

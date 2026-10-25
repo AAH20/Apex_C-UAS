@@ -148,6 +148,36 @@ def main(argv: Optional[list] = None) -> int:
         help="Scenario ID to run/report/show (default: all scenarios)",
     )
 
+    # dc: Data Center Lifecycle Decision Support (DCC concepts)
+    dc_p = subparsers.add_parser(
+        "dc",
+        help="Data center lifecycle decision support: capacity, lifecycle, efficiency",
+    )
+    dc_p.add_argument(
+        "--capacity",
+        action="store_true",
+        help=(
+            "Run data center capacity planning (power, cooling, rack "
+            "utilization, headroom, overcommitment)"
+        ),
+    )
+    dc_p.add_argument(
+        "--lifecycle",
+        action="store_true",
+        help=(
+            "Run data center lifecycle decisions (provision, decommission, "
+            "refresh, retire, stage tracking)"
+        ),
+    )
+    dc_p.add_argument(
+        "--efficiency",
+        action="store_true",
+        help=(
+            "Run energy-to-compute efficiency analysis (PUE, DCiE, compute "
+            "per watt, carbon intensity)"
+        ),
+    )
+
     # governance
     gov_p = subparsers.add_parser(
         "governance",
@@ -419,6 +449,11 @@ def main(argv: Optional[list] = None) -> int:
     from c_uas.edge.cli import build_subparser
 
     _ = build_subparser(subparsers)
+
+    # obs
+    from c_uas.observability.cli import build_subparser as _obs_build_subparser
+
+    _ = _obs_build_subparser(subparsers)
 
     # red-team
     rt_p = subparsers.add_parser(
@@ -1899,6 +1934,16 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.security.cli import security_main
 
         return security_main(args)
+
+    if args.command == "dc":
+        from c_uas.datacenter.cli import dc_main
+
+        return dc_main(args)
+
+    if args.command == "obs":
+        from c_uas.observability.cli import obs_main
+
+        return obs_main(args)
 
     parser.print_help()
     return 1
