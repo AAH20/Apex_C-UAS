@@ -112,6 +112,9 @@ c-uas perf --sla --module default --seed 7
 c-uas dew --laser fiber_50kw --range-m 3000 --material aluminum
 c-uas opendew --samples 100
 c-uas contract-readiness
+c-uas contract --verify --spec openapi.yaml
+c-uas contract --breaking --spec openapi.yaml --old-spec openapi.prev.yaml
+c-uas contract --gate --spec openapi.yaml
 c-uas governance --action compliance-report
 c-uas grc-clab --action monitor
 c-uas grc --chain
@@ -181,6 +184,7 @@ implemented in c_uas/cli.py.
 | dew | Directed-energy beam modeling with atmospheric attenuation |
 | opendew | OpenDEW neural network signal classifier |
 | contract-readiness | Contract readiness: burn rate, CAC:LTV, MVP scope |
+| contract | OpenAPI contract readiness: verify spec routes against the FastAPI route table, detect breaking changes between two spec versions, and CI gate with non-zero exit on missing routes or breaking changes; state under ~/.c-uas-platform/contract_readiness/ |
 | api | Run the REST API server |
 | deploy | Deploy the platform: Docker, Kubernetes, or config check |
 | dashboard | Serve the SOC dashboard web interface |
