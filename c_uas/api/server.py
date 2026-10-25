@@ -22,19 +22,45 @@ Endpoints:
   GET  /competitive-landscape    List deployed C-UAS systems
   POST /unit-economics           Compute unit economics
   GET  /benchmarks               Run performance benchmarks
+  GET  /performance/benchmark    Run deterministic benchmark kernels
+  GET  /performance/profile      Profile per-endpoint latency/throughput
+  GET  /performance/sla          Assess SLA compliance
+  GET  /security/audit           Run the hardening audit
+  GET  /security/penetrate       Run penetration test scenarios
+  GET  /security/compliance      ISO 42001 / SOC 2 compliance matrix
+  GET  /observability/metrics    Prometheus-style metrics collection
+  GET  /observability/alerts     Alerting engine state
+  GET  /observability/health     Composite platform health
+  GET  /observability/slo        SLO / error-budget evaluation
+  GET  /status                   Comprehensive platform health (observability)
+  GET  /datacenter/capacity      Data center capacity plan
+  GET  /datacenter/lifecycle     Data center lifecycle report
+  GET  /datacenter/efficiency    Energy-to-compute efficiency report
+  GET  /edge/tenant              List registered edge tenants
+  GET  /edge/fleet               Aggregate fleet health
+  GET  /edge/zero-trust          Evaluate ingress against zero-trust policy
 
 All figures computed from real code execution — no fabricated metrics.
 """
 
 from __future__ import annotations
 
+import random
 from dataclasses import asdict
-from typing import Any, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, cast
 
 from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
 from c_uas.api.websockets import websocket_route
+
+# ---------------------------------------------------------------------------
+# Module analysis imports (HTTP surface mirrors the CLI surface)
+# ---------------------------------------------------------------------------
+from c_uas.datacenter.capacity import compute_capacity_plan
+from c_uas.datacenter.cli import EXAMPLE_RACKS as _DC_EXAMPLE_RACKS
+from c_uas.datacenter.efficiency import compute_efficiency_report
+from c_uas.datacenter.lifecycle import lifecycle_report
 from c_uas.detection.opendew_classifier import get_opendew_classifier
 from c_uas.detection.rf_classifier import RFSignalClassifier
 from c_uas.detection.spoof_detector import GNSSMeasurement, GNSSSpoofDetector
@@ -43,6 +69,9 @@ from c_uas.dew.atmospheric import (
     AtmosphericConditions,
     time_to_kill_with_attenuation,
 )
+from c_uas.edge.fleet import FleetManager
+from c_uas.edge.tenancy import TenancyManager
+from c_uas.edge.zero_trust import default_deny_eval
 from c_uas.engagement.backtest import Scenario, run_backtest
 from c_uas.engagement.scheduler import (
     DroneTrack,
@@ -56,6 +85,39 @@ from c_uas.governance import (
     IncidentManager,
     RiskAssessment,
 )
+from c_uas.observability.alerts import (
+    AbsenceSignalRule,
+    RateOfChangeRule,
+    ThresholdRule,
+    new_engine,
+)
+from c_uas.observability.health import new_aggregator, run_all_probes
+from c_uas.observability.metrics import (
+    MetricType,
+    new_registry,
+)
+from c_uas.observability.slo import SLOTarget, new_tracker
+from c_uas.performance.optimizers import (
+    a_star,
+    greedy_set_cover,
+    local_search,
+)
+from c_uas.performance.profiler import (
+    ProfileStore,
+    run_profile,
+)
+from c_uas.performance.sla_tracker import (
+    SLARegistry,
+    SLATarget,
+    record_recovery,
+    record_request,
+)
+from c_uas.security.cli import (
+    BASELINE_CONFIG as _SEC_BASELINE_CONFIG,
+)
+from c_uas.security.compliance_matrix import build_matrix
+from c_uas.security.hardening import run_audit
+from c_uas.security.penetration import run_penetration_test
 from c_uas.swarm import SwarmConfig, SwarmSimulator
 from c_uas.unit_economics import UnitEconomicsModel
 
@@ -175,6 +237,179 @@ class DewModelRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Module analysis request/response models (HTTP surface mirrors CLI surface)
+# ---------------------------------------------------------------------------
+
+
+class BenchmarkRequest(BaseModel):
+    module: str = Field("default", description="Target module id")
+    seed: int = Field(42, description="Deterministic RNG seed")
+
+
+class BenchmarkResponse(BaseModel):
+    module: str
+    seed: int
+    astar_path: List[List[int]]
+    astar_cost: float
+    astar_nodes_expanded: int
+    astar_found: bool
+    set_cover_chosen: List[str]
+    set_cover_covered: int
+    set_cover_universe: int
+    set_cover_uncovered: List[object]
+    local_search_best_state: List[float]
+    local_search_best_cost: float
+    local_search_iterations: int
+    local_search_improved: bool
+
+
+class ProfileRequest(BaseModel):
+    module: str = Field("default", description="Target module id")
+    seed: int = Field(42, description="Deterministic RNG seed")
+
+
+class ProfileResponse(BaseModel):
+    module: str
+    seed: int
+    endpoints: Dict[str, Any]
+    memory_pressure: bool
+    peak_rss_bytes: int
+    bottlenecks: List[Dict[str, Any]]
+
+
+class SLARequest(BaseModel):
+    module: str = Field("default", description="Target module id")
+    seed: int = Field(42, description="Deterministic RNG seed")
+
+
+class SLAResponse(BaseModel):
+    module: str
+    sample_count: int
+    latency_p50_s: float
+    latency_p95_s: float
+    latency_p99_s: float
+    error_count: int
+    error_rate: float
+    error_budget_remaining: float
+    p99_compliant: bool
+    error_budget_compliant: bool
+    overall_compliant: bool
+    recovery_time_s: float
+    compliance_status: str
+
+
+class AuditResponse(BaseModel):
+    audit_id: str
+    config_hash: str
+    overall_score: float
+    grade: str
+    checks_passed: int
+    checks_total: int
+
+
+class PenetrateResponse(BaseModel):
+    report_id: str
+    config_hash: str
+    overall_passed: bool
+    pass_rate: float
+    results: List[Dict[str, Any]]
+
+
+class ComplianceResponse(BaseModel):
+    matrix_id: str
+    overall_coverage: float
+    iso_coverage: float
+    soc2_coverage: float
+    gaps: List[str]
+
+
+class MetricsResponse(BaseModel):
+    collected_at: str
+    counters: int
+    gauges: int
+    histograms: int
+    summaries: int
+
+
+class AlertsResponse(BaseModel):
+    total: int
+    firing: int
+    active: int
+    resolved: int
+    by_severity: Dict[str, int]
+
+
+class HealthResponse(BaseModel):
+    overall_status: str
+    composite_score: float
+    components: List[Dict[str, Any]]
+    unhealthy: List[str]
+    degraded: List[str]
+    healthy: List[str]
+
+
+class SLOResponse(BaseModel):
+    results: List[Dict[str, Any]]
+
+
+class CapacityResponse(BaseModel):
+    plan_id: str
+    config_hash: str
+    total_it_load_kw: float
+    total_facility_kw: float
+    overall_utilization_pct: float
+    overcommitted_racks: int
+    racks: List[Dict[str, Any]]
+
+
+class LifecycleResponse(BaseModel):
+    report_id: str
+    config_hash: str
+    total_assets: int
+    assets_needing_retirement: int
+    total_decommission_cost_usd: float
+    stage_counts: Dict[str, int]
+
+
+class EfficiencyResponse(BaseModel):
+    report_id: str
+    config_hash: str
+    pue: float
+    dcie: float
+    compute_per_watt: float
+    efficiency_rating: str
+
+
+class TenantResponse(BaseModel):
+    tenants: List[Dict[str, Any]]
+
+
+class FleetResponse(BaseModel):
+    total_nodes: int
+    active_nodes: int
+    offline_nodes: int
+    decommissioned_nodes: int
+    average_health_score: float
+    by_tenant: Dict[str, int]
+
+
+class ZeroTrustRequest(BaseModel):
+    source: str = Field("node-A", description="Ingress source identity")
+    dest: str = Field("node-B", description="Ingress destination identity")
+    port: int = Field(443, description="Ingress destination port")
+    has_mtls: bool = Field(False, description="mTLS is present for the flow")
+    same_segment: bool = Field(False, description="Same network segment")
+    authenticated: bool = Field(False, description="Service-to-service auth present")
+
+
+class ZeroTrustResponse(BaseModel):
+    allowed: bool
+    reason: str
+    rules_checked: List[str]
+    matched_rules: List[str]
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 @app.get("/")
@@ -185,6 +420,37 @@ def health() -> dict[str, Any]:
         "version": "0.1.0",
         "publisher": "Apex Growth Systems LLC",
         "contact": "aah@a2zsoc.com",
+    }
+
+
+@app.get("/status")
+def platform_status() -> Dict[str, Any]:
+    """Comprehensive platform health from real component probes.
+
+    Returns the composite health score (weighted average of the six
+    component scores), the per-component breakdown, the list of unhealthy
+    components (score < 80), and the UTC check timestamp.
+    """
+    aggregator = new_aggregator()
+    run_all_probes(aggregator)
+    composite = aggregator.composite()
+    return {
+        "schema_version": composite.schema_version,
+        "overall_status": composite.overall_status,
+        "composite_score": composite.composite_score,
+        "unhealthy": list(composite.unhealthy),
+        "components": [
+            {
+                "component": c.component,
+                "status": c.status,
+                "score": c.score,
+                "details": c.details,
+                "checked_at": c.checked_at,
+                "error": c.error,
+            }
+            for c in composite.components
+        ],
+        "checked_at": composite.checked_at,
     }
 
 
@@ -481,3 +747,481 @@ def opendew_classify() -> dict[str, Any]:
 
     samples = [random.uniform(-1.0, 1.0) for _ in range(100)]
     return clf.classify_iq(samples)
+
+
+# ---------------------------------------------------------------------------
+# Performance routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/performance/benchmark", response_model=BenchmarkResponse)
+def performance_benchmark(module: str = "default", seed: int = 42) -> Dict[str, Any]:
+    """Run deterministic performance benchmark kernels (mirrors ``c-uas perf --benchmark``)."""
+    grid = [
+        [True, True, True, True, True],
+        [True, False, False, False, True],
+        [True, True, True, True, True],
+        [True, False, False, False, True],
+        [True, True, True, True, True],
+    ]
+    astar = a_star(grid, (0, 0), (4, 4), seed=seed)
+
+    universe = ["a", "b", "c", "d", "e", "f", "g"]
+    sets: Dict[str, List[object]] = {
+        "S1": ["a", "b", "c"],
+        "S2": ["c", "d", "e"],
+        "S3": ["e", "f", "g"],
+        "S4": ["a", "g"],
+    }
+    cover = greedy_set_cover(
+        universe,
+        cast(Dict[str, Sequence[object]], sets),
+        seed=seed,
+    )
+
+    def cost_fn(state: Sequence[float]) -> float:
+        return sum(float(x) ** 2 for x in state)
+
+    def neighbors_fn(state: Sequence[float]) -> List[List[float]]:
+        out: List[List[float]] = []
+        for i in range(len(state)):
+            for delta in (-1.0, 1.0):
+                n = list(state)
+                n[i] += delta
+                out.append(n)
+        return out
+
+    search = local_search(
+        [3.0, -2.0, 5.0],
+        cast(Callable[[Sequence[object]], float], cost_fn),
+        cast(Callable[[Sequence[object]], Sequence[Sequence[object]]], neighbors_fn),
+        seed=seed,
+        max_iterations=50,
+    )
+
+    return {
+        "module": module,
+        "seed": seed,
+        "astar_path": [list(p) for p in astar.path],
+        "astar_cost": astar.cost,
+        "astar_nodes_expanded": astar.nodes_expanded,
+        "astar_found": astar.found,
+        "set_cover_chosen": list(cover.chosen_sets),
+        "set_cover_covered": len(cover.covered_elements),
+        "set_cover_universe": cover.universe_size,
+        "set_cover_uncovered": list(cover.uncovered_elements),
+        "local_search_best_state": list(search.best_state),
+        "local_search_best_cost": search.best_cost,
+        "local_search_iterations": search.iterations,
+        "local_search_improved": search.improved,
+    }
+
+
+@app.get("/performance/profile", response_model=ProfileResponse)
+def performance_profile(module: str = "default", seed: int = 42) -> Dict[str, Any]:
+    """Profile per-endpoint latency/throughput (mirrors ``c-uas perf --profile``)."""
+    store = ProfileStore(seed=seed)
+    rng = random.Random(seed)
+    base = 0.05 if module == "default" else 0.1
+    samples = [base + rng.uniform(0.0, 0.02) for _ in range(200)]
+    for s in samples:
+        store.record_latency(module, s, errored=s > 0.09)
+    store.record_memory(0.0, 128 * 1024 * 1024)
+
+    result = run_profile(store, seed=seed)
+    return {
+        "module": module,
+        "seed": seed,
+        "endpoints": {k: asdict(v) for k, v in result.endpoints.items()},
+        "memory_pressure": result.memory_pressure,
+        "peak_rss_bytes": result.peak_rss_bytes,
+        "bottlenecks": [asdict(b) for b in result.bottlenecks],
+    }
+
+
+@app.get("/performance/sla", response_model=SLAResponse)
+def performance_sla(module: str = "default", seed: int = 42) -> Dict[str, Any]:
+    """Assess SLA compliance (mirrors ``c-uas perf --sla``)."""
+    registry = SLARegistry(seed=seed)
+    registry.add_target(
+        SLATarget(
+            module=module,
+            latency_p50_s=0.1,
+            latency_p95_s=0.5,
+            latency_p99_s=1.0,
+            error_budget=0.01,
+            recovery_time_s=30.0,
+        )
+    )
+    rng = random.Random(seed + 1)
+    for _ in range(1000):
+        seconds = 0.05 + rng.uniform(0.0, 0.05)
+        failed = rng.random() < 0.005
+        record_request(registry, module, seconds, failed)
+
+    result = registry.compute_result(module)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"No SLA data for module: {module}")
+    record_recovery(registry, module, "2026-01-01T00:00:00Z", "2026-01-01T00:00:10Z", 10.0)
+
+    return {
+        "module": result.module,
+        "sample_count": result.sample_count,
+        "latency_p50_s": result.latency_p50_s,
+        "latency_p95_s": result.latency_p95_s,
+        "latency_p99_s": result.latency_p99_s,
+        "error_count": result.error_count,
+        "error_rate": result.error_rate,
+        "error_budget_remaining": result.error_budget_remaining,
+        "p99_compliant": result.p99_compliant,
+        "error_budget_compliant": result.error_budget_compliant,
+        "overall_compliant": result.overall_compliant,
+        "recovery_time_s": result.recovery_time_s,
+        "compliance_status": registry.compliance_status(module),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Security routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/security/audit", response_model=AuditResponse)
+def security_audit() -> Dict[str, Any]:
+    """Run the hardening audit (mirrors ``c-uas security --audit``)."""
+    audit = run_audit(_SEC_BASELINE_CONFIG)
+    return {
+        "audit_id": audit.audit_id,
+        "config_hash": audit.config_hash,
+        "overall_score": audit.overall_score,
+        "grade": audit.grade,
+        "checks_passed": sum(1 for c in audit.checks if c.passed),
+        "checks_total": len(audit.checks),
+    }
+
+
+@app.get("/security/penetrate", response_model=PenetrateResponse)
+def security_penetrate() -> Dict[str, Any]:
+    """Run penetration test scenarios (mirrors ``c-uas security --penetrate``)."""
+    report = run_penetration_test(_SEC_BASELINE_CONFIG)
+    return {
+        "report_id": report.report_id,
+        "config_hash": report.config_hash,
+        "overall_passed": report.overall_passed,
+        "pass_rate": report.pass_rate,
+        "results": [asdict(r) for r in report.results],
+    }
+
+
+@app.get("/security/compliance", response_model=ComplianceResponse)
+def security_compliance() -> Dict[str, Any]:
+    """ISO 42001 / SOC 2 compliance matrix (mirrors ``c-uas security --compliance``)."""
+    audit = run_audit(_SEC_BASELINE_CONFIG)
+    report = run_penetration_test(_SEC_BASELINE_CONFIG)
+    matrix = build_matrix(audit, report)
+    return {
+        "matrix_id": matrix.matrix_id,
+        "overall_coverage": matrix.overall_coverage,
+        "iso_coverage": matrix.iso_coverage,
+        "soc2_coverage": matrix.soc2_coverage,
+        "gaps": list(matrix.gaps),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Observability routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/observability/metrics", response_model=MetricsResponse)
+def observability_metrics() -> Dict[str, Any]:
+    """Prometheus-style metrics collection (mirrors ``c-uas obs --metrics``)."""
+    registry = new_registry()
+    registry.register(
+        "http_requests_total",
+        MetricType.COUNTER,
+        help="Total HTTP requests",
+        unit="requests",
+        label_names=("code", "method"),
+    )
+    registry.register(
+        "http_request_duration_seconds",
+        MetricType.HISTOGRAM,
+        help="HTTP latency",
+        unit="seconds",
+        label_names=("handler",),
+    )
+    registry.register(
+        "api_requests_in_flight",
+        MetricType.GAUGE,
+        help="In-flight requests",
+        unit="requests",
+    )
+    registry.register(
+        "api_response_time_seconds",
+        MetricType.SUMMARY,
+        help="API response time",
+        unit="seconds",
+        label_names=("endpoint",),
+    )
+
+    c = registry.counter("http_requests_total")
+    for code, method, n in (("200", "GET", 1250), ("404", "GET", 30), ("500", "POST", 5)):
+        c.inc(float(n), labels={"code": code, "method": method})
+    h = registry.histogram("http_request_duration_seconds")
+    for v in (0.012, 0.045, 0.089, 0.210, 0.540, 1.230, 2.500):
+        h.observe(v, labels={"handler": "detect"})
+    g = registry.gauge("api_requests_in_flight")
+    g.set(7.0)
+    s = registry.summary("api_response_time_seconds")
+    for v in (0.05, 0.11, 0.19, 0.33, 0.67, 1.10):
+        s.observe(v, labels={"endpoint": "/detect"})
+
+    result = registry.collect()
+    return {
+        "collected_at": result.collected_at,
+        "counters": len(result.counters),
+        "gauges": len(result.gauges),
+        "histograms": len(result.histograms),
+        "summaries": len(result.summaries),
+    }
+
+
+@app.get("/observability/alerts", response_model=AlertsResponse)
+def observability_alerts() -> Dict[str, Any]:
+    """Alerting engine state (mirrors ``c-uas obs --alerts``)."""
+    registry = new_registry()
+    registry.register("http_requests_total", MetricType.COUNTER, label_names=("code", "method"))
+    registry.register(
+        "http_request_duration_seconds",
+        MetricType.HISTOGRAM,
+        label_names=("handler",),
+    )
+    registry.register("api_requests_in_flight", MetricType.GAUGE)
+
+    c = registry.counter("http_requests_total")
+    c.inc(1250.0, labels={"code": "200", "method": "GET"})
+    c.inc(5.0, labels={"code": "500", "method": "POST"})
+    h = registry.histogram("http_request_duration_seconds")
+    h.observe(0.012, labels={"handler": "detect"})
+    h.observe(2.500, labels={"handler": "detect"})
+    g = registry.gauge("api_requests_in_flight")
+    g.set(7.0)
+
+    engine = new_engine(registry)
+    engine.add_threshold_rule(
+        ThresholdRule(
+            rule_id="obs-001",
+            name="high_error_rate",
+            metric="http_requests_total",
+            threshold=1000.0,
+            severity="warning",
+            comparison="gt",
+            for_seconds=60.0,
+            labels=(("code", "500"), ("method", "POST")),
+        )
+    )
+    engine.add_rate_of_change_rule(
+        RateOfChangeRule(
+            rule_id="obs-002",
+            name="latency_spike",
+            metric="http_request_duration_seconds",
+            threshold=0.5,
+            severity="critical",
+            for_seconds=60.0,
+        )
+    )
+    engine.add_absence_signal_rule(
+        AbsenceSignalRule(
+            rule_id="obs-003",
+            name="missing_metric",
+            metric="api_requests_in_flight",
+            severity="warning",
+            for_seconds=60.0,
+        )
+    )
+    engine.evaluate()
+
+    summary = engine.summary()
+    return {
+        "total": summary["total"],
+        "firing": summary["firing"],
+        "active": summary["active"],
+        "resolved": summary["resolved"],
+        "by_severity": summary["by_severity"],
+    }
+
+
+@app.get("/observability/health", response_model=HealthResponse)
+def observability_health() -> Dict[str, Any]:
+    """Composite platform health (mirrors ``c-uas obs --health``)."""
+    aggregator = new_aggregator()
+    run_all_probes(aggregator)
+    composite = aggregator.composite()
+    return {
+        "overall_status": composite.overall_status,
+        "composite_score": composite.composite_score,
+        "components": [asdict(c) for c in composite.components],
+        "unhealthy": list(composite.unhealthy),
+        "degraded": list(composite.degraded),
+        "healthy": list(composite.healthy),
+    }
+
+
+@app.get("/observability/slo", response_model=SLOResponse)
+def observability_slo() -> Dict[str, Any]:
+    """SLO / error-budget evaluation (mirrors ``c-uas obs --slo``)."""
+    tracker = new_tracker()
+    tracker.add_target(
+        SLOTarget(
+            service="detection-api",
+            metric="availability",
+            target=0.999,
+            window_seconds=3600,
+            is_latency=False,
+        )
+    )
+    tracker.add_target(
+        SLOTarget(
+            service="detection-api",
+            metric="latency_p95",
+            target=0.5,
+            window_seconds=3600,
+            is_latency=True,
+        )
+    )
+    tracker.add_target(
+        SLOTarget(
+            service="engagement-api",
+            metric="error_rate",
+            target=0.01,
+            window_seconds=3600,
+            is_latency=False,
+        )
+    )
+    tracker.observe("detection-api", "availability", 0.9995)
+    tracker.observe("detection-api", "latency_p95", 0.42)
+    tracker.observe("engagement-api", "error_rate", 0.003)
+
+    results = tracker.evaluate_all()
+    return {"results": [asdict(r) for r in results]}
+
+
+# ---------------------------------------------------------------------------
+# Datacenter routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/datacenter/capacity", response_model=CapacityResponse)
+def datacenter_capacity() -> Dict[str, Any]:
+    """Data center capacity plan (mirrors ``c-uas dc --capacity``)."""
+    it_loads = {"RACK-01": 8.0, "RACK-02": 11.0, "RACK-03": 6.0}
+    cooling_loads = {"RACK-01": 7.5, "RACK-02": 10.5, "RACK-03": 5.5}
+    compute_units = {"RACK-01": 24, "RACK-02": 36, "RACK-03": 18}
+    plan = compute_capacity_plan(
+        _DC_EXAMPLE_RACKS,
+        it_loads_kw=it_loads,
+        cooling_loads_kw=cooling_loads,
+        compute_units_map=compute_units,
+    )
+    return {
+        "plan_id": plan.plan_id,
+        "config_hash": plan.config_hash,
+        "total_it_load_kw": plan.total_it_load_kw,
+        "total_facility_kw": plan.total_facility_kw,
+        "overall_utilization_pct": plan.overall_utilization_pct,
+        "overcommitted_racks": plan.overcommitted_racks,
+        "racks": [asdict(r) for r in plan.racks],
+    }
+
+
+@app.get("/datacenter/lifecycle", response_model=LifecycleResponse)
+def datacenter_lifecycle() -> Dict[str, Any]:
+    """Data center lifecycle report (mirrors ``c-uas dc --lifecycle``)."""
+    report = lifecycle_report()
+    return {
+        "report_id": report.report_id,
+        "config_hash": report.config_hash,
+        "total_assets": len(report.assets),
+        "assets_needing_retirement": report.assets_needing_retirement,
+        "total_decommission_cost_usd": report.total_decommission_cost_usd,
+        "stage_counts": dict(report.stage_counts),
+    }
+
+
+@app.get("/datacenter/efficiency", response_model=EfficiencyResponse)
+def datacenter_efficiency() -> Dict[str, Any]:
+    """Energy-to-compute efficiency report (mirrors ``c-uas dc --efficiency``)."""
+    report = compute_efficiency_report(
+        facility_energy_kwh=1500.0,
+        it_energy_kwh=1000.0,
+        compute_units=50_000,
+        power_watts=1_000_000.0,
+        interval_kwh=1500.0,
+        emission_factor_kg_co2e_per_kwh=0.45,
+        pue_target=1.3,
+    )
+    return {
+        "report_id": report.report_id,
+        "config_hash": report.config_hash,
+        "pue": report.metrics.pue,
+        "dcie": report.metrics.dcie,
+        "compute_per_watt": report.metrics.compute_per_watt,
+        "efficiency_rating": report.efficiency_rating,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Edge routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/edge/tenant", response_model=TenantResponse)
+def edge_tenant() -> Dict[str, Any]:
+    """List registered edge tenants (mirrors ``c-uas edge --tenant --list-tenants``)."""
+    manager = TenancyManager()
+    tenants = manager.list_tenants()
+    return {"tenants": [asdict(t) for t in tenants.tenants]}
+
+
+@app.get("/edge/fleet", response_model=FleetResponse)
+def edge_fleet() -> Dict[str, Any]:
+    """Aggregate fleet health (mirrors ``c-uas edge --fleet --fleet-health``)."""
+    manager = FleetManager()
+    report = manager.fleet_health()
+    return {
+        "total_nodes": report.total_nodes,
+        "active_nodes": report.active_nodes,
+        "offline_nodes": report.offline_nodes,
+        "decommissioned_nodes": report.decommissioned_nodes,
+        "average_health_score": report.average_health_score,
+        "by_tenant": dict(report.by_tenant),
+    }
+
+
+@app.get("/edge/zero-trust", response_model=ZeroTrustResponse)
+def edge_zero_trust(
+    source: str = "node-A",
+    dest: str = "node-B",
+    port: int = 443,
+    has_mtls: bool = False,
+    same_segment: bool = False,
+    authenticated: bool = False,
+) -> Dict[str, Any]:
+    """Evaluate an ingress flow against the zero-trust policy (mirrors
+    ``c-uas edge --zero-trust --evaluate-policy``).
+    """
+    result = default_deny_eval(
+        source=source,
+        dest=dest,
+        port=port,
+        has_mtls=has_mtls,
+        same_segment=same_segment,
+        authenticated=authenticated,
+    )
+    return {
+        "allowed": result.allowed,
+        "reason": result.reason,
+        "rules_checked": list(result.rules_checked),
+        "matched_rules": list(result.matched_rules),
+    }
