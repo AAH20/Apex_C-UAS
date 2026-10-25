@@ -191,7 +191,7 @@ implemented in c_uas/cli.py.
 
 Generated from FastAPI route introspection of c_uas/api/server.py. Every
 documented route below mounts on the app; verified by diffing this table against
-the live route table (20 platform routes + 4 FastAPI framework routes:
+the live route table (36 platform routes + 4 FastAPI framework routes:
 /docs, /docs/oauth2-redirect, /openapi.json, /redoc).
 
 | Endpoint | Method | Description |
@@ -210,6 +210,19 @@ the live route table (20 platform routes + 4 FastAPI framework routes:
 | /engagement/schedule | POST | NP-hard engagement scheduling |
 | /evidence/verify | GET | Audit chain tamper verification |
 | /incidents | POST | Record an incident |
+| /datacenter/capacity | GET | Data center capacity plan |
+| /datacenter/efficiency | GET | Energy-to-compute efficiency report |
+| /datacenter/lifecycle | GET | Data center lifecycle report |
+| /edge/fleet | GET | Aggregate edge fleet health |
+| /edge/tenant | GET | List registered edge tenants |
+| /edge/zero-trust | GET | Evaluate ingress against zero-trust policy |
+| /observability/alerts | GET | Alerting engine state |
+| /observability/health | GET | Composite platform health |
+| /observability/metrics | GET | Prometheus-style metrics collection |
+| /observability/slo | GET | SLO / error-budget evaluation |
+| /performance/benchmark | GET | Deterministic benchmark kernels |
+| /performance/profile | GET | Per-endpoint latency/throughput profile |
+| /performance/sla | GET | SLA compliance assessment |
 | /risks | GET | List risks |
 | /risks | POST | Assess a new risk |
 | /swarm/simulate | POST | Simulate drone swarm |
@@ -242,7 +255,7 @@ are not yet implemented. No fabricated metrics.
 | DEW beam modeling | Delivered | c_uas/dew/, tested |
 | OpenDEW signal classifier | Delivered | c_uas/detection/opendew_classifier.py, tested |
 | Contract readiness model | Delivered | c_uas/contract_readiness.py, tested |
-| REST API server | Delivered | c_uas/api/server.py, 20 routes mounted |
+| REST API server | Delivered | c_uas/api/server.py, 36 routes mounted |
 | API Gateway | Delivered | c_uas/gateway/, tested |
 | WebSocket streaming | Delivered | c_uas/api/websockets.py, tested |
 | SOC dashboard | Delivered | c_uas/dashboard/, tested |
