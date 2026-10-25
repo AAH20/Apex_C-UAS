@@ -295,6 +295,11 @@ def main(argv: Optional[list] = None) -> int:
         help="Contract readiness: burn rate, CAC:LTV, MVP scope",
     )
 
+    # contract: OpenAPI contract readiness (verify / breaking / gate)
+    from c_uas.contract_readiness.cli import build_subparser as _contract_build_subparser
+
+    _contract_build_subparser(subparsers)
+
     # api
     api_p = subparsers.add_parser(
         "api",
@@ -445,10 +450,20 @@ def main(argv: Optional[list] = None) -> int:
     hw_p.add_argument("--status", action="store_true", help="Health-check all sensors")
     hw_p.add_argument("--seed", type=int, default=42, help="Deterministic RNG seed")
 
+    # grc
+    from c_uas.grc_clab.cli import build_subparser as _grc_build_subparser
+
+    _ = _grc_build_subparser(subparsers)
+
     # edge
     from c_uas.edge.cli import build_subparser
 
     _ = build_subparser(subparsers)
+
+    # finops
+    from c_uas.finops.cli import build_subparser as _finops_build_subparser
+
+    _ = _finops_build_subparser(subparsers)
 
     # obs
     from c_uas.observability.cli import build_subparser as _obs_build_subparser
@@ -1184,6 +1199,11 @@ def main(argv: Optional[list] = None) -> int:
         print(f"[C-UAS] Unknown grc-clab action: {action}")
         return 1
 
+    if args.command == "grc":
+        from c_uas.grc_clab.cli import grc_main
+
+        return grc_main(args)
+
     if args.command == "dew":
         from c_uas.dew.atmospheric import (
             LASER_SPECS,
@@ -1265,6 +1285,11 @@ def main(argv: Optional[list] = None) -> int:
         print(f"  MVP build     : {analysis['mvp_scope']['total_weeks']} weeks")
         print(f"  Earliest contract: month {frc['earliest_contract_month']}")
         return 0
+
+    if args.command == "contract":
+        from c_uas.contract_readiness.cli import contract_main
+
+        return contract_main(args)
 
     if args.command == "api":
         from c_uas.deployment.server import create_app, run
@@ -1939,6 +1964,11 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.datacenter.cli import dc_main
 
         return dc_main(args)
+
+    if args.command == "finops":
+        from c_uas.finops.cli import finops_main
+
+        return finops_main(args)
 
     if args.command == "obs":
         from c_uas.observability.cli import obs_main
