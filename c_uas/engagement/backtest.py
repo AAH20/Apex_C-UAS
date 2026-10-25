@@ -5,8 +5,7 @@ Deterministic backtest of the NP-hard engagement scheduler against
 counterfactual controls. Per the backtest-evidence-integrity skill:
 
 - Every claim is recomputed from source reports, not asserted.
-- Counterfactual controls (random entry, direction-flip, shortest-hold-first,
-  greedy-by-Pk-only) run against the same scenario.
+- Counterfactual controls run against the same scenario.
 - The scheduler must beat all controls to claim alpha.
 - Results are falsifiable: each control produces measurable expected_kills.
 - No fabrication: all figures computed from actual code execution.
@@ -19,13 +18,40 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import random
 import sys
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Dict, List
 
 from c_uas.engagement.scheduler import DroneTrack, EngagementScheduler
+
+BACKTEST_ROOT = Path(
+    os.environ.get(
+        "C_UAS_ENGAGEMENT_STATE_DIR",
+        Path.home() / ".c-uas-platform" / "engagement" / "backtest",
+    )
+)
+
+
+def _atomic_write_json(path: Path, data: Any) -> None:
+    """Write JSON atomically (temp file + replace)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
+    os.replace(tmp, path)
+
+
+def _control_seed(scenario_seed: int, control_name: str) -> int:
+    """Derive a deterministic, control-specific seed from the scenario seed.
+
+    Uses SHA-256 (never Python's randomized ``hash()``) so results are
+    seed-keyed and identical across processes and machines.
+    """
+    digest = hashlib.sha256(f"{scenario_seed}:{control_name}".encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big") % (2**31)
 
 
 @dataclass(frozen=True)
@@ -101,89 +127,17 @@ def _fitness(
 # ---------------------------------------------------------------------------
 
 
-def control_random_entry(
-    tracks: List[DroneTrack],
-    scheduler: EngagementScheduler,
-) -> ControlResult:
-    """Control: engage targets in a random order (no intelligence).
-
-    This isolates whether the scheduler's value comes from selection
-    intelligence or just from firing at things.
-    """
-    rng = random.Random(999)
-    shuffled = list(tracks)
-    rng.shuffle(shuffled)
-
-    time_used = 0.0
-    expected_kills = 0.0
-    engaged = 0
-    bloom = 0.0
-    for t in shuffled:
-        cost = scheduler.dwell_s + (scheduler.slew_s if engaged > 0 else 0.0)
-        if time_used + cost > t.arrival_time_s:
-            continue
-        if time_used + cost > scheduler.time_limit_s:
-            continue
-        effective_pk = max(0.0, t.pk_base - bloom)
-        expected_kills += effective_pk
-        time_used += cost
-        engaged += 1
-        bloom += scheduler.thermal_bloom_penalty_per_target
-
-    fitness = _fitness(expected_kills, len(tracks) - engaged, time_used, scheduler.time_limit_s)
-    return ControlResult(
-        control_name="random_entry",
-        expected_kills=round(expected_kills, 3),
-        total_time_s=round(time_used, 2),
-        engaged_targets=engaged,
-        leaked_targets=len(tracks) - engaged,
-        fitness=round(fitness, 4),
-        seed=999,
-    )
-
-
-def control_shortest_hold_first(
-    tracks: List[DroneTrack],
-    scheduler: EngagementScheduler,
-) -> ControlResult:
-    """Control: engage targets with the shortest dwell requirement first.
-
-    Tests whether Pk-per-second selection matters vs just firing fast.
-    """
-    ordered = sorted(tracks, key=lambda t: scheduler.dwell_s + scheduler.slew_s)
-    return _greedy_sequence(ordered, scheduler, "shortest_hold_first")
-
-
-def control_greedy_pk_only(
-    tracks: List[DroneTrack],
-    scheduler: EngagementScheduler,
-) -> ControlResult:
-    """Control: engage targets by raw Pk only (ignore time cost).
-
-    Tests whether time-awareness matters vs just picking highest Pk.
-    """
-    ordered = sorted(tracks, key=lambda t: -t.pk_base)
-    return _greedy_sequence(ordered, scheduler, "greedy_pk_only")
-
-
-def control_deadline_first(
-    tracks: List[DroneTrack],
-    scheduler: EngagementScheduler,
-) -> ControlResult:
-    """Control: engage targets by earliest arrival deadline first.
-
-    Tests whether Pk-per-second matters vs just meeting deadlines.
-    """
-    ordered = sorted(tracks, key=lambda t: t.arrival_time_s)
-    return _greedy_sequence(ordered, scheduler, "deadline_first")
-
-
-def _greedy_sequence(
+def _execute_sequence(
     ordered: List[DroneTrack],
     scheduler: EngagementScheduler,
     name: str,
+    seed: int,
 ) -> ControlResult:
-    """Execute engagements in the given order, respecting deadlines and time."""
+    """Execute engagements in the given order, respecting deadlines and time.
+
+    Pure function of (ordered, scheduler, seed). Thermal bloom accumulates per
+    engaged target, reducing effective Pk for later engagements.
+    """
     time_used = 0.0
     expected_kills = 0.0
     engaged = 0
@@ -191,9 +145,9 @@ def _greedy_sequence(
     for t in ordered:
         cost = scheduler.dwell_s + (scheduler.slew_s if engaged > 0 else 0.0)
         if time_used + cost > t.arrival_time_s:
-            continue
+            continue  # Too late for this target
         if time_used + cost > scheduler.time_limit_s:
-            continue
+            continue  # Not enough time remaining
         effective_pk = max(0.0, t.pk_base - bloom)
         expected_kills += effective_pk
         time_used += cost
@@ -208,20 +162,57 @@ def _greedy_sequence(
         engaged_targets=engaged,
         leaked_targets=len(ordered) - engaged,
         fitness=round(fitness, 4),
-        seed=0,
+        seed=seed,
     )
+
+
+def control_random_entry(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+) -> ControlResult:
+    """Control: engage targets in a random order (no intelligence).
+
+    Isolates whether the scheduler's value comes from selection intelligence
+    or just from firing at things. Fixed seed 999 for backward compatibility.
+    """
+    rng = random.Random(999)
+    shuffled = list(tracks)
+    rng.shuffle(shuffled)
+    return _execute_sequence(shuffled, scheduler, "random_entry", 999)
+
+
+def control_shortest_hold_first(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+) -> ControlResult:
+    """Control: engage targets with the shortest dwell requirement first."""
+    ordered = sorted(tracks, key=lambda t: scheduler.dwell_s + scheduler.slew_s)
+    return _execute_sequence(ordered, scheduler, "shortest_hold_first", 0)
+
+
+def control_greedy_pk_only(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+) -> ControlResult:
+    """Control: engage targets by raw Pk only (ignore time cost)."""
+    ordered = sorted(tracks, key=lambda t: -t.pk_base)
+    return _execute_sequence(ordered, scheduler, "greedy_pk_only", 0)
+
+
+def control_deadline_first(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+) -> ControlResult:
+    """Control: engage targets by earliest arrival deadline first."""
+    ordered = sorted(tracks, key=lambda t: t.arrival_time_s)
+    return _execute_sequence(ordered, scheduler, "deadline_first", 0)
 
 
 def control_direction_flip(
     tracks: List[DroneTrack],
     scheduler: EngagementScheduler,
 ) -> ControlResult:
-    """Control: invert Pk (high Pk becomes low, low becomes high).
-
-    If the scheduler's edge comes from Pk selection, flipping Pk should
-    collapse performance. If it doesn't, the edge is from time management
-    or deadline handling, not signal.
-    """
+    """Control: invert Pk (high Pk becomes low, low becomes high)."""
     flipped = [
         DroneTrack(
             track_id=t.track_id,
@@ -255,6 +246,80 @@ def control_direction_flip(
     )
 
 
+# --- New seed-keyed counterfactual controls --------------------------------
+
+
+def control_random_scheduler(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    seed: int,
+) -> ControlResult:
+    """Control: engage targets in a random order keyed by the scenario seed.
+
+    Same strategy class as random_entry, but seed-keyed so it is reproducible
+    per scenario rather than fixed at 999.
+    """
+    rng = random.Random(seed)
+    shuffled = list(tracks)
+    rng.shuffle(shuffled)
+    return _execute_sequence(shuffled, scheduler, "random_scheduler", seed)
+
+
+def control_round_robin(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    seed: int,
+) -> ControlResult:
+    """Control: cycle through targets in track-id order, engaging each that fits.
+
+    A fair-share counterfactual: every target gets one turn before any target
+    is reconsidered, emulating round-robin scheduling.
+    """
+    ordered = sorted(tracks, key=lambda t: t.track_id)
+    return _execute_sequence(ordered, scheduler, "round_robin", seed)
+
+
+def control_fifo(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    seed: int,
+) -> ControlResult:
+    """Control: first-in, first-out by arrival time (then track_id for ties)."""
+    ordered = sorted(tracks, key=lambda t: (t.arrival_time_s, t.track_id))
+    return _execute_sequence(ordered, scheduler, "fifo", seed)
+
+
+def control_longest_queue_first(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    seed: int,
+) -> ControlResult:
+    """Control: highest priority first (longest/most urgent queue first).
+
+    Treats priority as queue depth: the most urgent targets are engaged first,
+    regardless of Pk or time cost.
+    """
+    ordered = sorted(tracks, key=lambda t: (-t.priority, t.arrival_time_s, t.track_id))
+    return _execute_sequence(ordered, scheduler, "longest_queue_first", seed)
+
+
+def control_shortest_job_first(
+    tracks: List[DroneTrack],
+    scheduler: EngagementScheduler,
+    seed: int,
+) -> ControlResult:
+    """Control: shortest engagement time cost first.
+
+    Engages the quickest targets first to maximize the count of engagements
+    within the time limit (shortest-job-first scheduling).
+    """
+    ordered = sorted(
+        tracks,
+        key=lambda t: (scheduler.dwell_s + scheduler.slew_s, t.track_id),
+    )
+    return _execute_sequence(ordered, scheduler, "shortest_job_first", seed)
+
+
 def run_scheduler(tracks: List[DroneTrack], scheduler: EngagementScheduler) -> ControlResult:
     """Run the engagement scheduler against tracks."""
     plan = scheduler.schedule(tracks=tracks)
@@ -275,11 +340,32 @@ def run_scheduler(tracks: List[DroneTrack], scheduler: EngagementScheduler) -> C
     )
 
 
+def _save_backtest_result(scenario: Scenario, result: Dict[str, Any]) -> Path:
+    """Persist a backtest result under ~/.c-uas-platform/engagement/backtest/."""
+    BACKTEST_ROOT.mkdir(parents=True, exist_ok=True)
+    safe = scenario.name.replace("/", "_").replace(" ", "_")
+    path = BACKTEST_ROOT / f"{safe}_{scenario.seed}.json"
+    _atomic_write_json(path, result)
+    return path
+
+
+def _load_backtest_result(scenario: Scenario) -> Dict[str, Any] | None:
+    """Load a persisted backtest result, or None if not stored yet."""
+    safe = scenario.name.replace("/", "_").replace(" ", "_")
+    path = BACKTEST_ROOT / f"{safe}_{scenario.seed}.json"
+    if not path.exists():
+        return None
+    with path.open() as fh:
+        return json.load(fh)
+
+
 def run_backtest(scenario: Scenario) -> Dict[str, Any]:
     """Run the scheduler and all controls against one scenario.
 
     Returns a dict with the scenario, scheduler result, control results,
     and the alpha determination (did scheduler beat every control?).
+
+    Results are persisted under ~/.c-uas-platform/engagement/backtest/.
     """
     tracks = _deterministic_tracks(
         scenario.num_drones,
@@ -297,12 +383,22 @@ def run_backtest(scenario: Scenario) -> Dict[str, Any]:
 
     scheduler_result = run_scheduler(tracks, scheduler)
 
+    base_seed = scenario.seed
     controls = [
         control_random_entry(tracks, scheduler),
         control_shortest_hold_first(tracks, scheduler),
         control_greedy_pk_only(tracks, scheduler),
         control_deadline_first(tracks, scheduler),
         control_direction_flip(tracks, scheduler),
+        control_random_scheduler(tracks, scheduler, _control_seed(base_seed, "random_scheduler")),
+        control_round_robin(tracks, scheduler, _control_seed(base_seed, "round_robin")),
+        control_fifo(tracks, scheduler, _control_seed(base_seed, "fifo")),
+        control_longest_queue_first(
+            tracks, scheduler, _control_seed(base_seed, "longest_queue_first")
+        ),
+        control_shortest_job_first(
+            tracks, scheduler, _control_seed(base_seed, "shortest_job_first")
+        ),
     ]
 
     # Alpha determination: scheduler must beat every control on fitness
@@ -312,7 +408,7 @@ def run_backtest(scenario: Scenario) -> Dict[str, Any]:
         scheduler_result.expected_kills >= c.expected_kills for c in controls
     )
 
-    return {
+    result: Dict[str, Any] = {
         "scenario": asdict(scenario),
         "scheduler": asdict(scheduler_result),
         "controls": [asdict(c) for c in controls],
@@ -324,10 +420,14 @@ def run_backtest(scenario: Scenario) -> Dict[str, Any]:
                 scheduler_result.fitness - max(c.fitness for c in controls), 4
             ),
             "margin_over_best_control_kills": round(
-                scheduler_result.expected_kills - max(c.expected_kills for c in controls), 4
+                scheduler_result.expected_kills - max(c.expected_kills for c in controls),
+                4,
             ),
         },
     }
+
+    _save_backtest_result(scenario, result)
+    return result
 
 
 def run_sweep(scenarios: List[Scenario]) -> Dict[str, Any]:

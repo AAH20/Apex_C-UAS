@@ -181,6 +181,7 @@ implemented in c_uas/cli.py.
 | broker | Broker Channel OS: multi-tenant broker management, agent slots, campaigns |
 | hardware | Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion |
 | edge | Deploy and operate C-UAS edge nodes: local detection/tracking, edge-to-cloud sync, multi-tenant isolation (tenants, RLS, quotas), fleet management (registration, heartbeat, offline detection, decommission), and zero-trust network policies (default-deny, mTLS, segmentation) |
+| engagement | Engagement scheduler backtest, evolutionary tuning, and alpha measurement vs counterfactual baselines (``--backtest``/``--evolve``/``--alpha``); state under ~/.c-uas-platform/engagement/ |
 | red-team | Red team adversarial testing framework (GNSS spoofing, RF jamming, swarm saturation, coordinated attacks, controller hijacking) |
 | performance | Performance optimization engine: baselines, bottlenecks, capacity planning, optimization recommendations |
 | compliance | Automated compliance evidence collection for ISO 42001 audits |
@@ -277,7 +278,7 @@ illustrative.
 | c_uas/detection | RF signal classification + GNSS spoofing detection + MAVLink vulns + controller locator + OpenDEW |
 | c_uas/tracking | Continuous-jerk EKF trajectory prediction |
 | c_uas/forensics | Ed25519-signed airspace intrusion dossiers |
-| c_uas/engagement | NP-hard engagement scheduler + constraint models + backtest |
+| c_uas/engagement | NP-hard engagement scheduler + constraint models + backtest, evolutionary tuning, and alpha measurement vs counterfactuals; state under ~/.c-uas-platform/engagement/ |
 | c_uas/decision | Agentic Perception -> Decision -> Action loop |
 | c_uas/dew | Directed-energy beam quality, thermal bloom, time-to-kill |
 | c_uas/evolution | (mu + lambda) evolutionary scheduler tuner |

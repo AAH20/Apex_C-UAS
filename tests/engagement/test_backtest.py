@@ -81,20 +81,53 @@ class TestBacktestHarness(unittest.TestCase):
 
     def test_scheduler_has_controls(self):
         result = run_backtest(self.scenario)
-        self.assertEqual(len(result["controls"]), 5)
+        # 5 original controls + 5 new seed-keyed counterfactuals
+        self.assertEqual(len(result["controls"]), 10)
         control_names = {c["control_name"] for c in result["controls"]}
         self.assertEqual(
             control_names,
             {
-                "scheduler",
                 "random_entry",
                 "shortest_hold_first",
                 "greedy_pk_only",
                 "deadline_first",
                 "direction_flip",
-            }
-            - {"scheduler"},
-        )  # controls don't include scheduler itself
+                "random_scheduler",
+                "round_robin",
+                "fifo",
+                "longest_queue_first",
+                "shortest_job_first",
+            },
+        )  # controls don't include the scheduler itself
+
+    def test_controls_are_seed_keyed(self):
+        result = run_backtest(self.scenario)
+        seeds = {c["control_name"]: c["seed"] for c in result["controls"]}
+        # The 5 new controls carry scenario-derived (non-zero, non-fixed) seeds
+        for name in (
+            "random_scheduler",
+            "round_robin",
+            "fifo",
+            "longest_queue_first",
+            "shortest_job_first",
+        ):
+            self.assertIn(name, seeds)
+            self.assertNotEqual(seeds[name], 0)
+        # Same scenario -> same seeds (deterministic)
+        result2 = run_backtest(self.scenario)
+        seeds2 = {c["control_name"]: c["seed"] for c in result2["controls"]}
+        self.assertEqual(seeds, seeds2)
+
+    def test_new_controls_have_real_values(self):
+        result = run_backtest(self.scenario)
+        for c in result["controls"]:
+            self.assertGreaterEqual(c["expected_kills"], 0.0)
+            self.assertGreaterEqual(c["fitness"], 0.0)
+            self.assertGreaterEqual(c["total_time_s"], 0.0)
+            self.assertEqual(
+                c["engaged_targets"] + c["leaked_targets"],
+                self.scenario.num_drones,
+            )
 
     def test_alpha_determination_structure(self):
         result = run_backtest(self.scenario)
