@@ -183,6 +183,7 @@ implemented in c_uas/cli.py.
 | benchmarks | Run performance benchmarks (scheduler, EKF, end-to-end, swarm saturation) |
 | chaos | Chaos / resilience testing: fault injection and resilience validation |
 | dc | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency (DCC concepts) |
+| forecast | Deterministic time-series forecasting of compute demand, drone track volume, and API traffic for capacity planning; state under ~/.c-uas-platform/forecasting/ |
 | finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ |
 | governance | ISO 42001 AI governance for C-UAS systems |
 | grc | GRC_Clab agentic governance: hash-linked evidence chain, compliance monitoring, remediation |
@@ -289,6 +290,7 @@ are not yet implemented. No fabricated metrics.
 | Performance optimization engine | Delivered | c_uas/performance/, tested |
 | Compliance evidence collection | Delivered | c_uas/compliance/, tested |
 | Data Center Lifecycle Decision Support | Delivered | c_uas/datacenter/ (capacity, lifecycle, efficiency), state under ~/.c-uas-platform/datacenter/, tested |
+| Demand Forecasting | Delivered | c_uas/forecasting/ (moving average, linear trend, seasonal decomposition, exponential smoothing; engine + capacity), state under ~/.c-uas-platform/forecasting/, tested |
 | FinOps / Cost Optimization | Delivered | c_uas/finops/ (cost model, unit economics, carbon, optimizer), state under ~/.c-uas-platform/finops/, tested |
 | Live SDR integration | Roadmap | Not in scope; explicitly defensive-only |
 | Weapons-employment effector | Roadmap | Out of scope; defensive-only project |
@@ -324,8 +326,9 @@ actual code execution or are labeled illustrative.
 | c_uas/hardware | SDR, radar, camera sensor abstraction with simulation mode and track fusion |
 | c_uas/edge | Edge node detection/tracking and edge-to-cloud sync; sub-modules: tenancy (tenant isolation, RLS, quotas), fleet (registration, heartbeat, health scoring, offline detection, decommission), zero_trust (default-deny, mTLS, segmentation, policy evaluation) |
 | c_uas/chaos | Chaos / resilience testing: fault injection and resilience validation |
-|| c_uas/datacenter | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency; state under ~/.c-uas-platform/datacenter/ ||
-|| c_uas/finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ ||
+| c_uas/datacenter | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency; state under ~/.c-uas-platform/datacenter/ |
+| c_uas/forecasting | Demand Forecasting: moving average, linear trend, seasonal decomposition, exponential smoothing; engine + capacity headroom and rack recommendations; state under ~/.c-uas-platform/forecasting/ |
+| c_uas/finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ |
 || c_uas/red_team | Adversarial testing framework ||
 | c_uas/security | Production hardening: security audits, penetration tests, ISO 42001 / SOC 2 compliance |
 | c_uas/performance | Performance optimization: baselines, bottlenecks, capacity, recommendations |
