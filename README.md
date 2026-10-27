@@ -146,6 +146,9 @@ c-uas dr --backup
 c-uas dr --rpo-rto --rpo-threshold-s 3600
 c-uas dr --restore --backup-id <id> --target /recovery/root
 c-uas red-team --scenario
+c-uas red-team --run --scenario-name gnss_spoofing
+c-uas red-team --run-campaign --seed 42
+c-uas red-team --report
 c-uas threat-intel --export --alert --test
 c-uas broker --action list-tenants
 c-uas orchestrate --sites 3 --drones 16

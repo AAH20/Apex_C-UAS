@@ -18,8 +18,8 @@ import time
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Tuple
 
-from .attack_simulator import AttackResult, AttackSimulator
-from .scenarios import ALL_SCENARIOS, AdversarialScenario
+from .attack_simulator import AttackSimulator
+from .scenarios import ALL_SCENARIOS, Scenario, ScenarioResult
 
 REPORT_DIR = os.path.join(os.path.expanduser("~"), ".c-uas-platform", "red_team", "reports")
 LATEST_PATH = os.path.join(
@@ -51,10 +51,29 @@ REMEDIATION_BY_SCENARIO = {
         "consistency checks, and C/N0 anomaly rate-of-change alarms; correlate "
         "spoof alerts with RF direction finding before engaging."
     ),
+    "gnss_meaconing": (
+        "Add GNSS signal-delay / meaconing detection: compare receiver time of "
+        "arrival across antennas, flag elevated C/N0 with abrupt clock-drift "
+        "steps, and use authenticated navigation messages."
+    ),
+    "gnss_replay": (
+        "Reject replayed GNSS constellations: validate ephemeris freshness, "
+        "detect satellite-count collapse, and cross-check pseudorange rates "
+        "against an inertial solution."
+    ),
     "rf_jamming": (
         "Add jam detection on the noise floor, frequency-agile control links, "
         "and directional null-steering; alert when the jam band overlaps active "
         "drone control frequencies."
+    ),
+    "rf_jamming_barrage": (
+        "Detect wideband noise barrages on the RF noise floor and switch to "
+        "frequency-agile or directional links before control is lost."
+    ),
+    "rf_jamming_deceptive": (
+        "Reject protocol-mimicking emissions inside the drone band: require "
+        "cryptographic binding of RF fingerprint to protocol ID and alert on "
+        "unexpected protocol transitions."
     ),
     "swarm_saturation": (
         "Increase engagement throughput: additional directors, shorter dwell, "
@@ -74,17 +93,32 @@ REMEDIATION_BY_SCENARIO = {
         "the controller via multi-station direction finding for forensic "
         "referral."
     ),
+    "mavlink_injection": (
+        "Require signed MAVLink commands, reject all-zeros signature fields, "
+        "and correlate unsigned COMMAND_LONG traffic with the MAV-2017-001 "
+        "signing-bypass weakness for controller referral."
+    ),
+    "identity_spoofing": (
+        "Bind drone identities to RF fingerprints and require authenticated "
+        "Remote ID / system ID; alert on ID mismatches, missing authentication, "
+        "or unexpected system IDs on the control link."
+    ),
+    "man_in_the_middle": (
+        "Detect MITM via certificate/auth mismatch, round-trip timing "
+        "anomalies, and duplicated sequence numbers; require mutual "
+        "authentication on controller-to-drone links."
+    ),
 }
 
 
-def sid_lookup(scenario_id: str, scenarios: Tuple[AdversarialScenario, ...]) -> AdversarialScenario:
+def sid_lookup(scenario_id: str, scenarios: Tuple[Scenario, ...]) -> Scenario:
     for s in scenarios:
         if s.scenario_id == scenario_id:
             return s
     raise KeyError(f"Unknown scenario: {scenario_id}")
 
 
-def compute_passed(result: AttackResult, scenario: AdversarialScenario) -> bool:
+def compute_passed(result: ScenarioResult, scenario: Scenario) -> bool:
     """Pass/fail for one scenario result against its thresholds."""
     return (
         result.detection_rate >= scenario.expected_detection_rate
@@ -93,7 +127,7 @@ def compute_passed(result: AttackResult, scenario: AdversarialScenario) -> bool:
     )
 
 
-def _remediation_for(result: AttackResult, scenario: AdversarialScenario) -> List[str]:
+def _remediation_for(result: ScenarioResult, scenario: Scenario) -> List[str]:
     """Deterministic remediation strings for the scenario's failures."""
     tips: List[str] = []
     if result.detection_rate < scenario.expected_detection_rate:
@@ -115,15 +149,15 @@ class RedTeamReport:
     report_id: str
     generated_at: float
     scenario_ids: Tuple[str, ...]
-    results: Tuple[AttackResult, ...]
+    results: Tuple[ScenarioResult, ...]
     overall_pass: bool
     summary: Dict[str, Any]
     remediation: Tuple[str, ...]
 
 
 def generate_report(
-    scenarios: Tuple[AdversarialScenario, ...],
-    results: Tuple[AttackResult, ...],
+    scenarios: Tuple[Scenario, ...],
+    results: Tuple[ScenarioResult, ...],
 ) -> RedTeamReport:
     """Build a RedTeamReport from scenario results (pure computation)."""
     result_by_id = {r.scenario_id: r for r in results}
@@ -201,7 +235,7 @@ class ReportStore:
     def ensure_dir(self) -> None:
         os.makedirs(self.dir, exist_ok=True)
 
-    def save_result(self, result: AttackResult) -> str:
+    def save_result(self, result: ScenarioResult) -> str:
         results_dir = os.path.join(os.path.dirname(self.dir), "results")
         os.makedirs(results_dir, exist_ok=True)
         path = os.path.join(results_dir, f"{result.scenario_id}-{result.seed}.json")
@@ -242,7 +276,7 @@ class ReportStore:
         with open(path) as fh:
             data = json.load(fh)
         results = tuple(
-            AttackResult(
+            ScenarioResult(
                 scenario_id=r["scenario_id"],
                 scenario_name=r["scenario_name"],
                 seed=r["seed"],
@@ -252,6 +286,7 @@ class ReportStore:
                 leak_rate=r["leak_rate"],
                 passed=r["passed"],
                 details=r["details"],
+                evidence=tuple(r.get("evidence", [])),
             )
             for r in data["results"]
         )
@@ -266,7 +301,7 @@ class ReportStore:
         )
 
 
-def run_all_scenarios() -> Tuple[Tuple[AdversarialScenario, ...], Tuple[AttackResult, ...]]:
+def run_all_scenarios() -> Tuple[Tuple[Scenario, ...], Tuple[ScenarioResult, ...]]:
     """Run every registered scenario deterministically."""
     scenarios = ALL_SCENARIOS
     sim = AttackSimulator()

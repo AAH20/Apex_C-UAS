@@ -4,6 +4,10 @@ Usage:
     c-uas red-team --scenario [--scenario-name X]
     c-uas red-team --run --scenario-name X
     c-uas red-team --report [--scenario-name X]
+    c-uas red-team --run-campaign [--campaign-name X] [--seed N]
+
+Output is deterministic: the same scenarios, seed, and mode always produce
+the same results and report ID.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ import argparse
 from typing import Any, Optional
 
 from .attack_simulator import AttackSimulator
+from .campaign import run_default_campaign
 from .report import ReportStore, generate_report
 from .scenarios import ScenarioStore
 
@@ -19,8 +24,9 @@ from .scenarios import ScenarioStore
 def build_subparser(subparsers: Any) -> Any:
     parser = subparsers.add_parser(
         "red-team",
-        help="Red team adversarial testing framework (GNSS spoofing, RF jamming, "
-        "swarm saturation, coordinated attacks, controller hijacking)",
+        help="Red team adversarial testing framework (GNSS spoofing/meaconing/"
+        "replay, RF jamming/barrage/deceptive, controller hijacking/MAVLink "
+        "injection, swarm saturation, identity spoofing, man-in-the-middle)",
     )
     parser.add_argument(
         "--scenario",
@@ -38,10 +44,27 @@ def build_subparser(subparsers: Any) -> Any:
         help="Generate an adversarial test report with pass/fail and remediation",
     )
     parser.add_argument(
+        "--run-campaign",
+        action="store_true",
+        help="Run the full adversarial campaign (all scenarios) and report the compromise rate",
+    )
+    parser.add_argument(
         "--scenario-name",
         type=str,
         default=None,
         help="Scenario ID to run/report/show (default: all scenarios)",
+    )
+    parser.add_argument(
+        "--campaign-name",
+        type=str,
+        default="default",
+        help="Campaign name for --run-campaign (default: default)",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Deterministic RNG seed for --run-campaign (default: 42)",
     )
     return parser
 
@@ -99,6 +122,10 @@ def _run_scenario(store: ScenarioStore, scenario_name: Optional[str]) -> int:
     print(f"  Leak rate         : {result.leak_rate:.1%}")
     print(f"  Result            : {'PASS' if result.passed else 'FAIL'}")
     print(f"  Details           : {result.details}")
+    if result.evidence:
+        print("  Evidence:")
+        for line in result.evidence:
+            print(f"    - {line}")
     return 0
 
 
@@ -137,6 +164,33 @@ def _report(store: ScenarioStore, scenario_name: Optional[str]) -> int:
     return 0
 
 
+def _run_campaign(campaign_name: str, seed: int) -> int:
+    result = run_default_campaign(name=campaign_name, seed=seed)
+    print(f"[C-UAS] Red Team Campaign: {result.campaign_id}")
+    print(f"  Name              : {result.name}")
+    print("  Mode              : sequence")
+    print(f"  Seed              : {result.seed}")
+    print(f"  Scenarios run     : {result.scenarios_run}")
+    print(f"  Scenarios passed  : {result.scenarios_run - result.scenarios_compromised}")
+    print(f"  Scenarios failed  : {result.scenarios_compromised}")
+    print(f"  Compromise rate   : {result.compromise_rate:.1%}")
+    print(f"  Avg detection     : {result.avg_detection_rate:.1%}")
+    print(f"  Max leak rate     : {result.max_leak_rate:.1%}")
+    print(f"  Max false positive: {result.max_false_positive_rate:.1%}")
+    print(f"  Overall           : {'PASS' if result.overall_pass else 'FAIL'}")
+    for r in result.scenario_results:
+        mark = "PASS" if r.passed else "FAIL"
+        print(
+            f"  [{mark}] {r.scenario_id:30s} detect={r.detection_rate:.1%} "
+            f"fpr={r.false_positive_rate:.1%} leak={r.leak_rate:.1%}"
+        )
+    if result.evidence:
+        print("  Evidence:")
+        for line in result.evidence:
+            print(f"    - {line}")
+    return 0
+
+
 def red_team_main(args: argparse.Namespace) -> int:
     store = ScenarioStore()
     if args.scenario:
@@ -145,8 +199,11 @@ def red_team_main(args: argparse.Namespace) -> int:
         return _run_scenario(store, args.scenario_name)
     if args.report:
         return _report(store, args.scenario_name)
-    print("[C-UAS] red-team: specify --scenario, --run, or --report")
+    if args.run_campaign:
+        return _run_campaign(args.campaign_name, args.seed)
+    print("[C-UAS] red-team: specify --scenario, --run, --report, or --run-campaign")
     print("  c-uas red-team --scenario")
     print("  c-uas red-team --run --scenario-name gnss_spoofing")
     print("  c-uas red-team --report")
+    print("  c-uas red-team --run-campaign")
     return 1
