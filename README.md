@@ -158,6 +158,9 @@ c-uas compliance --collect --package --report
 c-uas api --host 127.0.0.1 --port 8000
 c-uas deploy --config-check
 c-uas dashboard --host 127.0.0.1 --port 8080
+c-uas notify --channels
+c-uas notify --test
+c-uas notify --send
 ```
 
 Run the test suite:
@@ -200,6 +203,7 @@ implemented in c_uas/cli.py.
 | api | Run the REST API server |
 | deploy | Deploy the platform: Docker, Kubernetes, or config check |
 | dashboard | Serve the SOC dashboard web interface |
+| notify | Alert notification delivery: email (SMTP/TLS), webhook, and Slack (Block Kit); state under ~/.c-uas-platform/notifications/ |
 | orchestrate | Run multi-site C-UAS orchestration round |
 | agent-eval | Run agent reliability evaluation harness |
 | threat-intel | STIX/TAXII threat intelligence export and alerting |
@@ -298,6 +302,7 @@ are not yet implemented. No fabricated metrics.
 | Data Center Lifecycle Decision Support | Delivered | c_uas/datacenter/ (capacity, lifecycle, efficiency), state under ~/.c-uas-platform/datacenter/, tested |
 | Demand Forecasting | Delivered | c_uas/forecasting/ (moving average, linear trend, seasonal decomposition, exponential smoothing; engine + capacity), state under ~/.c-uas-platform/forecasting/, tested |
 | FinOps / Cost Optimization | Delivered | c_uas/finops/ (cost model, unit economics, carbon, optimizer), state under ~/.c-uas-platform/finops/, tested |
+| Alert notification channels | Delivered | c_uas/notifications/ (email, webhook, Slack), router with dedupe + rate-limit, state under ~/.c-uas-platform/notifications/, tested |
 | Live SDR integration | Roadmap | Not in scope; explicitly defensive-only |
 | Weapons-employment effector | Roadmap | Out of scope; defensive-only project |
 | Production Kubernetes manifests | Roadmap | Dockerfile present; K8s manifests not yet authored |
@@ -346,6 +351,7 @@ actual code execution or are labeled illustrative.
 | c_uas/contract_readiness | Burn rate, CAC:LTV, MVP scope for contract readiness |
 | c_uas/benchmarks | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
 | c_uas/performance | Production performance & scalability: A*/set-cover/local-search kernels, per-endpoint profiler, SLA tracker (p50/p95/p99, error budget, recovery), state under ~/.c-uas-platform/performance/ |
+| c_uas/notifications | Alert notification channels: email (SMTP/TLS), HTTP webhook with retries, and Slack Block Kit; router with severity routing, dedupe, and rate-limiting; state under ~/.c-uas-platform/notifications/ |
 | evals/ | Agent eval harness: reliability evaluation for agentic components |
 
 ## License

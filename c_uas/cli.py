@@ -323,6 +323,11 @@ def main(argv: Optional[list] = None) -> int:
 
     _contract_build_subparser(subparsers)
 
+    # notify
+    from c_uas.notifications.cli import build_subparser as _notify_build_subparser
+
+    _notify_build_subparser(subparsers)
+
     # api
     api_p = subparsers.add_parser(
         "api",
@@ -2034,6 +2039,11 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.disaster_recovery.cli import dr_main
 
         return dr_main(args)
+
+    if args.command == "notify":
+        from c_uas.notifications.cli import notify_main
+
+        return notify_main(args)
 
     parser.print_help()
     return 1
