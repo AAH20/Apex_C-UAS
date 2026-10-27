@@ -155,6 +155,10 @@ c-uas orchestrate --sites 3 --drones 16
 c-uas agent-eval --sites 3 --drones 16
 c-uas performance --baseline --bottlenecks --capacity --optimize
 c-uas compliance --collect --package --report
+c-uas ir --create --type security_breach --source alert --source-id ALERT-001 --severity P1
+c-uas ir --list
+c-uas ir --execute --incident-id <id>
+c-uas ir --escalate --incident-id <id>
 c-uas api --host 127.0.0.1 --port 8000
 c-uas deploy --config-check
 c-uas k8s --manifests --replicas 3
@@ -167,6 +171,11 @@ c-uas notify --send
 c-uas auth --create-key --label default --tenant acme --role admin
 c-uas auth --list-keys
 c-uas auth --check-perm --key <key> --route /status --method GET
+c-uas mlops --register --name rf_clf --version 1.0.0 --artifact m.joblib --metrics-hash <sha256>
+c-uas mlops --list
+c-uas mlops --promote --name rf_clf --version 1.0.0 --stage production
+c-uas mlops --drift --baseline baseline.json --current inference.json
+c-uas mlops --ab --ab-action route --experiment-id rf-ab-1 --user-id user-42
 ```
 
 Run the test suite:
@@ -210,8 +219,9 @@ implemented in c_uas/cli.py.
 | deploy | Deploy the platform: Docker, Kubernetes, or config check |
 | k8s | Kubernetes operator: declarative deployment and lifecycle management (CRD, Deployment, Service, ConfigMap, NetworkPolicy, PodDisruptionBudget, ResourceQuota manifests; drift detection; state under ~/.c-uas-platform/k8s_operator/; manifest generation only, no cluster access) |
 | dashboard | Serve the SOC dashboard web interface |
-| notify | Alert notification delivery: email (SMTP/TLS), webhook, and Slack (Block Kit); state under ~/.c-uas-platform/notifications/ |
-| auth | API key authentication & RBAC: deterministic API key generation (SHA-256), role-based access control (admin/operator/viewer/auditor), route-to-permission mapping, tenant scoping; state under ~/.c-uas-platform/auth/keys/ |
+|| notify | Alert notification delivery: email (SMTP/TLS), webhook, and Slack (Block Kit); state under ~/.c-uas-platform/notifications/ |
+|| mlops | MLOps: model registry (register/list/promote/demote/archive), drift detection (KS test + chi-squared), and A/B testing with hash-based routing; state under ~/.c-uas-platform/mlops/ |
+|| auth | API key authentication & RBAC: deterministic API key generation (SHA-256), role-based access control (admin/operator/viewer/auditor), route-to-permission mapping, tenant scoping; state under ~/.c-uas-platform/auth/keys/ |
 | orchestrate | Run multi-site C-UAS orchestration round |
 | agent-eval | Run agent reliability evaluation harness |
 | threat-intel | STIX/TAXII threat intelligence export and alerting |
@@ -349,6 +359,7 @@ actual code execution or are labeled illustrative.
 | c_uas/forecasting | Demand Forecasting: moving average, linear trend, seasonal decomposition, exponential smoothing; engine + capacity headroom and rack recommendations; state under ~/.c-uas-platform/forecasting/ |
 || c_uas/finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ |
 || c_uas/k8s_operator | Kubernetes operator scaffolding: CUASPlatform CRD, manifest generator, reconciler with drift detection, CLI; state under ~/.c-uas-platform/k8s_operator/ |
+|| c_uas/mlops | MLOps: model registry, drift detection (KS test + chi-squared), and A/B testing with deterministic hash-based routing; state under ~/.c-uas-platform/mlops/ |
 || c_uas/red_team | Adversarial testing framework |
 | c_uas/security | Production hardening: security audits, penetration tests, ISO 42001 / SOC 2 compliance |
 | c_uas/performance | Performance optimization: baselines, bottlenecks, capacity, recommendations |
@@ -415,3 +426,33 @@ JSON report.
 To expose this as c-uas security ..., register build_subparser from
 c_uas.security.cli in c_uas/cli.py. The security module itself does not
 modify any other module.
+
+## MLOps: model registry, drift detection, A/B testing
+
+``c_uas/mlops`` provides model lifecycle management for the platform's
+detection and RF classification models, with state under
+``~/.c-uas-platform/mlops/`` (outside the repo):
+
+* ``c_uas/mlops/registry.py`` -- register models (name, version, artifact path,
+  metrics hash), list models, promote/demote between staging/production/
+  archived; persisted atomically to ``registry/registry.json``.
+* ``c_uas/mlops/drift.py`` -- drift detection: inference-time feature
+  distributions vs a training baseline via the two-sample Kolmogorov-Smirnov
+  test (numeric features) and chi-squared / Cramér's V (categorical features),
+  with a drift score per feature and a configurable threshold.
+* ``c_uas/mlops/ab_test.py`` -- A/B testing: deterministic SHA-256 hash-based
+  traffic splitting, conversion/pk metrics per variant, winner determination
+  with a minimum-trials guard.
+
+All functions are frozen-dataclass, pure, and deterministic; the CLI is
+exposed as ``c-uas mlops``:
+
+    c-uas mlops --register --name rf_clf --version 1.0.0 --artifact m.joblib --metrics-hash <sha256>
+    c-uas mlops --list
+    c-uas mlops --promote --name rf_clf --version 1.0.0 --stage production
+    c-uas mlops --drift --baseline baseline.json --current inference.json
+    c-uas mlops --ab --ab-action route --experiment-id rf-ab-1 --user-id user-42
+
+Run the MLOps tests:
+
+    pytest tests/mlops/ -q

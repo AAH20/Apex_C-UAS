@@ -1,0 +1,128 @@
+"""Incident Response Playbooks module for the C-UAS platform.
+
+Deterministic incident response that automates response to security and
+platform incidents detected by observability alerts, security audits, and
+red team findings. State persists under
+``~/.c-uas-platform/incident_response/`` (outside the repo).
+"""
+
+from __future__ import annotations
+
+from .escalation import (
+    EscalationEngine,
+    EscalationRecord,
+    EscalationResult,
+    Notification,
+    escalate_incident,
+    is_sla_breached,
+    policy_for,
+    sla_deadline,
+    time_remaining,
+)
+from .manager import (
+    DEFAULT_STATE_DIR,
+    IncidentManager,
+    IncidentStore,
+)
+from .playbook import (
+    ACTION_CLOSE,
+    ACTION_CONTAIN,
+    ACTION_INVESTIGATE,
+    ACTION_MONITOR,
+    ACTION_NOTIFY,
+    ACTION_REMEDIATE,
+    ALL_INCIDENT_TYPES,
+    ALL_SEVERITIES,
+    ALL_STATUSES,
+    DEFAULT_SLA_MINUTES,
+    INCIDENT_TYPE_DATA_EXFILTRATION,
+    INCIDENT_TYPE_DETECTION_FAILURE,
+    INCIDENT_TYPE_SECURITY_BREACH,
+    INCIDENT_TYPE_SERVICE_DEGRADATION,
+    SEVERITY_P1,
+    SEVERITY_P2,
+    SEVERITY_P3,
+    SEVERITY_P4,
+    SOURCE_ALERT,
+    SOURCE_FINDING,
+    SOURCE_RED_TEAM,
+    STATUS_CLOSED,
+    STATUS_INVESTIGATING,
+    STATUS_OPEN,
+    STATUS_REMEDIATED,
+    Incident,
+    IncidentResponse,
+    Playbook,
+    PlaybookStep,
+    build_playbook,
+    execute_playbook,
+    execute_step,
+    incident_from_alert,
+    incident_from_finding,
+    new_incident,
+    severity_for_alert,
+    utc_now_iso,
+    validate_incident_type,
+    validate_severity,
+)
+from .playbook import (
+    sla_minutes_for as _sla_minutes_for,
+)
+
+__all__ = [
+    "DEFAULT_STATE_DIR",
+    "IncidentManager",
+    "IncidentStore",
+    "EscalationEngine",
+    "EscalationRecord",
+    "EscalationResult",
+    "Notification",
+    "escalate_incident",
+    "is_sla_breached",
+    "policy_for",
+    "sla_deadline",
+    "sla_minutes_for",
+    "time_remaining",
+    "Incident",
+    "IncidentResponse",
+    "Playbook",
+    "PlaybookStep",
+    "SOURCE_ALERT",
+    "SOURCE_FINDING",
+    "SOURCE_RED_TEAM",
+    "STATUS_OPEN",
+    "STATUS_INVESTIGATING",
+    "STATUS_REMEDIATED",
+    "STATUS_CLOSED",
+    "SEVERITY_P1",
+    "SEVERITY_P2",
+    "SEVERITY_P3",
+    "SEVERITY_P4",
+    "INCIDENT_TYPE_SECURITY_BREACH",
+    "INCIDENT_TYPE_DATA_EXFILTRATION",
+    "INCIDENT_TYPE_SERVICE_DEGRADATION",
+    "INCIDENT_TYPE_DETECTION_FAILURE",
+    "ALL_INCIDENT_TYPES",
+    "ALL_SEVERITIES",
+    "ALL_STATUSES",
+    "DEFAULT_SLA_MINUTES",
+    "ACTION_CLOSE",
+    "ACTION_CONTAIN",
+    "ACTION_INVESTIGATE",
+    "ACTION_MONITOR",
+    "ACTION_NOTIFY",
+    "ACTION_REMEDIATE",
+    "build_playbook",
+    "execute_playbook",
+    "execute_step",
+    "incident_from_alert",
+    "incident_from_finding",
+    "new_incident",
+    "severity_for_alert",
+    "utc_now_iso",
+    "validate_incident_type",
+    "validate_severity",
+]
+
+# Alias for backwards-compat / test imports.
+sla_minutes_for = _sla_minutes_for
