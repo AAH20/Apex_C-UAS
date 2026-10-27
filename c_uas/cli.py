@@ -328,6 +328,11 @@ def main(argv: Optional[list] = None) -> int:
 
     _notify_build_subparser(subparsers)
 
+    # auth: API key authentication & RBAC
+    from c_uas.auth.cli import build_subparser as _auth_build_subparser
+
+    _auth_build_subparser(subparsers)
+
     # api
     api_p = subparsers.add_parser(
         "api",
@@ -2044,6 +2049,11 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.notifications.cli import notify_main
 
         return notify_main(args)
+
+    if args.command == "auth":
+        from c_uas.auth.cli import auth_main
+
+        return auth_main(args)
 
     parser.print_help()
     return 1

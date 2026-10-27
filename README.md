@@ -161,6 +161,9 @@ c-uas dashboard --host 127.0.0.1 --port 8080
 c-uas notify --channels
 c-uas notify --test
 c-uas notify --send
+c-uas auth --create-key --label default --tenant acme --role admin
+c-uas auth --list-keys
+c-uas auth --check-perm --key <key> --route /status --method GET
 ```
 
 Run the test suite:
@@ -204,6 +207,7 @@ implemented in c_uas/cli.py.
 | deploy | Deploy the platform: Docker, Kubernetes, or config check |
 | dashboard | Serve the SOC dashboard web interface |
 | notify | Alert notification delivery: email (SMTP/TLS), webhook, and Slack (Block Kit); state under ~/.c-uas-platform/notifications/ |
+| auth | API key authentication & RBAC: deterministic API key generation (SHA-256), role-based access control (admin/operator/viewer/auditor), route-to-permission mapping, tenant scoping; state under ~/.c-uas-platform/auth/keys/ |
 | orchestrate | Run multi-site C-UAS orchestration round |
 | agent-eval | Run agent reliability evaluation harness |
 | threat-intel | STIX/TAXII threat intelligence export and alerting |
@@ -352,6 +356,7 @@ actual code execution or are labeled illustrative.
 | c_uas/benchmarks | Performance benchmarks: scheduler, EKF, end-to-end, swarm saturation |
 | c_uas/performance | Production performance & scalability: A*/set-cover/local-search kernels, per-endpoint profiler, SLA tracker (p50/p95/p99, error budget, recovery), state under ~/.c-uas-platform/performance/ |
 | c_uas/notifications | Alert notification channels: email (SMTP/TLS), HTTP webhook with retries, and Slack Block Kit; router with severity routing, dedupe, and rate-limiting; state under ~/.c-uas-platform/notifications/ |
+| c_uas/auth | API key authentication & RBAC for the FastAPI API: deterministic key generation, role-based access control, route-to-permission mapping, tenant scoping, middleware protecting all 36+ routes; state under ~/.c-uas-platform/auth/keys/ |
 | evals/ | Agent eval harness: reliability evaluation for agentic components |
 
 ## License

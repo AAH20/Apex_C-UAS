@@ -53,6 +53,7 @@ from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
 from c_uas.api.websockets import websocket_route
+from c_uas.auth.middleware import AuthMiddleware
 
 # ---------------------------------------------------------------------------
 # Module analysis imports (HTTP surface mirrors the CLI surface)
@@ -127,6 +128,11 @@ app = FastAPI(
     "and airspace forensics — ISO 42001 governance ready.",
     version="0.1.0",
 )
+
+# Auth middleware protects every platform route once at least one API key
+# exists (~/.c-uas-platform/auth/keys/). With no keys configured it is a
+# pass-through (dev mode), so local use stays unauthenticated by default.
+app.add_middleware(AuthMiddleware)
 
 
 @app.websocket("/ws")
