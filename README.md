@@ -157,6 +157,9 @@ c-uas performance --baseline --bottlenecks --capacity --optimize
 c-uas compliance --collect --package --report
 c-uas api --host 127.0.0.1 --port 8000
 c-uas deploy --config-check
+c-uas k8s --manifests --replicas 3
+c-uas k8s --dry-run --replicas 5
+c-uas k8s --reconcile
 c-uas dashboard --host 127.0.0.1 --port 8080
 c-uas notify --channels
 c-uas notify --test
@@ -205,6 +208,7 @@ implemented in c_uas/cli.py.
 | contract | OpenAPI contract readiness: verify spec routes against the FastAPI route table, detect breaking changes between two spec versions, and CI gate with non-zero exit on missing routes or breaking changes; state under ~/.c-uas-platform/contract_readiness/ |
 | api | Run the REST API server |
 | deploy | Deploy the platform: Docker, Kubernetes, or config check |
+| k8s | Kubernetes operator: declarative deployment and lifecycle management (CRD, Deployment, Service, ConfigMap, NetworkPolicy, PodDisruptionBudget, ResourceQuota manifests; drift detection; state under ~/.c-uas-platform/k8s_operator/; manifest generation only, no cluster access) |
 | dashboard | Serve the SOC dashboard web interface |
 | notify | Alert notification delivery: email (SMTP/TLS), webhook, and Slack (Block Kit); state under ~/.c-uas-platform/notifications/ |
 | auth | API key authentication & RBAC: deterministic API key generation (SHA-256), role-based access control (admin/operator/viewer/auditor), route-to-permission mapping, tenant scoping; state under ~/.c-uas-platform/auth/keys/ |
@@ -309,7 +313,7 @@ are not yet implemented. No fabricated metrics.
 | Alert notification channels | Delivered | c_uas/notifications/ (email, webhook, Slack), router with dedupe + rate-limit, state under ~/.c-uas-platform/notifications/, tested |
 | Live SDR integration | Roadmap | Not in scope; explicitly defensive-only |
 | Weapons-employment effector | Roadmap | Out of scope; defensive-only project |
-| Production Kubernetes manifests | Roadmap | Dockerfile present; K8s manifests not yet authored |
+|| Kubernetes operator scaffolding | Delivered | c_uas/k8s_operator/ (CUASPlatform CRD, manifest generator, reconciler with drift detection, CLI); manifest generation and state under ~/.c-uas-platform/k8s_operator/; no cluster access |
 | Multi-region federation | Roadmap | Demo federation builder present; multi-region not yet implemented |
 
 ## Test results
@@ -343,8 +347,9 @@ actual code execution or are labeled illustrative.
 | c_uas/chaos | Chaos / resilience testing: fault injection and resilience validation |
 | c_uas/datacenter | Data Center Lifecycle Decision Support: capacity planning, lifecycle decisions, energy-to-compute efficiency; state under ~/.c-uas-platform/datacenter/ |
 | c_uas/forecasting | Demand Forecasting: moving average, linear trend, seasonal decomposition, exponential smoothing; engine + capacity headroom and rack recommendations; state under ~/.c-uas-platform/forecasting/ |
-| c_uas/finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ |
-|| c_uas/red_team | Adversarial testing framework ||
+|| c_uas/finops | FinOps / Cost Optimization: cost model, unit economics, carbon intensity by region, cost optimization; state under ~/.c-uas-platform/finops/ |
+|| c_uas/k8s_operator | Kubernetes operator scaffolding: CUASPlatform CRD, manifest generator, reconciler with drift detection, CLI; state under ~/.c-uas-platform/k8s_operator/ |
+|| c_uas/red_team | Adversarial testing framework |
 | c_uas/security | Production hardening: security audits, penetration tests, ISO 42001 / SOC 2 compliance |
 | c_uas/performance | Performance optimization: baselines, bottlenecks, capacity, recommendations |
 | c_uas/compliance | Automated compliance evidence collection for ISO 42001 audits |

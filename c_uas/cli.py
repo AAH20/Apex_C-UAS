@@ -515,10 +515,25 @@ def main(argv: Optional[list] = None) -> int:
 
     _ = _forecast_build_subparser(subparsers)
 
+    # mlops: model registry, drift detection, A/B testing
+    from c_uas.mlops.cli import build_subparser as _mlops_build_subparser
+
+    _mlops_build_subparser(subparsers)
+
     # dr: Disaster Recovery / Backup
     from c_uas.disaster_recovery.cli import build_subparser as _dr_build_subparser
 
     _dr_build_subparser(subparsers)
+
+    # ir: Incident Response Playbooks
+    from c_uas.incident_response.cli import build_subparser as _ir_build_subparser
+
+    _ir_build_subparser(subparsers)
+
+    # k8s: Kubernetes operator scaffolding (manifest generation only)
+    from c_uas.k8s_operator.cli import build_subparser as _k8s_build_subparser
+
+    _k8s_build_subparser(subparsers)
 
     # red-team
     rt_p = subparsers.add_parser(
@@ -2044,6 +2059,21 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.disaster_recovery.cli import dr_main
 
         return dr_main(args)
+
+    if args.command == "ir":
+        from c_uas.incident_response.cli import ir_main
+
+        return ir_main(args)
+
+    if args.command == "k8s":
+        from c_uas.k8s_operator.cli import k8s_main
+
+        return k8s_main(args)
+
+    if args.command == "mlops":
+        from c_uas.mlops.cli import mlops_main
+
+        return mlops_main(args)
 
     if args.command == "notify":
         from c_uas.notifications.cli import notify_main
