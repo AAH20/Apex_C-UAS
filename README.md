@@ -133,11 +133,16 @@ c-uas gateway --status --route --backend detection
 c-uas chaos --report
 c-uas dc --capacity
 c-uas dc --lifecycle
-c-uas dc --efficiency
+ c-uas dc --efficiency
+ c-uas forecast --demand --horizon 30
+ c-uas forecast --capacity --horizon 30 --stream api_traffic
 c-uas finops --cost
 c-uas finops --unit
 c-uas finops --carbon
 c-uas finops --optimize
+c-uas dr --backup
+c-uas dr --rpo-rto --rpo-threshold-s 3600
+c-uas dr --restore --backup-id <id> --target /recovery/root
 c-uas red-team --scenario
 c-uas threat-intel --export --alert --test
 c-uas broker --action list-tenants
@@ -169,6 +174,7 @@ implemented in c_uas/cli.py.
 | track | Predict drone intercept trajectory (EKF) |
 | schedule | Compute optimal engagement sequence |
 | dossier | Generate signed airspace intrusion dossier |
+| dr | Disaster Recovery / Backup: deterministic snapshots of all module state dirs, restore with SHA-256 verification, and RPO/RTO threshold tracking; state under ~/.c-uas-platform/disaster_recovery/ |
 | mavlink-vulns | List MAVLink protocol vulnerabilities |
 | locate-controller | Estimate controller geolocation from RF detections |
 | competitive-landscape | List global deployed counter-UAS systems with unit economics |

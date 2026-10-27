@@ -483,6 +483,13 @@ def main(argv: Optional[list] = None) -> int:
 
     _ = build_subparser(subparsers)
 
+    # readiness: production readiness review go/no-go
+    from c_uas.production_readiness.cli import (
+        build_subparser as _readiness_build_subparser,
+    )
+
+    _ = _readiness_build_subparser(subparsers)
+
     # finops
     from c_uas.finops.cli import build_subparser as _finops_build_subparser
 
@@ -492,6 +499,16 @@ def main(argv: Optional[list] = None) -> int:
     from c_uas.observability.cli import build_subparser as _obs_build_subparser
 
     _ = _obs_build_subparser(subparsers)
+
+    # forecast
+    from c_uas.forecasting.cli import build_subparser as _forecast_build_subparser
+
+    _ = _forecast_build_subparser(subparsers)
+
+    # dr: Disaster Recovery / Backup
+    from c_uas.disaster_recovery.cli import build_subparser as _dr_build_subparser
+
+    _dr_build_subparser(subparsers)
 
     # red-team
     rt_p = subparsers.add_parser(
@@ -1888,6 +1905,11 @@ def main(argv: Optional[list] = None) -> int:
         source = argv if argv is not None else sys.argv[1:]  # type: ignore[assignment]
         return edge_main([a for a in source if a != "edge"])
 
+    if args.command == "readiness":
+        from c_uas.production_readiness.cli import readiness_main
+
+        return readiness_main(args)
+
     if args.command == "performance":
         from c_uas.performance.engine import (
             BottleneckDetector,
@@ -2002,6 +2024,16 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.observability.cli import obs_main
 
         return obs_main(args)
+
+    if args.command == "forecast":
+        from c_uas.forecasting.cli import forecast_main
+
+        return forecast_main(args)
+
+    if args.command == "dr":
+        from c_uas.disaster_recovery.cli import dr_main
+
+        return dr_main(args)
 
     parser.print_help()
     return 1
