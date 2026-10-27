@@ -261,6 +261,29 @@ def main(argv: Optional[list] = None) -> int:
         help="Scan interval in seconds for the autonomous agent",
     )
 
+    # export-control: §120.41 'specially designed' exposure scanner
+    ec_p = subparsers.add_parser(
+        "export-control",
+        help="Export control compliance scanner (§120.41 weapons-employment framing)",
+    )
+    ec_p.add_argument(
+        "--scan",
+        type=str,
+        default=None,
+        help="Scan a directory tree for weapons-employment framing",
+    )
+    ec_p.add_argument(
+        "--audit",
+        action="store_true",
+        help="Diff the latest scan against the prior audit",
+    )
+    ec_p.add_argument(
+        "--gate",
+        type=str,
+        default=None,
+        help="Run the CI gate on a directory (non-zero exit on HIGH/CRITICAL)",
+    )
+
     # dew
     dew_p = subparsers.add_parser(
         "dew",
@@ -1203,6 +1226,11 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.grc_clab.cli import grc_main
 
         return grc_main(args)
+
+    if args.command == "export-control":
+        from c_uas.export_control.cli import export_control_main
+
+        return export_control_main(args)
 
     if args.command == "dew":
         from c_uas.dew.atmospheric import (
