@@ -140,6 +140,8 @@ c-uas finops --cost
 c-uas finops --unit
 c-uas finops --carbon
 c-uas finops --optimize
+c-uas readiness --check
+c-uas readiness --report
 c-uas dr --backup
 c-uas dr --rpo-rto --rpo-threshold-s 3600
 c-uas dr --restore --backup-id <id> --target /recovery/root
@@ -202,7 +204,8 @@ implemented in c_uas/cli.py.
 | hardware | Hardware abstraction layer: SDR, radar, camera sensors with simulation mode and track fusion |
 | edge | Deploy and operate C-UAS edge nodes: local detection/tracking, edge-to-cloud sync, multi-tenant isolation (tenants, RLS, quotas), fleet management (registration, heartbeat, offline detection, decommission), and zero-trust network policies (default-deny, mTLS, segmentation) |
 | engagement | Engagement scheduler backtest, evolutionary tuning, and alpha measurement vs counterfactual baselines (``--backtest``/``--evolve``/``--alpha``); state under ~/.c-uas-platform/engagement/ |
-| red-team | Red team adversarial testing framework (GNSS spoofing, RF jamming, swarm saturation, coordinated attacks, controller hijacking) |
+| readiness | Production readiness review: aggregates all domain checks (security, observability, contract, finops, grc, edge, datacenter) into a weighted go/no-go release decision; state under ~/.c-uas-platform/production_readiness/ |
+|| red-team | Red team adversarial testing framework (GNSS spoofing, RF jamming, swarm saturation, coordinated attacks, controller hijacking) |
 | performance | Performance optimization engine: baselines, bottlenecks, capacity planning, optimization recommendations |
 | compliance | Automated compliance evidence collection for ISO 42001 audits |
 | gateway | API Gateway: multi-backend routing with health checks and circuit breakers |
