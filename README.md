@@ -198,6 +198,7 @@ implemented in c_uas/cli.py.
 | track | Predict drone intercept trajectory (EKF) |
 | schedule | Compute optimal engagement sequence |
 | dossier | Generate signed airspace intrusion dossier |
+| evidence | Immutable evidence ledger: tamper-evident, hash-linked evidence chain with Merkle roots, external anchoring (git/ipfs/manifest), chain and Merkle-proof verification; state under ~/.c-uas-platform/evidence_ledger/ |
 | dr | Disaster Recovery / Backup: deterministic snapshots of all module state dirs, restore with SHA-256 verification, and RPO/RTO threshold tracking; state under ~/.c-uas-platform/disaster_recovery/ |
 | mavlink-vulns | List MAVLink protocol vulnerabilities |
 | locate-controller | Estimate controller geolocation from RF detections |
