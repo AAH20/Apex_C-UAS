@@ -1,0 +1,13 @@
+{
+  "anchor_type": "git",
+  "root_hash": "c9b29269490f1ff6de7e66f739e642216975cb4d4c06f63bdab6049d0afdfa5e",
+  "content_hash": "3b5ae38ad8b02f87acf2a13f6ce929c75e930ab4c6da8e55f05191e3edf62bc7",
+  "created_at": 1793261478.263121,
+  "details": {
+    "anchor_type": "git",
+    "root_hash": "c9b29269490f1ff6de7e66f739e642216975cb4d4c06f63bdab6049d0afdfa5e",
+    "commit_message": "c-uas evidence ledger anchor: c9b29269490f1ff6de7e66f739e642216975cb4d4c06f63bdab6049d0afdfa5e",
+    "namespace": "c-uas-evidence-ledger",
+    "created_at": 1793261478.263121
+  }
+}
