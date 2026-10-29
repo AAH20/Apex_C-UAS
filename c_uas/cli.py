@@ -112,6 +112,11 @@ def main(argv: Optional[list] = None) -> int:
     sw_p.add_argument("--evasion", type=float, default=0.3, help="Evasion probability (0.0-1.0)")
     sw_p.add_argument("--seed", type=int, default=42, help="RNG seed")
 
+    # twin: airspace digital twin / simulation environment
+    from c_uas.digital_twin.cli import build_subparser as _twin_build_subparser
+
+    _twin_build_subparser(subparsers)
+
     # benchmarks
     bm_p = subparsers.add_parser(
         "benchmarks",
@@ -328,6 +333,11 @@ def main(argv: Optional[list] = None) -> int:
 
     _notify_build_subparser(subparsers)
 
+    # threat-share: TAXII 2.1 sharing & community feeds
+    from c_uas.threat_sharing.cli import build_subparser as _threat_share_build_subparser
+
+    _threat_share_build_subparser(subparsers)
+
     # auth: API key authentication & RBAC
     from c_uas.auth.cli import build_subparser as _auth_build_subparser
 
@@ -487,6 +497,11 @@ def main(argv: Optional[list] = None) -> int:
     from c_uas.grc_clab.cli import build_subparser as _grc_build_subparser
 
     _ = _grc_build_subparser(subparsers)
+
+    # evidence: immutable evidence ledger
+    from c_uas.evidence_ledger.cli import build_subparser as _evidence_build_subparser
+
+    _ = _evidence_build_subparser(subparsers)
 
     # edge
     from c_uas.edge.cli import build_subparser
@@ -1678,6 +1693,11 @@ def main(argv: Optional[list] = None) -> int:
         print("[C-UAS] threat-intel: specify --export, --serve, --alert, or --test")
         return 1
 
+    if args.command == "threat-share":
+        from c_uas.threat_sharing.cli import threat_share_main
+
+        return threat_share_main(args)
+
     if args.command == "broker":
         from c_uas.broker import (
             AgentSlotManager,
@@ -2084,6 +2104,16 @@ def main(argv: Optional[list] = None) -> int:
         from c_uas.auth.cli import auth_main
 
         return auth_main(args)
+
+    if args.command == "evidence":
+        from c_uas.evidence_ledger.cli import evidence_main
+
+        return evidence_main(args)
+
+    if args.command == "twin":
+        from c_uas.digital_twin.cli import twin_main
+
+        return twin_main(args)
 
     parser.print_help()
     return 1

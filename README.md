@@ -150,6 +150,7 @@ c-uas red-team --run --scenario-name gnss_spoofing
 c-uas red-team --run-campaign --seed 42
 c-uas red-team --report
 c-uas threat-intel --export --alert --test
+c-uas threat-share --serve --ingest --query --export
 c-uas broker --action list-tenants
 c-uas orchestrate --sites 3 --drones 16
 c-uas agent-eval --sites 3 --drones 16
@@ -366,6 +367,7 @@ actual code execution or are labeled illustrative.
 | c_uas/compliance | Automated compliance evidence collection for ISO 42001 audits |
 | c_uas/broker | Broker Channel OS: multi-tenant broker management, agent slots, campaigns |
 | c_uas/threat_intel | STIX 2.1 bundle export, TAXII 2.1 server, alert engine |
+| c_uas/threat_sharing | TAXII 2.1 sharing server, STIX 2.1 feed client, community sharing policy |
 | c_uas/unit_economics | Cost-per-engagement, cost-exchange ratio, economies of scale |
 | c_uas/competitive_landscape | Global C-UAS systems database |
 | c_uas/contract_readiness | Burn rate, CAC:LTV, MVP scope for contract readiness |
